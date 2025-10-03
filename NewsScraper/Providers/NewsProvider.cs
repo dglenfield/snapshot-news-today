@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using NewsScraper.Utilities;
+﻿
+using NewsScraper.Logging;
+using NewsScraper.Models;
 using System.Diagnostics;
 using System.Text.Json;
 
@@ -10,27 +11,10 @@ namespace NewsScraper.Providers;
 /// </summary>
 internal static class NewsProvider
 {
-    private static readonly string _cnnBaseUrl;
-    private static readonly string _debugUrl;
-    private static readonly string _pythonPath;
-    private static readonly bool _useDebugUrl;
-
-    static NewsProvider()
-    {
-        var config = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: false)
-            .AddUserSecrets<Program>()
-            .Build();
-
-        _cnnBaseUrl = config["NewsProvider:CnnBaseUrl"] ?? throw new InvalidOperationException("NewsProvider:CnnBaseUrl not found in appsettings.");
-        _pythonPath = config["PythonPath"] ?? throw new InvalidOperationException("PythonPath not found in appsettings.");
-        _debugUrl = config["NewsProvider:DebugArticleUrl"] ?? string.Empty;
-        _useDebugUrl = bool.Parse(config["NewsProvider:UseDebugArticle"] ?? "false");
-
-        if (_useDebugUrl && string.IsNullOrWhiteSpace(_debugUrl))
-            throw new InvalidOperationException("NewsProvider:DebugArticleUrl must be set when UseDebugArticle is true.");
-    }
+    private static readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
+    private static readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
+    private static readonly string _testLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.TestLandingPageFile;
+    private static readonly bool _useTestLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile;
 
     /// <summary>
     /// Retrieves a set of news article URLs from the specified news website.
@@ -39,56 +23,68 @@ internal static class NewsProvider
     /// <returns>A set of unique article URLs, or null if none found.</returns>
     public static HashSet<Uri>? GetNews(NewsWebsite newsWebsite)
     {
-        if (_useDebugUrl)
-        {
-            Logger.Log("Using debug URL as per configuration.", LogLevel.Info);
-            return [new(_debugUrl)];
-        }
+        //if (_useTestLandingPageFile)
+        //{
+        //    Logger.Log("Using test file as per configuration.");
+        //    return [new(_testLandingPageFile!)];
+        //}
 
-        switch (newsWebsite)
+        return newsWebsite switch
         {
-            case NewsWebsite.CNN:
-                return GetNewsFromCNN();
-            case NewsWebsite.FoxNews:
-                Logger.Log("Fox News scraping not yet implemented.", LogLevel.Warning);
-                throw new NotImplementedException("Fox News scraping not yet implemented.");
-            default:
-                throw new NotSupportedException("Unsupported news website.");
-        }
+            NewsWebsite.CNN => GetNewsFromCNN(),
+            NewsWebsite.FoxNews => throw new NotImplementedException("Fox News scraping not yet implemented."),
+            _ => throw new NotSupportedException("Unsupported news website."),
+        };
     }
 
     private static HashSet<Uri>? GetNewsFromCNN()
     {
-        string scriptPath = @"C:\Repos\snapshot-news-today\NewsScraper\Python\cnn_parser.py";
-
-        var start = new ProcessStartInfo(_pythonPath)
+        string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
+        string arguments = scriptPath;
+        if (_useTestLandingPageFile && !string.IsNullOrEmpty(_testLandingPageFile))
         {
-            Arguments = scriptPath,
+            Logger.Log("Using test file as per configuration.");
+            arguments += $" --test-landing-page-file \"{_testLandingPageFile}\"";
+            Logger.Log($"Passing test landing page file: {_testLandingPageFile}");
+        }
+        Console.WriteLine($"Executing Python script: {_pythonExePath} {arguments}");
+        var start = new ProcessStartInfo(_pythonExePath)
+        {
+            Arguments = arguments,
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true
         };
 
         using var process = Process.Start(start) ?? throw new Exception("Failed to start Python process.");
-        using var doc = JsonDocument.Parse(process.StandardOutput.ReadToEnd());
-
+        using var jsonDocument = JsonDocument.Parse(process.StandardOutput.ReadToEnd());
+        
         List<Uri> urls = [];
-        foreach (var item in doc.RootElement.EnumerateArray())
+        foreach (var jsonElement in jsonDocument.RootElement.EnumerateArray())
         {
-            if (DateTime.TryParse(item.GetProperty("publishdate").ToString(), out DateTime publishDate))
+            if (DateTime.TryParse(jsonElement.GetProperty("publishdate").GetString(), out DateTime publishDate))
             {
-                if (publishDate < DateTime.Now.AddDays(-1))
-                    continue; // Skip articles older than 1 day
+                // Return all articles regardless of age for now
+                //if (publishDate <= DateTime.Today.AddDays(-1).AddHours(-12))
+                //    continue; // Skip articles older than 1.5 days
             }
             else
             {
-                Logger.Log($"Invalid publish date format: {item.GetProperty("publishdate")}", LogLevel.Warning);
+                Logger.Log($"Invalid publish date format: {jsonElement.GetProperty("publishdate")}", LogLevel.Warning);
                 continue; // Skip if publish date is invalid
             }
 
-            Uri.TryCreate($"{_cnnBaseUrl}{item.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
+            Uri.TryCreate($"{_cnnBaseUrl}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
             if (uri is not null)
                 urls.Add(uri);
+
+            NewsArticle article = new()
+            {
+                SourceName = "CNN",
+                SourceUri = uri,
+                SourceHeadline = jsonElement.GetProperty("headline").GetString(),
+                SourcePublishDate = publishDate
+            };
         }
 
         var distinctUrls = new HashSet<Uri>();

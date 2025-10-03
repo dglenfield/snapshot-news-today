@@ -4,12 +4,20 @@ import requests
 import sys
 from datetime import datetime
 from bs4 import BeautifulSoup
+import argparse
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--test-landing-page-file', type=str, help='Path to test landing page file')
+    args = parser.parse_args()
 
-    url = "https://cnn.com"
-    response = requests.get(url)
-    html = response.text
+    if args.test_landing_page_file:
+        with open(args.test_landing_page_file, 'r', encoding='utf-8') as f:
+            html = f.read()
+    else:
+        url = "https://cnn.com"
+        response = requests.get(url)
+        html = response.text
 
     soup = BeautifulSoup(html, 'html.parser')
 

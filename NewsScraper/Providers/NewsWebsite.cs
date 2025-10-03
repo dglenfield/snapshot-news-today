@@ -6,6 +6,5 @@
 internal enum NewsWebsite
 {
     CNN,
-    FoxNews,
-    _DebugOnly = 999
+    FoxNews
 }
