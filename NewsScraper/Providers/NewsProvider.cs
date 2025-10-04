@@ -9,17 +9,17 @@ namespace NewsScraper.Providers;
 /// <summary>
 /// Provides methods for scraping news articles and metadata from supported news websites.
 /// </summary>
-internal static class NewsProvider
+internal class NewsProvider
 {
-    private static readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
-    private static readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
+    private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
+    private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
 
     /// <summary>
     /// Retrieves a set of news article URLs from the specified news website.
     /// </summary>
     /// <param name="newsWebsite">The news website to scrape.</param>
     /// <returns>A set of unique article URLs, or null if none found.</returns>
-    public static List<NewsArticle> GetNewsArticles(NewsWebsite newsWebsite)
+    public List<NewsArticle> GetNewsArticles(NewsWebsite newsWebsite)
     {
         return newsWebsite switch
         {
@@ -29,7 +29,7 @@ internal static class NewsProvider
         };
     }
 
-    private static List<NewsArticle> GetArticlesFromCNN()
+    private List<NewsArticle> GetArticlesFromCNN()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
 
@@ -65,7 +65,6 @@ internal static class NewsProvider
                 article.SourceCategory = grouped.Key;
 
         return [.. distinctArticles.OrderBy(a => a.SourceCategory).ThenByDescending(a => a.SourcePublishDate)];
-        //return [.. distinctArticles.OrderBy(a => a.SourceCategory).ThenByDescending(a => a.SourcePublishDate)];
     }
 
     /// <summary>
@@ -76,7 +75,7 @@ internal static class NewsProvider
     /// <param name="articles">The list of news articles to group. Cannot be null.</param>
     /// <returns>A dictionary where each key is a category name and the value is a list of articles belonging to that category.
     /// Articles with an unrecognized or missing category are grouped under the key "unknown".</returns>
-    private static Dictionary<string, List<NewsArticle>> GroupArticlesByCategory(List<NewsArticle> articles)
+    private Dictionary<string, List<NewsArticle>> GroupArticlesByCategory(List<NewsArticle> articles)
     {
         var groupedArticles = new Dictionary<string, List<NewsArticle>>();
         foreach (NewsArticle article in articles)
@@ -99,7 +98,7 @@ internal static class NewsProvider
     /// <param name="scriptPath">The full file path to the Python script to execute. Cannot be null or empty.</param>
     /// <returns>A JsonDocument representing the parsed JSON output from the Python script's standard output.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the Python process cannot be started.</exception>
-    private static JsonDocument RunPythonScript(string scriptPath)
+    private JsonDocument RunPythonScript(string scriptPath)
     {
         var pythonScript = new ProcessStartInfo(_pythonExePath)
         {

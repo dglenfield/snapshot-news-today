@@ -13,7 +13,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
 
-    internal async Task CurateArticles(List<NewsArticle> articles)
+    internal async Task<CuratedNewsArticles> CurateArticles(List<NewsArticle> articles)
     {
         List<Uri> distinctArticleUris = [.. articles.Select(a => a.SourceUri).Distinct()];
         Logger.Log($"Total articles to curate from: {articles.Count}");
@@ -97,7 +97,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
 
             Logger.Log($"\nCurated news articles:\n{curatedNewsArticles}");
 
-            return;
+            return curatedNewsArticles;
         }
 
         throw new Exception("Perplexity API response contained no choices.");

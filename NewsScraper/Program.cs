@@ -7,7 +7,51 @@ namespace NewsScraper;
 
 public class Program
 {
-    private static readonly PerplexityApiProvider _perplexityApiProvider;
+    private static readonly NewsProvider _newsProvider = default!;
+    private static readonly PerplexityApiProvider _perplexityApiProvider = default!;
+
+    public static void Main(string[] args)
+    {
+        try
+        {
+            // Get current news articles from CNN
+            NewsWebsite targetSite = NewsWebsite.CNN;
+            var sourceArticles = _newsProvider.GetNewsArticles(targetSite);
+            if (sourceArticles.Count == 0)
+                ExitApplication($"No articles found from {targetSite}.", LogLevel.Warning);
+            
+            // Curate articles using Perplexity API
+            var curatedNewsArticles = _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
+
+            // Analyze each curated article (not implemented)
+
+
+            ExitApplication();
+        }
+        catch (Exception ex)
+        {
+            ExitWithError(ex, 1);
+        }
+    }
+
+    private static void ExitApplication(string message = "", LogLevel messageLogLevel = LogLevel.Info, int exitCode = 0)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(message))
+                Logger.Log(message, messageLogLevel);
+            Logger.Log("\n********** Exiting application **********");
+        }
+        catch (Exception)
+        {
+            Console.Error.WriteLine("\nUnable to write to log file. Exiting application.\n");
+        }
+        
+        Environment.Exit(exitCode);
+    }
+
+    private static void ExitWithError(Exception ex, int exitCode) => 
+        ExitApplication($"{ex.GetType()}: {ex.Message}\nStackTrace: {ex.StackTrace}", LogLevel.Error, exitCode);
 
     static Program()
     {
@@ -25,49 +69,20 @@ public class Program
                         client.BaseAddress = new Uri(Configuration.PerplexityApiUrl);
                         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Configuration.PerplexityApiKey}");
                     });
+                    services.AddTransient<NewsProvider>();
                     services.AddTransient<PerplexityApiProvider>();
                 }).Build();
-            
+
+            _newsProvider = host.Services.GetRequiredService<NewsProvider>();
             _perplexityApiProvider = host.Services.GetRequiredService<PerplexityApiProvider>();
         }
-        catch (TypeInitializationException)
+        catch (TypeInitializationException ex)
         {
-            Console.WriteLine("\n********** Exiting application **********");
-            Environment.Exit(2);
+            ExitWithError(ex, 2);
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex);
-            Logger.Log("\n********** Exiting application **********");
-            Environment.Exit(3);
-        }
-    }
-
-    public static void Main(string[] args)
-    {
-        try
-        {
-            // Fetch articles from CNN
-            NewsWebsite targetSite = NewsWebsite.CNN;
-            var sourceArticles = NewsProvider.GetNewsArticles(targetSite);
-            if (sourceArticles.Count == 0)
-            {
-                Logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
-                Logger.Log("\n********** Exiting application **********");
-                Environment.Exit(0);
-            }
-            
-            // Curate articles using Perplexity API
-            _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
-
-            Logger.Log("\n********** Exiting application **********");
-            Environment.Exit(0);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex);
-            Logger.Log("\n********** Exiting application **********");
-            Environment.Exit(1);
+            ExitWithError(ex, 3);
         }
     }
 }
