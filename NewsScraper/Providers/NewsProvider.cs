@@ -13,8 +13,6 @@ internal static class NewsProvider
 {
     private static readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
     private static readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
-    private static readonly string _testLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.TestLandingPageFile;
-    private static readonly bool _useTestLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile;
 
     /// <summary>
     /// Retrieves a set of news article URLs from the specified news website.
@@ -34,8 +32,12 @@ internal static class NewsProvider
     private static List<NewsArticle> GetArticlesFromCNN()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
-        if (_useTestLandingPageFile && !string.IsNullOrEmpty(_testLandingPageFile))
-            scriptPath += $" --test-landing-page-file \"{_testLandingPageFile}\"";
+
+        // FOR TESTING: Append test landing page file argument
+        bool useTestLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile;
+        string testLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.TestLandingPageFile;
+        if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
+            scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
 
         List<NewsArticle> articles = [];
         var distinctArticles = new HashSet<NewsArticle>();

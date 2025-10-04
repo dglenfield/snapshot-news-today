@@ -15,48 +15,6 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, strin
 
     internal async Task CurateArticles(List<NewsArticle> articles)
     {
-        // FOR TESTING: Read from file instead of calling API
-        //var responseString = await File.ReadAllTextAsync(@"C:\Repos\snapshot-news-today\NewsScraper\curate-articles-response.json");
-
-        //var schema = new CurateArticles.JsonSchema();
-        //{
-        //Type = "object",
-        //Required = ["top_stories", "selection_criteria", "excluded_categories"],
-        //Properties = new SchemaProperties
-        //{
-        //TopStories = new ArraySchema
-        //{
-        //    Type = "array",
-        //    MinItems = 10,
-        //    MaxItems = 10,
-        //    Items = new ObjectSchema
-        //    {
-        //        Type = "object",
-        //        Required = ["url", "headline", "category", "highlights", "rationale"],
-        //        Properties = new Dictionary<string, TypeSchema>
-        //        {
-        //            ["url"] = new TypeSchema { Type = "string" },
-        //            ["headline"] = new TypeSchema { Type = "string" },
-        //            ["category"] = new TypeSchema { Type = "string" },
-        //            ["highlights"] = new TypeSchema { Type = "string" },
-        //            ["rationale"] = new TypeSchema { Type = "string" }
-        //        },
-        //        AdditionalProperties = false
-        //    }
-        //},
-        //SelectionCriteria = new TypeSchema { Type = "string" },
-        //ExcludedCategories = new ArraySchema
-        //{
-        //    Type = "array",
-        //    Items = new TypeSchema { Type = "string" }
-        //}
-        //},
-        //AdditionalProperties = false
-        //};
-
-        //CurateArticles.ResponseFormat responseFormat = new();
-        //{ Json_Schema = schema };
-
         List<Uri> distinctArticleUris = [.. articles.Select(a => a.SourceUri).Distinct()];
         Logger.Log($"Total articles to curate from: {articles.Count}");
 
@@ -68,14 +26,18 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, strin
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
         string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, distinctArticleUris.Select(u => u.AbsoluteUri))}";
 
-        CurateArticles.Body requestBody = new() 
-        { 
-            Messages = [new(Role.System, systemContent), new(Role.User, userContent)] 
-        };
+        CurateArticles.Body requestBody = new() { Messages = [new(Role.System, systemContent), new(Role.User, userContent)] };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody, JsonSerializerOptions.Web), Encoding.UTF8, "application/json");
         Logger.Log(jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
 
+        // FOR TESTING: Read from test response file instead of calling API
+        string testResponseString = string.Empty;
+        bool useTestResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile;
+        string testResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile;
+        if (useTestResponseFile && !string.IsNullOrEmpty(testResponseFile) && File.Exists(testResponseFile))
+            testResponseString = await File.ReadAllTextAsync(testResponseFile);
+        
         return;
 
         // Call Perplexity API
