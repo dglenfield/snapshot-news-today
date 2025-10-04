@@ -1,6 +1,6 @@
-﻿
-using NewsScraper.Logging;
+﻿using NewsScraper.Logging;
 using NewsScraper.Models;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 
@@ -21,97 +21,106 @@ internal static class NewsProvider
     /// </summary>
     /// <param name="newsWebsite">The news website to scrape.</param>
     /// <returns>A set of unique article URLs, or null if none found.</returns>
-    public static HashSet<Uri>? GetNews(NewsWebsite newsWebsite)
+    public static List<NewsArticle> GetNewsArticles(NewsWebsite newsWebsite)
     {
-        //if (_useTestLandingPageFile)
-        //{
-        //    Logger.Log("Using test file as per configuration.");
-        //    return [new(_testLandingPageFile!)];
-        //}
-
         return newsWebsite switch
         {
-            NewsWebsite.CNN => GetNewsFromCNN(),
+            NewsWebsite.CNN => GetArticlesFromCNN(),
             NewsWebsite.FoxNews => throw new NotImplementedException("Fox News scraping not yet implemented."),
             _ => throw new NotSupportedException("Unsupported news website."),
         };
     }
 
-    private static HashSet<Uri>? GetNewsFromCNN()
+    private static List<NewsArticle> GetArticlesFromCNN()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
-        string arguments = scriptPath;
         if (_useTestLandingPageFile && !string.IsNullOrEmpty(_testLandingPageFile))
-        {
-            Logger.Log("Using test file as per configuration.");
-            arguments += $" --test-landing-page-file \"{_testLandingPageFile}\"";
-            Logger.Log($"Passing test landing page file: {_testLandingPageFile}");
-        }
-        Console.WriteLine($"Executing Python script: {_pythonExePath} {arguments}");
-        var start = new ProcessStartInfo(_pythonExePath)
-        {
-            Arguments = arguments,
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true
-        };
+            scriptPath += $" --test-landing-page-file \"{_testLandingPageFile}\"";
 
-        using var process = Process.Start(start) ?? throw new Exception("Failed to start Python process.");
-        using var jsonDocument = JsonDocument.Parse(process.StandardOutput.ReadToEnd());
-        
-        List<Uri> urls = [];
-        foreach (var jsonElement in jsonDocument.RootElement.EnumerateArray())
+        List<NewsArticle> articles = [];
+        var distinctArticles = new HashSet<NewsArticle>();
+        foreach (var jsonElement in RunPythonScript(scriptPath).RootElement.EnumerateArray())
         {
-            if (DateTime.TryParse(jsonElement.GetProperty("publishdate").GetString(), out DateTime publishDate))
-            {
-                // Return all articles regardless of age for now
-                //if (publishDate <= DateTime.Today.AddDays(-1).AddHours(-12))
-                //    continue; // Skip articles older than 1.5 days
-            }
-            else
-            {
-                Logger.Log($"Invalid publish date format: {jsonElement.GetProperty("publishdate")}", LogLevel.Warning);
-                continue; // Skip if publish date is invalid
-            }
-
             Uri.TryCreate($"{_cnnBaseUrl}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
-            if (uri is not null)
-                urls.Add(uri);
+            if (uri is null)
+                continue; // Skip if URI is invalid
 
-            NewsArticle article = new()
+            if (!DateTime.TryParse(jsonElement.GetProperty("publishdate").GetString(), out DateTime publishDate))
+                continue; // Skip if publish date is invalid
+
+            distinctArticles.Add(new()
             {
                 SourceName = "CNN",
                 SourceUri = uri,
                 SourceHeadline = jsonElement.GetProperty("headline").GetString(),
                 SourcePublishDate = publishDate
-            };
+            });
         }
 
-        var distinctUrls = new HashSet<Uri>();
-        foreach (var group in GroupUrlsByCategory(urls))
-        {
-            foreach (var url in group.Value.Take(5)) // Take top 5 from each category
-                distinctUrls.Add(url);
-        }
+        // Group articles by category and assign category to each article
+        foreach (var grouped in GroupArticlesByCategory([.. distinctArticles]))
+            foreach (NewsArticle article in grouped.Value)
+                article.SourceCategory = grouped.Key;
 
-        return distinctUrls;
+        return [.. distinctArticles.OrderBy(a => a.SourceCategory).ThenByDescending(a => a.SourcePublishDate)];
+        //return [.. distinctArticles.OrderBy(a => a.SourceCategory).ThenByDescending(a => a.SourcePublishDate)];
     }
 
-    private static Dictionary<string, List<Uri>> GroupUrlsByCategory(List<Uri> urls)
+    /// <summary>
+    /// Groups a collection of news articles by their category, as determined from the article's source URI path.
+    /// </summary>
+    /// <remarks>The category is extracted as the fourth segment of the article's source URI path. If the path
+    /// does not contain at least four segments, the article is assigned to the "unknown" category.</remarks>
+    /// <param name="articles">The list of news articles to group. Cannot be null.</param>
+    /// <returns>A dictionary where each key is a category name and the value is a list of articles belonging to that category.
+    /// Articles with an unrecognized or missing category are grouped under the key "unknown".</returns>
+    private static Dictionary<string, List<NewsArticle>> GroupArticlesByCategory(List<NewsArticle> articles)
     {
-        var grouped = new Dictionary<string, List<Uri>>();
-        foreach (var url in urls)
+        var groupedArticles = new Dictionary<string, List<NewsArticle>>();
+        foreach (NewsArticle article in articles)
         {
-            var segments = url.AbsolutePath.Trim('/').Split('/');
-            
             // Category is the 4th segment in path (assuming "/2025/09/28/category/...")
-            var category = segments.Length >= 4 ? segments[3] : "unknown";
-            if (!grouped.ContainsKey(category))
-                grouped[category] = [];
-            
-            grouped[category].Add(url);
+            string[] segments = article.SourceUri.AbsolutePath.Trim('/').Split('/');
+            string category = segments.Length >= 4 ? segments[3] : "unknown";
+            if (!groupedArticles.ContainsKey(category))
+                groupedArticles[category] = [];
+            groupedArticles[category].Add(article);
         }
+        return groupedArticles;
+    }
 
-        return grouped;
+    /// <summary>
+    /// Runs a Python script located at the specified path and parses its standard output as a JSON document.
+    /// </summary>
+    /// <remarks>The Python script must write valid JSON to its standard output. Any errors in script
+    /// execution or invalid JSON output will result in an exception.</remarks>
+    /// <param name="scriptPath">The full file path to the Python script to execute. Cannot be null or empty.</param>
+    /// <returns>A JsonDocument representing the parsed JSON output from the Python script's standard output.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the Python process cannot be started.</exception>
+    private static JsonDocument RunPythonScript(string scriptPath)
+    {
+        var pythonScript = new ProcessStartInfo(_pythonExePath)
+        {
+            Arguments = scriptPath,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true
+        };
+
+        try
+        {
+            using var process = Process.Start(pythonScript) ?? throw new InvalidOperationException("Failed to start Python process.\nScript: {scriptPath}");
+            return JsonDocument.Parse(process.StandardOutput.ReadToEnd());
+        }
+        catch (Win32Exception ex)
+        {
+            Logger.Log($"Failed to start process: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            Logger.Log($"JSON parsing failed: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
+            throw;
+        }
     }
 }

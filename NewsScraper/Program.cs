@@ -50,18 +50,20 @@ public class Program
         {
             // 1. Fetch article URLs from news website
             NewsWebsite targetSite = NewsWebsite.CNN;
-            var distinctUris = NewsProvider.GetNews(targetSite);
+            var sourceArticles = NewsProvider.GetNewsArticles(targetSite);
 
             // 2. Curate article URLs using Perplexity API
-            if (distinctUris is null || distinctUris.Count == 0)
+            if (sourceArticles.Count == 0)
             {
                 Logger.Log("No article URIs found to curate.", LogLevel.Warning);
                 Logger.Log("********** Exiting application **********");
                 Environment.Exit(0);
             }
 
-            foreach ( var uri in distinctUris ) { Logger.Log(uri.AbsoluteUri, logAsRawMessage: true); }
-
+            Logger.Log($"Total distinct articles fetched from {targetSite}: {sourceArticles.Count}");
+            foreach (var uri in sourceArticles)
+                Logger.Log(uri.ToString(), logAsRawMessage: true);
+            
             //_perplexityApiProvider.CurateArticles([.. distinctUris]).GetAwaiter().GetResult();
 
             Logger.Log("********** Exiting application **********");

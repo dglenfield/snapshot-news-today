@@ -173,7 +173,7 @@ internal static class Configuration
                 response += $"\tPerplexityApiProvider.CurateArticles.TestResponseFile = {TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile}\n";
             }
 
-            response += "----- End of Configuration Settings -----\n";
+            response += "----- End of Configuration Settings -----";
             return response;
         }
     }
