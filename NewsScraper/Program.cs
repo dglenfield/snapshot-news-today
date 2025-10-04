@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using NewsScraper.Logging;
 using NewsScraper.Providers;
+using System.Text.Json;
 
 namespace NewsScraper;
 
@@ -15,7 +16,7 @@ public class Program
         {
             Console.Title = "News Scraper Application";
             Logger.Log("********** Application started **********");
-            Configuration.LogConfigurationSettings();
+            Logger.Log(Configuration.ToJson(), logAsRawMessage: true);
 
             // Setup DI
             IHost host = Host.CreateDefaultBuilder()
@@ -48,23 +49,22 @@ public class Program
     {
         try
         {
-            // 1. Fetch article URLs from news website
+            // 1. Fetch articles from CNN
             NewsWebsite targetSite = NewsWebsite.CNN;
             var sourceArticles = NewsProvider.GetNewsArticles(targetSite);
 
-            // 2. Curate article URLs using Perplexity API
             if (sourceArticles.Count == 0)
             {
-                Logger.Log("No article URIs found to curate.", LogLevel.Warning);
+                Logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
                 Logger.Log("********** Exiting application **********");
                 Environment.Exit(0);
             }
 
-            Logger.Log($"Total distinct articles fetched from {targetSite}: {sourceArticles.Count}");
-            foreach (var uri in sourceArticles)
-                Logger.Log(uri.ToString(), logAsRawMessage: true);
+            //Logger.Log($"Total articles fetched from {targetSite}: {sourceArticles.Count}");
+            //Logger.Log(JsonSerializer.Serialize(sourceArticles), logAsRawMessage: true);
             
-            //_perplexityApiProvider.CurateArticles([.. distinctUris]).GetAwaiter().GetResult();
+            // 2. Curate articles using Perplexity API
+            _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
 
             Logger.Log("********** Exiting application **********");
             Environment.Exit(0);

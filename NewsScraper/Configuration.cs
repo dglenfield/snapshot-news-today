@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using NewsScraper.Logging;
+using System.Text.Json;
 
 namespace NewsScraper;
 
@@ -110,6 +111,7 @@ internal static class Configuration
 
             // Access ConfigurationSummary to ensure all properties are accessed and validated
             var cs = ConfigurationSummary;
+            Logger.Log(ToJson(), logAsRawMessage: true);
         }
         catch (KeyNotFoundException ex) 
         { 
@@ -130,6 +132,11 @@ internal static class Configuration
     /// troubleshooting purposes. This method is for internal use only.</remarks>
     internal static void LogConfigurationSettings() => ConfigurationSummary.Split('\n').ToList()
         .ForEach(line => Logger.Log(line, logAsRawMessage: true));
+
+    internal static string ToJson() => JsonSerializer.Serialize(new
+    {
+        CnnBaseUrl = CnnBaseUrl,
+    });
 
     /// <summary>
     /// Gets a formatted summary of the current application configuration settings.

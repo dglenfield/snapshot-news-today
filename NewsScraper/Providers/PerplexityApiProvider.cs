@@ -1,4 +1,5 @@
 ﻿using NewsScraper.Logging;
+using NewsScraper.Models;
 using NewsScraper.Models.PerplexityApi.Requests;
 using NewsScraper.Models.PerplexityApi.Responses;
 using System.Text;
@@ -12,7 +13,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, strin
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
 
-    internal async Task CurateArticles(List<Uri> uris)
+    internal async Task CurateArticles(List<NewsArticle> articles)
     {
         // FOR TESTING: Read from file instead of calling API
         //var responseString = await File.ReadAllTextAsync(@"C:\Repos\snapshot-news-today\NewsScraper\curate-articles-response.json");
@@ -56,42 +57,23 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, strin
         //CurateArticles.ResponseFormat responseFormat = new();
         //{ Json_Schema = schema };
 
-        Logger.Log($"Total article URIs to curate from: {uris.Count}");
-        foreach (var uri in uris)
-            Logger.Log(uri.AbsoluteUri);
+        List<Uri> distinctArticleUris = [.. articles.Select(a => a.SourceUri).Distinct()];
+        Logger.Log($"Total articles to curate from: {articles.Count}");
 
-        string systemContent = @"
-        You are a news analyst AI assistant.
-        Your task is to select the 10 most important news stories from a provided list of URLs, ranking them by national/international impact, immediacy, societal relevance, and likelihood to shape upcoming events.
-        For each story, provide the URL, a catchy headline, category, highlights, and a short rationale explaining its importance.
-        After the list, summarize your selection criteria and note any categories (e.g., sports, entertainment) excluded from the top 10.
-        IMPORTANT: Return your response as a valid JSON object with the name top_stories. 
-        Do not include any additional text, commentary, or Markdown outside the JSON object. Your response must be parsable as JSON by a program.";
+        string systemPromptFileName = "curate-articles-system-prompt.txt";
+        string systemPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", systemPromptFileName);
+        string systemContent = File.ReadAllText(systemPromptFilePath);
 
-//        systemContent = @"
-//You are a news analyst AI assistant.
-//Your task is to select the 10 most important news stories from a provided list of URLs.
+        string userPromptFileName = "curate-articles-user-prompt.txt";
+        string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
+        string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, distinctArticleUris.Select(u => u.AbsoluteUri))}";
 
-//CRITICAL: You MUST return ONLY valid JSON matching this exact structure:
-//{
-//  ""top_stories"": [ /* array of exactly 10 story objects */ ],
-//  ""selection_criteria"": ""string explanation"",
-//  ""excluded_categories"": [ /* array of strings */ ]
-//}
-
-//Each story object must have: url, headline, category, highlights, rationale.
-//Do NOT add any additional fields or vary the structure.
-//Do NOT wrap the JSON in markdown code blocks.
-//Return only the raw JSON object.";
-
-        string userContent = $@"
-        For the following list of URLs to news stories, can you select the 10 most important to be informed about? IMPORTANT: Return your response as a valid JSON object with the name top_stories. 
-        {string.Join(Environment.NewLine, uris.Select(u => u.AbsoluteUri))}";
-
-        CurateArticles.Body requestBody = new() { Messages = [new(Role.System, systemContent), new(Role.User, userContent)] };
+        CurateArticles.Body requestBody = new() 
+        { 
+            Messages = [new(Role.System, systemContent), new(Role.User, userContent)] 
+        };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody, JsonSerializerOptions.Web), Encoding.UTF8, "application/json");
-
         Logger.Log(jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
 
         return;

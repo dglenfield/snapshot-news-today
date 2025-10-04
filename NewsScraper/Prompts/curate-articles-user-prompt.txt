@@ -1,0 +1,2 @@
+﻿For the following list of URLs to news stories, select the 10 most important to be informed about.
+IMPORTANT: Return your response as a valid JSON object with the name top_stories.
