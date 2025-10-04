@@ -53,7 +53,6 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         
         // Deserialize the outer response
         var perplexityResponse = JsonSerializer.Deserialize<PerplexityResponse>(responseString);
-
         if (perplexityResponse?.Choices != null && perplexityResponse.Choices.Count > 0)
         {
             // The actual curated articles are in the message content as JSON
@@ -63,11 +62,44 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
             contentJson = Regex.Replace(contentJson, @"^```(?:json)?\s*|\s*```$", "", RegexOptions.Multiline).Trim();
 
             // Deserialize the inner JSON
-            var curatedArticles = JsonSerializer.Deserialize<CuratedArticlesResponse>(contentJson);
-            Logger.Log($"\nCurated articles JSON:\n" + curatedArticles?.ToJson() ?? 
-                throw new NullReferenceException("Deserializing curated articles failed."), logAsRawMessage: true);
-            
+            var curatedArticlesResponse = JsonSerializer.Deserialize<CuratedArticlesResponse>(contentJson);
+            CuratedNewsArticles curatedNewsArticles = new()
+            {
+                Articles = curatedArticlesResponse?.TopStories.Select(s => new CuratedNewsArticle
+                {
+                    SourceUri = new Uri(s.Url),
+                    CuratedHeadline = s.Headline,
+                    CuratedCategory = s.Category,
+                    Highlights = s.Highlights,
+                    Rationale = s.Rationale
+                }).ToList() ?? [],
+                SelectionCriteria = curatedArticlesResponse?.SelectionCriteriaRaw.ToString() ?? string.Empty,
+                ExcludedCategoriesList = curatedArticlesResponse?.ExcludedCategoriesList ?? [],
+                Citations = perplexityResponse.Citations,
+                SearchResults = perplexityResponse.SearchResults,
+                PerplexityResponseId = perplexityResponse.Id,
+                PerplexityResponseModel = perplexityResponse.Model,
+                PerplexityApiUsage = perplexityResponse.Usage
+            };
+
+            // Merge source article details into curated articles
+            curatedNewsArticles.Articles
+                .Where(ca => articles.Any(a => a.SourceUri == ca.SourceUri))
+                .ToList()
+                .ForEach(ca =>
+                {
+                    var sourceArticle = articles.First(a => a.SourceUri == ca.SourceUri);
+                    ca.SourceHeadline = sourceArticle.SourceHeadline;
+                    ca.SourcePublishDate = sourceArticle.SourcePublishDate;
+                    ca.SourceName = sourceArticle.SourceName;
+                    ca.SourceCategory = sourceArticle.SourceCategory;
+                });
+
+            Logger.Log($"\nCurated news articles:\n{curatedNewsArticles}");
+
             return;
         }
+
+        throw new Exception("Perplexity API response contained no choices.");
     }
 }

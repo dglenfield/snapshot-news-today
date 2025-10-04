@@ -29,6 +29,14 @@ public class PerplexityResponse
 
     [JsonPropertyName("choices")]
     public List<Choice> Choices { get; set; }
+
+    public string ToJson() => JsonSerializer.Serialize(this);
+    public string ToJson(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
+    public string ToJson(JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
+        JsonSerializer.Serialize(this, JsonConfig.Customize(options, customOptions));
+
+    public override string ToString() => ToJson(JsonSerializerOptions.Default,
+        CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }
 
 public class Usage
@@ -130,17 +138,15 @@ public class CuratedArticlesResponse
     public JsonElement ExcludedCategoriesRaw { get; set; }  // Same for excluded_categories
 
     // Helper properties to get the actual values
-    [JsonIgnore]
-    public string SelectionCriteriaText =>
-        SelectionCriteriaRaw.ValueKind == JsonValueKind.String
-            ? SelectionCriteriaRaw.GetString()
-            : SelectionCriteriaRaw.ToString();
+    //[JsonIgnore]
+    //public string SelectionCriteriaText => SelectionCriteriaRaw.ValueKind == JsonValueKind.String
+    //        ? SelectionCriteriaRaw.GetString() : SelectionCriteriaRaw.ToString();
 
-    [JsonIgnore]
-    public SelectionCriteria SelectionCriteriaObject =>
-        SelectionCriteriaRaw.ValueKind == JsonValueKind.Object
-            ? SelectionCriteriaRaw.Deserialize<SelectionCriteria>()
-            : null;
+    //[JsonIgnore]
+    //public SelectionCriteria SelectionCriteriaObject =>
+    //    SelectionCriteriaRaw.ValueKind == JsonValueKind.Object
+    //        ? SelectionCriteriaRaw.Deserialize<SelectionCriteria>()
+    //        : null;
 
     [JsonIgnore]
     public List<string> ExcludedCategoriesList
@@ -167,20 +173,20 @@ public class CuratedArticlesResponse
         JsonSerializer.Serialize(this, JsonConfig.Customize(options, customOptions));
 }
 
-public class SelectionCriteria
-{
-    [JsonPropertyName("national_international_impact")]
-    public string NationalInternationalImpact { get; set; }
+//public class SelectionCriteria
+//{
+    //[JsonPropertyName("national_international_impact")]
+    //public string NationalInternationalImpact { get; set; }
 
-    [JsonPropertyName("immediacy")]
-    public string Immediacy { get; set; }
+    //[JsonPropertyName("immediacy")]
+    //public string Immediacy { get; set; }
 
-    [JsonPropertyName("societal_relevance")]
-    public string SocietalRelevance { get; set; }
+    //[JsonPropertyName("societal_relevance")]
+    //public string SocietalRelevance { get; set; }
 
-    [JsonPropertyName("shaping_upcoming_events")]
-    public string ShapingUpcomingEvents { get; set; }
-}
+    //[JsonPropertyName("shaping_upcoming_events")]
+    //public string ShapingUpcomingEvents { get; set; }
+//}
 
 public class Story
 {
