@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using NewsScraper.Logging;
 using NewsScraper.Providers;
-using System.Text.Json;
 
 namespace NewsScraper;
 
@@ -14,9 +13,8 @@ public class Program
     {
         try
         {
-            Console.Title = "News Scraper Application";
+            Console.Title = "News Scraper";
             Logger.Log("********** Application started **********");
-            Logger.Log(Configuration.ToJson(), logAsRawMessage: true);
 
             // Setup DI
             IHost host = Host.CreateDefaultBuilder()
@@ -41,7 +39,7 @@ public class Program
         {
             Logger.LogException(ex);
             Logger.Log("********** Exiting application **********");
-            Environment.Exit(1);
+            Environment.Exit(3);
         }
     }
 
@@ -49,21 +47,17 @@ public class Program
     {
         try
         {
-            // 1. Fetch articles from CNN
+            // Fetch articles from CNN
             NewsWebsite targetSite = NewsWebsite.CNN;
             var sourceArticles = NewsProvider.GetNewsArticles(targetSite);
-
             if (sourceArticles.Count == 0)
             {
                 Logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
                 Logger.Log("********** Exiting application **********");
                 Environment.Exit(0);
             }
-
-            //Logger.Log($"Total articles fetched from {targetSite}: {sourceArticles.Count}");
-            //Logger.Log(JsonSerializer.Serialize(sourceArticles), logAsRawMessage: true);
             
-            // 2. Curate articles using Perplexity API
+            // Curate articles using Perplexity API
             _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
 
             Logger.Log("********** Exiting application **********");

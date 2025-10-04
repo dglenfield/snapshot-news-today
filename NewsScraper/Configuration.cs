@@ -108,10 +108,8 @@ internal static class Configuration
             .Build();
 
             _useProductionSettings = bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
-
-            // Access ConfigurationSummary to ensure all properties are accessed and validated
-            var cs = ConfigurationSummary;
-            Logger.Log(ToJson(), logAsRawMessage: true);
+            
+            ToJson(); // Access ToJson to ensure all properties are accessed and validated
         }
         catch (KeyNotFoundException ex) 
         { 
@@ -126,62 +124,17 @@ internal static class Configuration
     }
 
     /// <summary>
-    /// Logs the current configuration settings to the application log as raw messages.
+    /// Serializes the current configuration settings to a JSON string.
     /// </summary>
-    /// <remarks>Each line of the configuration summary is logged individually. Intended for diagnostic or
-    /// troubleshooting purposes. This method is for internal use only.</remarks>
-    internal static void LogConfigurationSettings() => ConfigurationSummary.Split('\n').ToList()
-        .ForEach(line => Logger.Log(line, logAsRawMessage: true));
-
+    /// <remarks>The returned JSON includes properties from production, logging, Python, and test
+    /// settings. Sensitive values, such as API keys, will be partially masked in the output for security.</remarks>
+    /// <returns>A JSON-formatted string representing the current values of the configuration settings.</returns>
     internal static string ToJson() => JsonSerializer.Serialize(new
     {
-        CnnBaseUrl = CnnBaseUrl,
+        UseProductionSettings = _useProductionSettings, CnnBaseUrl, PerplexityApiKey = $"{PerplexityApiKey[..10]}...", PerplexityApiUrl,
+        LoggingSettings.ApplicationLogLevel, LoggingSettings.LogDirectory, LoggingSettings.LogToConsole, LoggingSettings.LogToFile,
+        PythonSettings.PythonExePath, PythonSettings.GetNewsFromCnnScript,
+        TestSettings.NewsProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsProvider.GetNews.TestLandingPageFile,
+        TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile, TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile,
     });
-
-    /// <summary>
-    /// Gets a formatted summary of the current application configuration settings.
-    /// </summary>
-    /// <remarks>The summary includes key configuration values for Python integration, news provider
-    /// endpoints, Perplexity API credentials, and logging options. If production settings are enabled, test settings
-    /// are omitted from the summary. This property is intended for diagnostic or informational purposes.</remarks>
-    private static string ConfigurationSummary
-    {
-        get
-        {
-            string response = "----- Configuration Settings -----\n";
-            response += $"UseProductionSettings = {_useProductionSettings}\n";
-            // Python settings
-            response += $"PythonSettings:\n";
-            response += $"\tPythonExePath = {PythonSettings.PythonExePath}\n";
-            response += $"\tGetNewsFromCnnScript = {PythonSettings.GetNewsFromCnnScript}\n";
-            // NewsProvider settings
-            response += $"NewsProvider:\n";
-            response += $"\tCnnBaseUrl = {CnnBaseUrl}\n";
-            // PerplexityApiProvider settings
-            response += $"PerplexityApiProvider:\n";
-            response += $"\tPerplexityApiKey = {PerplexityApiKey[..10]}...\n";
-            response += $"\tPerplexityApiUrl = {PerplexityApiUrl}\n";
-            // Logging settings
-            response += $"LoggingSettings:\n";
-            response += $"\tApplicationLogLevel = {LoggingSettings.ApplicationLogLevel}\n";
-            response += $"\tLogDirectory = {LoggingSettings.LogDirectory}\n";
-            response += $"\tLogToConsole = {LoggingSettings.LogToConsole}\n";
-            response += $"\tLogToFile = {LoggingSettings.LogToFile}\n";
-
-            if (_useProductionSettings)
-                response += "*** Using production settings, test settings are disabled. ***\n";
-            else
-            {
-                // Test settings
-                response += $"TestSettings:\n";
-                response += $"\tNewsProvider.GetNews.UseTestArticleUrl = {TestSettings.NewsProvider.GetNews.UseTestLandingPageFile}\n";
-                response += $"\tNewsProvider.GetNews.TestArticleUrl = {TestSettings.NewsProvider.GetNews.TestLandingPageFile}\n";
-                response += $"\tPerplexityApiProvider.CurateArticles.UseTestResponseFile = {TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile}\n";
-                response += $"\tPerplexityApiProvider.CurateArticles.TestResponseFile = {TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile}\n";
-            }
-
-            response += "----- End of Configuration Settings -----";
-            return response;
-        }
-    }
 }
