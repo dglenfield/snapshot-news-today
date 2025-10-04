@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using NewsScraper.Serialization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace NewsScraper.Models.PerplexityApi.Responses;
@@ -159,6 +160,11 @@ public class CuratedArticlesResponse
             return new List<string>();
         }
     }
+
+    public string ToJson() => JsonSerializer.Serialize(this);
+    public string ToJson(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
+    public string ToJson(JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
+        JsonSerializer.Serialize(this, JsonConfig.Customize(options, customOptions));
 }
 
 public class SelectionCriteria

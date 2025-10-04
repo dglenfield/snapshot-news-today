@@ -1,7 +1,7 @@
 ﻿namespace NewsScraper.Serialization;
 
 [Flags]
-internal enum CustomJsonSerializerOptions
+public enum CustomJsonSerializerOptions
 {
     IgnoreNull = 0,
     WriteIndented = 1 << 0, // 1

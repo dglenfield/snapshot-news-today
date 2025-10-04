@@ -32,13 +32,13 @@ public class Program
         }
         catch (TypeInitializationException)
         {
-            Console.WriteLine("********** Exiting application **********");
+            Console.WriteLine("\n********** Exiting application **********");
             Environment.Exit(2);
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            Logger.Log("********** Exiting application **********");
+            Logger.Log("\n********** Exiting application **********");
             Environment.Exit(3);
         }
     }
@@ -53,20 +53,20 @@ public class Program
             if (sourceArticles.Count == 0)
             {
                 Logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
-                Logger.Log("********** Exiting application **********");
+                Logger.Log("\n********** Exiting application **********");
                 Environment.Exit(0);
             }
             
             // Curate articles using Perplexity API
             _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
 
-            Logger.Log("********** Exiting application **********");
+            Logger.Log("\n********** Exiting application **********");
             Environment.Exit(0);
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            Logger.Log("********** Exiting application **********");
+            Logger.Log("\n********** Exiting application **********");
             Environment.Exit(1);
         }
     }

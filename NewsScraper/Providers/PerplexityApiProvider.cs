@@ -9,7 +9,7 @@ using CurateArticles = NewsScraper.Models.PerplexityApi.Requests.CurateArticles;
 
 namespace NewsScraper.Providers;
 
-internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, string test = "")
+internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
 
@@ -29,7 +29,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, strin
         CurateArticles.Body requestBody = new() { Messages = [new(Role.System, systemContent), new(Role.User, userContent)] };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody, JsonSerializerOptions.Web), Encoding.UTF8, "application/json");
-        Logger.Log(jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
+        Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
 
         // FOR TESTING: Read from test response file instead of calling API
         string testResponseString = string.Empty;
@@ -37,21 +37,20 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, strin
         string testResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile;
         if (useTestResponseFile && !string.IsNullOrEmpty(testResponseFile) && File.Exists(testResponseFile))
             testResponseString = await File.ReadAllTextAsync(testResponseFile);
-        
-        return;
 
-        // Call Perplexity API
-        var response = await _httpClientFactory.CreateClient("Perplexity").PostAsync("", jsonContent);
-        var responseString = await response.Content.ReadAsStringAsync();
-
-        Logger.Log(responseString, logAsRawMessage: true);
-        Logger.Log($"HTTP Status Code: {response.StatusCode}");
-        if (!response.IsSuccessStatusCode)
+        string responseString = string.Empty;
+        if (useTestResponseFile) 
+            responseString = testResponseString;
+        else
         {
-            return;
-            //return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
-        }
-
+            // Call Perplexity API
+            var response = await _httpClientFactory.CreateClient("Perplexity").PostAsync("", jsonContent);
+            responseString = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException($"Perplexity API request failed with status code {response.StatusCode}: {responseString}");
+        }        
+        Logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
+        
         // Deserialize the outer response
         var perplexityResponse = JsonSerializer.Deserialize<PerplexityResponse>(responseString);
 
@@ -63,48 +62,12 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory, strin
             // Remove markdown code fences using regex
             contentJson = Regex.Replace(contentJson, @"^```(?:json)?\s*|\s*```$", "", RegexOptions.Multiline).Trim();
 
-            // Remove markdown code fences if present
-            //contentJson = contentJson.Trim();
-            //if (contentJson.StartsWith("```json"))
-            //{
-            //    contentJson = contentJson.Substring(7); // Remove ```json
-            //}
-            //else if (contentJson.StartsWith("```"))
-            //{
-            //    contentJson = contentJson.Substring(3); // Remove ```
-            //}
-
-            //if (contentJson.EndsWith("```"))
-            //{
-            //    contentJson = contentJson.Substring(0, contentJson.Length - 3); // Remove trailing ```
-            //}
-
-            //contentJson = contentJson.Trim(); // Clean up any extra whitespace
-
-            Logger.Log("Cleaned JSON content:");
-            Logger.Log(contentJson, logAsRawMessage: true);
-
             // Deserialize the inner JSON
             var curatedArticles = JsonSerializer.Deserialize<CuratedArticlesResponse>(contentJson);
-
-            if (curatedArticles?.TopStories != null)
-            {
-                foreach (var story in curatedArticles.TopStories)
-                {
-                    Logger.Log($"Headline: {story.Headline}");
-                    Logger.Log($"URL: {story.Url}");
-                    Logger.Log($"Category: {story.Category}");
-                    Logger.Log($"Highlights: {story.Highlights}");
-                    Logger.Log($"Rationale: {story.Rationale}");
-                    Logger.Log("---");
-                }
-
-                // Handle selection criteria (string or object)
-                Logger.Log($"Selection Criteria: {curatedArticles.SelectionCriteriaText}");
-
-                // Handle excluded categories (array or object)
-                Logger.Log($"Excluded Categories: {string.Join(", ", curatedArticles.ExcludedCategoriesList)}");
-            }
+            Logger.Log($"\nCurated articles JSON:\n" + curatedArticles?.ToJson() ?? 
+                throw new NullReferenceException("Deserializing curated articles failed."), logAsRawMessage: true);
+            
+            return;
         }
     }
 }
