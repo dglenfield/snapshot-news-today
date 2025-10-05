@@ -1,7 +1,9 @@
 ﻿using NewsScraper.Logging;
 using NewsScraper.Models;
 using NewsScraper.Models.PerplexityApi.Requests;
+using NewsScraper.Models.PerplexityApi.Requests.CurateArticles;
 using NewsScraper.Models.PerplexityApi.Responses;
+using NewsScraper.Models.PerplexityApi.Responses.CurateArticles;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -26,11 +28,17 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
         string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, distinctArticleUris.Select(u => u.AbsoluteUri))}";
 
-        CurateArticles.Body requestBody = new() { Messages = [new(Role.System, systemContent), new(Role.User, userContent)] };
+        CurateArticles.Body requestBody = new() 
+        { 
+            Messages = [new(Role.System, systemContent), new(Role.User, userContent)],
+            Response_Format = new CurateArticles.ResponseFormat() { Json_Schema = new JsonSchema() },
+            Max_Tokens = 2000,
+            Web_Search_Options = new() { Search_Context_Size = SearchContextSize.Low }
+        };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody, JsonSerializerOptions.Web), Encoding.UTF8, "application/json");
         Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
-
+        
         // FOR TESTING: Read from test response file instead of calling API
         string testResponseString = string.Empty;
         bool useTestResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile;
@@ -52,7 +60,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         Logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
         
         // Deserialize the outer response
-        var perplexityResponse = JsonSerializer.Deserialize<PerplexityResponse>(responseString);
+        var perplexityResponse = JsonSerializer.Deserialize<Response>(responseString);
         if (perplexityResponse?.Choices != null && perplexityResponse.Choices.Count > 0)
         {
             // The actual curated articles are in the message content as JSON
@@ -73,7 +81,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
                     Highlights = s.Highlights,
                     Rationale = s.Rationale
                 }).ToList() ?? [],
-                SelectionCriteria = curatedArticlesResponse?.SelectionCriteriaRaw.ToString() ?? string.Empty,
+                SelectionCriteria = curatedArticlesResponse?.SelectionCriteriaText?.ToString() ?? string.Empty,
                 ExcludedCategoriesList = curatedArticlesResponse?.ExcludedCategoriesList ?? [],
                 Citations = perplexityResponse.Citations,
                 SearchResults = perplexityResponse.SearchResults,

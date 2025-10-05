@@ -8,7 +8,7 @@ internal class ResponseFormat
     public JsonSchema Json_Schema { get; init; } = new();
 }
 
-public class JsonSchema
+internal class JsonSchema : JsonSchemaBase
 {
     [JsonPropertyName("type")]
     public string Type { get; set; } = "object";

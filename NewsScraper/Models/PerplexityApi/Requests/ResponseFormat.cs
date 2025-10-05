@@ -8,14 +8,14 @@ namespace NewsScraper.Models.PerplexityApi.Requests;
 internal class ResponseFormat
 {
     public string Type { get; init; } = "json_schema";
-    public JsonSchema Json_Schema { get; init; }
+    public JsonSchemaBase Json_Schema { get; init; }
 }
 
-internal class JsonSchema
+internal class JsonSchemaBase
 {
     public string Name { get; set; } = "top_stories";
     public bool Strict { get; set; } = true;
-    public required Schema Schema { get; set; }
+    public Schema Schema { get; set; }
 }
 
 internal class Schema
