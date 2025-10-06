@@ -34,7 +34,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody, JsonSerializerOptions.Web), Encoding.UTF8, "application/json");
         Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
-        //return null;
+        
         // FOR TESTING: Read from test response file instead of calling API
         string testResponseString = string.Empty;
         bool useTestResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile;
@@ -66,7 +66,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
             contentJson = Regex.Replace(contentJson, @"^```(?:json)?\s*|\s*```$", "", RegexOptions.Multiline).Trim();
 
             // Deserialize the inner JSON
-            var curatedArticlesResponse = JsonSerializer.Deserialize<CuratedArticlesResponse>(contentJson);
+            var curatedArticlesResponse = JsonSerializer.Deserialize<CuratedArticlesContent>(contentJson);
             CuratedNewsArticles curatedNewsArticles = new()
             {
                 Articles = curatedArticlesResponse?.TopStories.Select(s => new CuratedNewsArticle
