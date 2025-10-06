@@ -37,16 +37,11 @@ internal class SchemaProperties
         SelectionCriteria = new TypeSchema { Type = "string" };
 
         // Define the schema for excluded categories
-        ExcludedCategories = new ArraySchema
-        {
-            Type = "array",
-            Items = new TypeSchema { Type = "string" }
-        };
+        ExcludedCategories = new ArraySchema { Items = new TypeSchema { Type = "string" } };
 
         // Define the schema for top stories
         TopStories = new ArraySchema
         {
-            Type = "array",
             MinItems = 10,
             MaxItems = 10,
             Items = new TopStoriesItemsSchema()

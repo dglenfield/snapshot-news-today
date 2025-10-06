@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace NewsScraper.Models.PerplexityApi.Common.Request;
 
+/// <summary>
+/// Represents a schema that defines the type information for an object.
+/// </summary>
 public class TypeSchema
 {
+    /// <summary>
+    /// Gets the type identifier associated with the object.
+    /// </summary>
     [JsonPropertyName("type")]
-    public string Type { get; set; }
+    public string Type { get; init; }
 }

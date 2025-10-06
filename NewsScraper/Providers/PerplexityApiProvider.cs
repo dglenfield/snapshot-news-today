@@ -27,7 +27,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
         string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, distinctArticleUris.Select(u => u.AbsoluteUri))}";
 
-        CurateArticlesRequestBody requestBody = new() 
+        CurateArticlesRequest requestBody = new() 
         { 
             Messages = [new(Role.System, systemContent), new(Role.User, userContent)] 
         };

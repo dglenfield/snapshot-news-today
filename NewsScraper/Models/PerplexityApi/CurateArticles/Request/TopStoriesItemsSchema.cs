@@ -1,7 +1,4 @@
 ﻿using NewsScraper.Models.PerplexityApi.Common.Request;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace NewsScraper.Models.PerplexityApi.CurateArticles.Request;
