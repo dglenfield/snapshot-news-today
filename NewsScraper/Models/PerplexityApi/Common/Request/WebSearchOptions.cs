@@ -1,7 +1,7 @@
 ﻿using NewsScraper.Serialization;
 using System.Text.Json.Serialization;
 
-namespace NewsScraper.Models.PerplexityApi.Requests;
+namespace NewsScraper.Models.PerplexityApi.Common.Request;
 
 /// <summary>
 /// Perplexity-Specific: Configuration for using web search in model responses.
@@ -13,7 +13,7 @@ internal class WebSearchOptions
     /// </summary>
     [JsonPropertyName("search_context_size")]
     [JsonConverter(typeof(LowercaseJsonStringEnumConverter))]
-    public SearchContextSize? Search_Context_Size { get; set; }
+    public SearchContextSize? SearchContextSize { get; set; }
 
     /// <summary>
     /// When enabled, improves the relevance of image search results to the user query. 

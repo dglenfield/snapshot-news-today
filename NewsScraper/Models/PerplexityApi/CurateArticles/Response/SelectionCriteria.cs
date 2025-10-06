@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace NewsScraper.Models.PerplexityApi.Responses.CurateArticles;
+namespace NewsScraper.Models.PerplexityApi.CurateArticles.Response;
 
 internal class SelectionCriteria
 {

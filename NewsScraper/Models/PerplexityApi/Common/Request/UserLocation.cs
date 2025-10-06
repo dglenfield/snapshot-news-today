@@ -1,4 +1,4 @@
-﻿namespace NewsScraper.Models.PerplexityApi.Requests;
+﻿namespace NewsScraper.Models.PerplexityApi.Common.Request;
 
 /// <summary>
 /// User location to refine search results based on geography. For best accuracy, it is recommended to 

@@ -2,9 +2,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NewsScraper.Models.PerplexityApi.Requests;
+namespace NewsScraper.Models.PerplexityApi.Common.Request;
 
-internal abstract class BodyBase
+internal abstract class RequestBody
 {
     /// <summary>
     /// OpenAI Compatible: The maximum number of completion tokens returned by the API.
@@ -12,13 +12,13 @@ internal abstract class BodyBase
     /// <remarks>Controls the length of the model's response. If the response would exceed this limit, it will 
     /// be truncated. Higher values allow for longer responses but may increase processing time and costs.</remarks>
     [JsonPropertyName("max_tokens")]
-    [JsonPropertyOrderAttribute(3)]
-    public int? Max_Tokens { get; set; }
+    [JsonPropertyOrderAttribute(1)]
+    public int? MaxTokens { get; set; }
 
     /// <summary>
     /// A list of messages comprising the conversation so far.
     /// </summary>
-    [JsonPropertyOrderAttribute(1)]
+    [JsonPropertyOrderAttribute(5)]
     public required Message[] Messages { get; set; }
 
     /// <summary>
@@ -29,11 +29,20 @@ internal abstract class BodyBase
     public Model Model { get; set; } = Model.Sonar;
 
     /// <summary>
-    /// Perplexity-Specific: Configuration for using web search in model responses.
+    /// Placeholder for the formatting to use for the response. Derived classes must hide this property 
+    /// using 'new' and provide a concrete implementation with the correct type and serialization attributes.
     /// </summary>
-    [JsonPropertyName("web_search_options")]
-    [JsonPropertyOrderAttribute(2)]
-    public WebSearchOptions? Web_Search_Options { get; set; }
+    /// <remarks>For example:
+    /// <code>public new DesiredType ResponseFormat { get; init; }</code>
+    /// Refer to <seealso cref="CurateArticles.Body"></seealso> for an actual implementation.
+    /// </remarks>
+    [JsonPropertyName("response_format")]
+    [JsonPropertyOrderAttribute(4)]
+    public object? ResponseFormat 
+    { 
+        get => throw new NotImplementedException("Implement in derived class using 'new' and the correct type.");
+        init => throw new NotImplementedException("Implement in derived class using 'new' and the correct type.");
+    }
 
     /// <summary>
     /// The amount of randomness in the response, valued between 0 and 2.
@@ -41,19 +50,35 @@ internal abstract class BodyBase
     /// <remarks>Lower values (e.g., 0.1) make the output more focused, deterministic, and less creative. 
     /// Higher values (e.g., 1.5) make the output more random and creative. Use lower values for 
     /// factual/information retrieval tasks and higher values for creative applications.</remarks>
-    [JsonPropertyOrderAttribute(4)]
+    [JsonPropertyOrderAttribute(2)]
     public double? Temperature
     {
         get;
         set => field = (value > 0 && value < 2) ? value :
-                throw new ArgumentOutOfRangeException(nameof(Temperature), "Value must be between 0 and 2 (exclusive)");
+            throw new ArgumentOutOfRangeException(nameof(Temperature), "Value must be between 0 and 2 (exclusive)");
     }
 
+    /// <summary>
+    /// Perplexity-Specific: Configuration for using web search in model responses.
+    /// </summary>
+    [JsonPropertyName("web_search_options")]
+    [JsonPropertyOrderAttribute(3)]
+    public WebSearchOptions? WebSearchOptions { get; set; }
+
+    // Serialization methods
     public string ToJson() => JsonSerializer.Serialize(this);
     public string ToJson(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
     public string ToJson(JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
         JsonSerializer.Serialize(this, JsonConfig.Customize(options, customOptions));
 
+    /// <summary>
+    /// Returns a JSON-formatted string representation of the current object.
+    /// </summary>
+    /// <remarks>The returned JSON string uses default serialization options, including indentation for
+    /// readability and omission of properties with null values. This can be useful for logging, debugging, or
+    /// persisting the object's state in a human-readable format.</remarks>
+    /// <returns>A string containing the JSON representation of the object, formatted with indentation and excluding properties
+    /// with null values.</returns>
     public override string ToString() => ToJson(JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }

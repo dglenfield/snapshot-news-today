@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace NewsScraper.Models.PerplexityApi.Responses;
+namespace NewsScraper.Models.PerplexityApi.Common.Response;
 
 internal class Choice
 {

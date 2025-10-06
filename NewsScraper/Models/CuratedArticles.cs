@@ -1,4 +1,4 @@
-﻿using NewsScraper.Models.PerplexityApi.Responses;
+﻿using NewsScraper.Models.PerplexityApi.Common.Response;
 using NewsScraper.Serialization;
 using System.Text.Json;
 

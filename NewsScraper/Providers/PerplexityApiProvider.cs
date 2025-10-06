@@ -1,13 +1,12 @@
 ﻿using NewsScraper.Logging;
 using NewsScraper.Models;
-using NewsScraper.Models.PerplexityApi.Requests;
-using NewsScraper.Models.PerplexityApi.Requests.CurateArticles;
-using NewsScraper.Models.PerplexityApi.Responses;
-using NewsScraper.Models.PerplexityApi.Responses.CurateArticles;
+using NewsScraper.Models.PerplexityApi.Common.Request;
+using NewsScraper.Models.PerplexityApi.Common.Response;
+using NewsScraper.Models.PerplexityApi.CurateArticles.Request;
+using NewsScraper.Models.PerplexityApi.CurateArticles.Response;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CurateArticles = NewsScraper.Models.PerplexityApi.Requests.CurateArticles;
 
 namespace NewsScraper.Providers;
 
@@ -28,17 +27,14 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
         string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, distinctArticleUris.Select(u => u.AbsoluteUri))}";
 
-        CurateArticles.Body requestBody = new() 
+        CurateArticlesRequestBody requestBody = new() 
         { 
-            Messages = [new(Role.System, systemContent), new(Role.User, userContent)],
-            Response_Format = new CurateArticles.ResponseFormat() { Json_Schema = new JsonSchema() },
-            Max_Tokens = 2000,
-            Web_Search_Options = new() { Search_Context_Size = SearchContextSize.Low }
+            Messages = [new(Role.System, systemContent), new(Role.User, userContent)] 
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody, JsonSerializerOptions.Web), Encoding.UTF8, "application/json");
         Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
-        
+        //return null;
         // FOR TESTING: Read from test response file instead of calling API
         string testResponseString = string.Empty;
         bool useTestResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile;
