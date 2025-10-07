@@ -5,7 +5,10 @@ namespace NewsScraper.Serialization;
 
 internal static class JsonConfig
 {
-    public static JsonSerializerOptions Customize(JsonSerializerOptions options,
+    public static string ToJson(object value, JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
+        JsonSerializer.Serialize(value, Customize(options, customOptions));
+
+    private static JsonSerializerOptions Customize(JsonSerializerOptions options,
         CustomJsonSerializerOptions customOptions)
     {
         options = new JsonSerializerOptions(options); // Clone to avoid mutating the original

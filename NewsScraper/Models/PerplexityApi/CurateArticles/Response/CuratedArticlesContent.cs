@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using NewsScraper.Serialization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace NewsScraper.Models.PerplexityApi.CurateArticles.Response;
@@ -80,4 +81,7 @@ internal class CuratedArticlesContent
             return [];
         }
     }
+
+    public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
+        CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }

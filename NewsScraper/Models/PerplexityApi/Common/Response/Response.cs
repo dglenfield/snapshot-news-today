@@ -62,13 +62,13 @@ internal class Response
     [JsonPropertyName("choices")]
     public List<Choice> Choices { get; init; } = default!;
 
-    // JSON serialization methods
-    public string ToJson() => JsonSerializer.Serialize(this);
-    public string ToJson(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
-    public string ToJson(JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
-        JsonSerializer.Serialize(this, JsonConfig.Customize(options, customOptions));
-
-    // Override ToString() to return indented JSON with null values ignored
-    public override string ToString() => ToJson(JsonSerializerOptions.Default,
+    /// <summary>
+    /// Returns a JSON-formatted string that represents the current object.
+    /// </summary>
+    /// <remarks>The returned JSON string uses default serialization options and omits properties with null
+    /// values for readability. This method is useful for logging, debugging, or exporting the object's state.</remarks>
+    /// <returns>A string containing the JSON representation of the object, formatted with indentation and excluding properties
+    /// with null values.</returns>
+    public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }

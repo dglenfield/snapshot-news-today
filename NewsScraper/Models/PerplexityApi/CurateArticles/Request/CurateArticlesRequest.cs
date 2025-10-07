@@ -26,12 +26,6 @@ internal class CurateArticlesRequest : RequestBody
         WebSearchOptions = new() { SearchContextSize = SearchContextSize.Low };
     }
 
-    // Serialization methods
-    public string ToJson() => JsonSerializer.Serialize(this);
-    public string ToJson(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
-    public string ToJson(JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
-        JsonSerializer.Serialize(this, JsonConfig.Customize(options, customOptions));
-
     /// <summary>
     /// Returns a JSON-formatted string representation of the current object.
     /// </summary>
@@ -40,6 +34,6 @@ internal class CurateArticlesRequest : RequestBody
     /// persisting the object's state in a human-readable format.</remarks>
     /// <returns>A string containing the JSON representation of the object, formatted with indentation and excluding properties
     /// with null values.</returns>
-    public override string ToString() => ToJson(JsonSerializerOptions.Default,
+    public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }

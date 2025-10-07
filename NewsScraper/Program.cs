@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Hosting;
 using NewsScraper.Logging;
 using NewsScraper.Providers;
+using NewsScraper.Serialization;
+using System.Text.Json;
 
 namespace NewsScraper;
 
@@ -33,10 +35,8 @@ public class Program
 
             // Log curated articles
             foreach (var article in curatedNewsArticles.Articles)
-            {
-                Logger.Log($"\n{article.CuratedHeadline}", logAsRawMessage: true);
-            }
-
+                Logger.Log($"\n{article}", logAsRawMessage: true);
+            
             // Analyze each curated article (not implemented)
 
 

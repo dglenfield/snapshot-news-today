@@ -43,12 +43,15 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
         string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, recentArticleUris.Select(u => u.AbsoluteUri))}";
 
+        // Construct request body
         CurateArticlesRequest requestBody = new()
         {
             Messages = [new(Role.System, systemContent), new(Role.User, userContent)]
         };
 
-        var jsonContent = new StringContent(requestBody.ToJson(JsonSerializerOptions.Web, CustomJsonSerializerOptions.IgnoreNull), Encoding.UTF8, "application/json");
+        // Serialize request body to JSON
+        var jsonContent = new StringContent(JsonConfig.ToJson(requestBody, JsonSerializerOptions.Web, 
+            CustomJsonSerializerOptions.IgnoreNull), Encoding.UTF8, "application/json");
 
         // Log request JSON (if not using test data)
         if (!Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
