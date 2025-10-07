@@ -2,8 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using NewsScraper.Logging;
 using NewsScraper.Providers;
-using NewsScraper.Serialization;
-using System.Text.Json;
 
 namespace NewsScraper;
 
@@ -12,15 +10,19 @@ public class Program
     private static readonly NewsProvider _newsProvider = default!;
     private static readonly PerplexityApiProvider _perplexityApiProvider = default!;
 
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         try
         {
+            // TODO: Move getting news and processing into a processor class
             // Get current news articles from CNN
             NewsWebsite targetSite = NewsWebsite.CNN;
             var sourceArticles = _newsProvider.GetNewsArticles(targetSite);
             if (sourceArticles.Count == 0)
-                ExitApplication($"No articles found from {targetSite}.", LogLevel.Warning);
+            {
+                Logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
+                return 0;
+            }
 
             // Log retrieved articles (if not using test data)
             if (!Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
@@ -29,43 +31,28 @@ public class Program
                 foreach (var article in sourceArticles)
                     Logger.Log(article.SourceUri.AbsoluteUri.ToString(), logAsRawMessage: true);
             }
+            // END TODO: Move the above into a processor class
 
+            // TODO: Move curating and analyzing articles into a processor class
             // Curate articles using Perplexity API
             var curatedNewsArticles = _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
 
             // Log curated articles
             foreach (var article in curatedNewsArticles.Articles)
                 Logger.Log($"\n{article}", logAsRawMessage: true);
-            
+            // END TODO: Move the above into a processor class
+
             // Analyze each curated article (not implemented)
 
 
-            ExitApplication();
+            return 0;
         }
         catch (Exception ex)
         {
-            ExitWithError(ex, 1);
+            Logger.LogException(ex);
+            return 1;
         }
     }
-
-    private static void ExitApplication(string message = "", LogLevel messageLogLevel = LogLevel.Info, int exitCode = 0)
-    {
-        try
-        {
-            if (!string.IsNullOrEmpty(message))
-                Logger.Log(message, messageLogLevel);
-            Logger.Log("\n********** Exiting application **********");
-        }
-        catch (Exception)
-        {
-            Console.Error.WriteLine("\nUnable to write to log file. Exiting application.\n");
-        }
-        
-        Environment.Exit(exitCode);
-    }
-
-    private static void ExitWithError(Exception ex, int exitCode) => 
-        ExitApplication($"{ex.GetType()}: {ex.Message}\nStackTrace: {ex.StackTrace}", LogLevel.Error, exitCode);
 
     static Program()
     {
@@ -92,11 +79,13 @@ public class Program
         }
         catch (TypeInitializationException ex)
         {
-            ExitWithError(ex, 2);
+            Logger.LogException(ex);
+            throw;
         }
         catch (Exception ex)
         {
-            ExitWithError(ex, 3);
+            Logger.LogException(ex);
+            throw;
         }
     }
 }
