@@ -20,12 +20,22 @@ public class Program
             if (sourceArticles.Count == 0)
                 ExitApplication($"No articles found from {targetSite}.", LogLevel.Warning);
 
-            Logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}");
-            foreach (var article in sourceArticles)
-                Logger.Log(article.SourceUri.AbsoluteUri.ToString(), logAsRawMessage: true);
+            // Log retrieved articles (if not using test data)
+            if (!Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
+            {
+                Logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}");
+                foreach (var article in sourceArticles)
+                    Logger.Log(article.SourceUri.AbsoluteUri.ToString(), logAsRawMessage: true);
+            }
 
             // Curate articles using Perplexity API
             var curatedNewsArticles = _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
+
+            // Log curated articles
+            foreach (var article in curatedNewsArticles.Articles)
+            {
+                Logger.Log($"\n{article.CuratedHeadline}", logAsRawMessage: true);
+            }
 
             // Analyze each curated article (not implemented)
 

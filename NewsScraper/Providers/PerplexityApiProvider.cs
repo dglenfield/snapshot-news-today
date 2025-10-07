@@ -27,7 +27,11 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
                 .Select(a => a.SourceUri)
                 .Distinct()
         ];
-        Logger.Log($"Total articles to curate from: {recentArticleUris.Count}");
+
+        // Log total articles to curate from (if not using test data)
+        if (!Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
+            Logger.Log($"Total articles to curate from: {recentArticleUris.Count}");
+
         if (recentArticleUris.Count == 0)
             throw new Exception("No recent articles to curate from.");
 
@@ -45,7 +49,10 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         };
 
         var jsonContent = new StringContent(requestBody.ToJson(JsonSerializerOptions.Web, CustomJsonSerializerOptions.IgnoreNull), Encoding.UTF8, "application/json");
-        Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
+
+        // Log request JSON (if not using test data)
+        if (!Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
+            Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
         
         // FOR TESTING: Read from test response file instead of calling API
         string testResponseString = string.Empty;
@@ -64,8 +71,11 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
             responseString = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
                 throw new HttpRequestException($"Perplexity API request failed with status code {response.StatusCode}: {responseString}");
-        }        
-        Logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
+        }
+
+        // Log response JSON (if not using test data)
+        if (!Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
+            Logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
         
         // Deserialize the outer response
         var perplexityResponse = JsonSerializer.Deserialize<Response>(responseString);
@@ -73,7 +83,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         {
             // The actual curated articles are in the message content as JSON
             var contentJson = perplexityResponse.Choices[0].Message.Content;
-
+            
             // Remove markdown code fences using regex
             contentJson = Regex.Replace(contentJson, @"^```(?:json)?\s*|\s*```$", "", RegexOptions.Multiline).Trim();
 
@@ -97,7 +107,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
                 PerplexityResponseModel = perplexityResponse.Model,
                 PerplexityApiUsage = perplexityResponse.Usage
             };
-
+            
             // Merge source article details into curated articles
             curatedNewsArticles.Articles
                 .Where(ca => articles.Any(a => a.SourceUri == ca.SourceUri))
@@ -110,8 +120,6 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
                     ca.SourceName = sourceArticle.SourceName;
                     ca.SourceCategory = sourceArticle.SourceCategory;
                 });
-
-            Logger.Log($"\nCurated news articles:\n{curatedNewsArticles}");
 
             return curatedNewsArticles;
         }
