@@ -11,7 +11,7 @@ public class ArraySchema
     /// Gets the type of the JSON schema element which is always "array".
     /// </summary>
     [JsonPropertyName("type")]
-    public string Type { get => "array"; }
+    public string Type => "array";
 
     /// <summary>
     /// Gets the minimum number of items that are allowed in the collection.
@@ -32,5 +32,5 @@ public class ArraySchema
     /// depending on whether the items are of a simple type or a complex object. Use this property to determine the
     /// expected structure of elements in the collection.</remarks>
     [JsonPropertyName("items")]
-    public object Items { get; init; } // Can be TypeSchema or ObjectSchema
+    public object Items { get; init; } = default!; // Can be TypeSchema or ObjectSchema
 }

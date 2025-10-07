@@ -1,5 +1,4 @@
 ﻿using NewsScraper.Models.PerplexityApi.Common.Request;
-using System.Text.Json.Serialization;
 
 namespace NewsScraper.Models.PerplexityApi.CurateArticles.Request;
 
@@ -18,7 +17,6 @@ internal class TopStoriesItemsSchema : ObjectSchema
     /// "highlights", and "rationale", each as a string. Additional properties are not allowed in this schema.</remarks>
     internal TopStoriesItemsSchema()
     {
-        Type = "object";
         Required = ["url", "headline", "category", "highlights", "rationale"];
         Properties = new Dictionary<string, TypeSchema>
         {

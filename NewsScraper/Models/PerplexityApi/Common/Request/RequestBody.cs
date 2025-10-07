@@ -1,5 +1,4 @@
 ﻿using NewsScraper.Serialization;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace NewsScraper.Models.PerplexityApi.Common.Request;
@@ -36,11 +35,12 @@ internal abstract class RequestBody
     /// <code>public new DesiredType ResponseFormat { get; init; }</code>
     /// Refer to <seealso cref="CurateArticles.Body"></seealso> for an actual implementation.
     /// </remarks>
+    [JsonIgnore]
     [JsonPropertyName("response_format")]
     [JsonPropertyOrderAttribute(4)]
-    public object? ResponseFormat 
+    public object? ResponseFormat2 
     { 
-        get => throw new NotImplementedException("Implement in derived class using 'new' and the correct type.");
+        get => null;
         init => throw new NotImplementedException("Implement in derived class using 'new' and the correct type.");
     }
 
@@ -64,23 +64,6 @@ internal abstract class RequestBody
     [JsonPropertyName("web_search_options")]
     [JsonPropertyOrderAttribute(3)]
     public WebSearchOptions? WebSearchOptions { get; set; }
-
-    // Serialization methods
-    public string ToJson() => JsonSerializer.Serialize(this);
-    public string ToJson(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
-    public string ToJson(JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
-        JsonSerializer.Serialize(this, JsonConfig.Customize(options, customOptions));
-
-    /// <summary>
-    /// Returns a JSON-formatted string representation of the current object.
-    /// </summary>
-    /// <remarks>The returned JSON string uses default serialization options, including indentation for
-    /// readability and omission of properties with null values. This can be useful for logging, debugging, or
-    /// persisting the object's state in a human-readable format.</remarks>
-    /// <returns>A string containing the JSON representation of the object, formatted with indentation and excluding properties
-    /// with null values.</returns>
-    public override string ToString() => ToJson(JsonSerializerOptions.Default,
-        CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }
 
 /// <summary>

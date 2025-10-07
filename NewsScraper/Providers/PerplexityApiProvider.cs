@@ -4,6 +4,7 @@ using NewsScraper.Models.PerplexityApi.Common.Request;
 using NewsScraper.Models.PerplexityApi.Common.Response;
 using NewsScraper.Models.PerplexityApi.CurateArticles.Request;
 using NewsScraper.Models.PerplexityApi.CurateArticles.Response;
+using NewsScraper.Serialization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -16,8 +17,19 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
 
     internal async Task<CuratedNewsArticles> CurateArticles(List<NewsArticle> articles)
     {
-        List<Uri> distinctArticleUris = [.. articles.Select(a => a.SourceUri).Distinct()];
-        Logger.Log($"Total articles to curate from: {articles.Count}");
+        // Get only the URIs of articles published within the past 2 days
+        DateTime twoDaysAgo = DateTime.UtcNow.AddDays(-2);
+        if (Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
+            twoDaysAgo = DateTime.MinValue; // Include all articles if using test data
+        List<Uri> recentArticleUris = [
+            .. articles
+                .Where(a => a.SourcePublishDate.HasValue && a.SourcePublishDate.Value >= twoDaysAgo)
+                .Select(a => a.SourceUri)
+                .Distinct()
+        ];
+        Logger.Log($"Total articles to curate from: {recentArticleUris.Count}");
+        if (recentArticleUris.Count == 0)
+            throw new Exception("No recent articles to curate from.");
 
         string systemPromptFileName = "curate-articles-system-prompt.txt";
         string systemPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", systemPromptFileName);
@@ -25,14 +37,14 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
 
         string userPromptFileName = "curate-articles-user-prompt.txt";
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
-        string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, distinctArticleUris.Select(u => u.AbsoluteUri))}";
+        string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, recentArticleUris.Select(u => u.AbsoluteUri))}";
 
-        CurateArticlesRequest requestBody = new() 
-        { 
-            Messages = [new(Role.System, systemContent), new(Role.User, userContent)] 
+        CurateArticlesRequest requestBody = new()
+        {
+            Messages = [new(Role.System, systemContent), new(Role.User, userContent)]
         };
 
-        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody, JsonSerializerOptions.Web), Encoding.UTF8, "application/json");
+        var jsonContent = new StringContent(requestBody.ToJson(JsonSerializerOptions.Web, CustomJsonSerializerOptions.IgnoreNull), Encoding.UTF8, "application/json");
         Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
         
         // FOR TESTING: Read from test response file instead of calling API

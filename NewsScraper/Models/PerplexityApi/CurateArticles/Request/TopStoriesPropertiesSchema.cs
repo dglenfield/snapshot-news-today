@@ -7,7 +7,7 @@ namespace NewsScraper.Models.PerplexityApi.CurateArticles.Request;
 /// Represents the response schema definitions for selection criteria, excluded categories, 
 /// and top stories used in content curation.
 /// </summary>
-internal class SchemaProperties
+internal class TopStoriesPropertiesSchema
 {
     /// <summary>
     /// Gets the collection of top stories associated with this instance.
@@ -31,7 +31,7 @@ internal class SchemaProperties
     /// Initializes a new instance of the SchemaProperties class with default schema definitions for selection criteria,
     /// excluded categories, and top stories.
     /// </summary>
-    internal SchemaProperties()
+    internal TopStoriesPropertiesSchema()
     {
         // Define the schema for selection criteria
         SelectionCriteria = new TypeSchema { Type = "string" };

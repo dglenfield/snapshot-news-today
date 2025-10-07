@@ -12,11 +12,11 @@ internal class JsonResponseFormat
     /// </summary>
     /// <remarks>This property always returns the string "json_schema". Use this value to indicate that the
     /// response format follows the JSON schema specification, as required by the API.</remarks>
-    public string Type { get => "json_schema"; }
+    public string Type => "json_schema";
 
     /// <summary>
     /// The schema defining the expected structure of the JSON response.  
     /// </summary>
     [JsonPropertyName("json_schema")]
-    public JsonSchema Schema { get; init; } = default!;
+    public JsonSchema Schema { get; init; } = new();
 }

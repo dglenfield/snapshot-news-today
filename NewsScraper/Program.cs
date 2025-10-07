@@ -19,7 +19,11 @@ public class Program
             var sourceArticles = _newsProvider.GetNewsArticles(targetSite);
             if (sourceArticles.Count == 0)
                 ExitApplication($"No articles found from {targetSite}.", LogLevel.Warning);
-            
+
+            Logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}");
+            foreach (var article in sourceArticles)
+                Logger.Log(article.SourceUri.AbsoluteUri.ToString(), logAsRawMessage: true);
+
             // Curate articles using Perplexity API
             var curatedNewsArticles = _perplexityApiProvider.CurateArticles([.. sourceArticles]).GetAwaiter().GetResult();
 
