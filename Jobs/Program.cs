@@ -5,6 +5,15 @@ using NewsScraper.Providers;
 
 namespace NewsScraper;
 
+// New workflow:
+// Scrape news articles and save to local storage and Azure Cosmos DB,
+// then curate and analyze using Perplexity API.
+// 1. Get news articles from NewsProvider (e.g., CNN)
+// 2. Get full article details for each article
+// 3. Save articles to local storage
+// 4. Save articles to Azure Cosmos DB
+// 5. Analyze articles using Perplexity API
+
 public class Program
 {
     private static readonly NewsProvider _newsProvider = default!;
@@ -43,7 +52,8 @@ public class Program
             // END TODO: Move the above into a processor class
 
             // Analyze each curated article (not implemented)
-
+            // 1. Create a GetNewsArticle method in NewsProvider to get full article details by URL
+            // 2. Call PerplexityApiProvider.AnalyzeArticle for each curated article (or batch them if possible)
 
             return 0;
         }
