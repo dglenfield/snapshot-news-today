@@ -1,3 +1,3 @@
 <Solution>
-  <Project Path="NewsScraper.csproj" />
+  <Project Path="NewsScraper/NewsScraper.csproj" />
 </Solution>
