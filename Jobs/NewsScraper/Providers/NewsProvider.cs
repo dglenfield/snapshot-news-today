@@ -13,7 +13,7 @@ internal class NewsProvider
 {
     private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
     private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
-
+    
     /// <summary>
     /// Retrieves a set of news article URLs from the specified news website.
     /// </summary>
@@ -38,7 +38,7 @@ internal class NewsProvider
         string testLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.TestLandingPageFile;
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
-
+        
         List<NewsArticle> articles = [];
         var distinctArticles = new HashSet<NewsArticle>();
         foreach (var jsonElement in RunPythonScript(scriptPath).RootElement.EnumerateArray())
@@ -58,7 +58,7 @@ internal class NewsProvider
                 SourcePublishDate = publishDate
             });
         }
-
+        
         // Group articles by category and assign category to each article
         foreach (var grouped in GroupArticlesByCategory([.. distinctArticles]))
             foreach (NewsArticle article in grouped.Value)

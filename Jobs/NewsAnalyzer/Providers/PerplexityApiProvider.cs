@@ -1,36 +1,35 @@
-﻿using NewsScraper.Logging;
-using NewsScraper.Models;
-using NewsScraper.Models.PerplexityApi.Common.Request;
-using NewsScraper.Models.PerplexityApi.Common.Response;
-using NewsScraper.Models.PerplexityApi.CurateArticles.Request;
-using NewsScraper.Models.PerplexityApi.CurateArticles.Response;
-using NewsScraper.Serialization;
+﻿using Common.Logging;
+using NewsAnalyzer.Models;
+using NewsAnalyzer.Models.PerplexityApi.Common.Request;
+using NewsAnalyzer.Models.PerplexityApi.Common.Response;
+using NewsAnalyzer.Models.PerplexityApi.CurateArticles.Request;
+using NewsAnalyzer.Models.PerplexityApi.CurateArticles.Response;
+using NewsAnalyzer.Serialization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace NewsScraper.Providers;
+namespace NewsAnalyzer.Providers;
 
-internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
+public class PerplexityApiProvider(IHttpClientFactory httpClientFactory, Logger logger)
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    private readonly Logger _logger = logger;
 
     internal async Task<CuratedNewsArticles> CurateArticles(List<NewsArticle> articles)
     {
         // Get only the URIs of articles published within the past 2 days
         DateTime twoDaysAgo = DateTime.UtcNow.AddDays(-2);
-        if (Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
+        if (Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
             twoDaysAgo = DateTime.MinValue; // Include all articles if using test data
-        List<Uri> recentArticleUris = [
-            .. articles
+        List<Uri> recentArticleUris = [ .. articles
                 .Where(a => a.SourcePublishDate.HasValue && a.SourcePublishDate.Value >= twoDaysAgo)
                 .Select(a => a.SourceUri)
                 .Distinct()
         ];
 
-        // Log total articles to curate from (if not using test data)
-        if (!Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
-            Logger.Log($"Total articles to curate from: {recentArticleUris.Count}");
+        // Log total articles to curate from
+        _logger.Log($"Total articles to curate from: {recentArticleUris.Count}");
 
         if (recentArticleUris.Count == 0)
             throw new Exception("No recent articles to curate from.");
@@ -53,9 +52,8 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
         var jsonContent = new StringContent(JsonConfig.ToJson(requestBody, JsonSerializerOptions.Web, 
             CustomJsonSerializerOptions.IgnoreNull), Encoding.UTF8, "application/json");
 
-        // Log request JSON (if not using test data)
-        if (!Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
-            Logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
+        // Log request JSON
+        _logger.Log("\nRequest JSON:\n" + jsonContent.ReadAsStringAsync().GetAwaiter().GetResult(), logAsRawMessage: true);
         
         // FOR TESTING: Read from test response file instead of calling API
         string testResponseString = string.Empty;
@@ -78,7 +76,7 @@ internal class PerplexityApiProvider(IHttpClientFactory httpClientFactory)
 
         // Log response JSON (if not using test data)
         if (!Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
-            Logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
+            _logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
         
         // Deserialize the outer response
         var perplexityResponse = JsonSerializer.Deserialize<Response>(responseString);
