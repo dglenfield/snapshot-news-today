@@ -1,80 +1,47 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Common.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NewsScraper.Logging;
+using NewsScraper.Processors;
 using NewsScraper.Providers;
 
 namespace NewsScraper;
 
-// New workflow:
-// Scrape news articles and save to local storage and Azure Cosmos DB,
-// then curate and analyze using Perplexity API.
-// 1. Get news articles from NewsProvider (e.g., CNN)
-// 2. Get full article details for each article
-// 3. Save articles to local storage
-// 4. Save articles to Azure Cosmos DB
-// 5. Analyze articles using Perplexity API
-
 public class Program
 {
-    private static readonly NewsProvider _newsProvider = default!;
-
     public static int Main(string[] args)
     {
+        Console.Title = "News Scraper";
+        var logger = new Logger(Configuration.Logging.ApplicationLogLevel, Configuration.Logging.LogDirectory, Configuration.Logging.LogToFile);
+        int returnCode = 0;
+
         try
         {
-            // TODO: Move getting news and processing into a processor class
-            // Get current news articles from CNN
-            NewsWebsite targetSite = NewsWebsite.CNN;
-            var sourceArticles = _newsProvider.GetNewsArticles(targetSite);
-            if (sourceArticles.Count == 0)
-            {
-                Logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
-                return 0;
-            }
+            logger.Log("********** Application started **********");
+            
+            var host = Host.CreateDefaultBuilder()
+                    .ConfigureServices((context, services) =>
+                    {
+                        services.AddSingleton<Logger>(provider =>
+                            new Logger(
+                                Configuration.Logging.ApplicationLogLevel,
+                                Configuration.Logging.LogDirectory,
+                                Configuration.Logging.LogToFile
+                            ));
+                        services.AddTransient<NewsProvider>();
+                        services.AddTransient<NewsScraperProcessor>();
+                    }).Build();
 
-            // Log retrieved articles
-            if (Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile)
-            {
-                Logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}");
-                foreach (var article in sourceArticles)
-                    Logger.Log(article.SourceUri.AbsoluteUri.ToString(), logAsRawMessage: true);
-            }
-            // END TODO: Move the above into a processor class
-
-            return 0;
+            // Resolve and run the main service
+            var processor = host.Services.GetRequiredService<NewsScraperProcessor>();
+            processor.Run();
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex);
-            return 1;
+            logger.LogException(ex);
+            returnCode = 1;
         }
-    }
 
-    static Program()
-    {
-        try
-        {
-            Console.Title = "News Scraper";
-            Logger.Log("********** Application started **********");
-
-            // Setup DI
-            IHost host = Host.CreateDefaultBuilder()
-                .ConfigureServices((context, services) =>
-                {
-                    services.AddTransient<NewsProvider>();
-                }).Build();
-
-            _newsProvider = host.Services.GetRequiredService<NewsProvider>();
-        }
-        catch (TypeInitializationException ex)
-        {
-            Logger.LogException(ex);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex);
-            throw;
-        }
+        logger.Log("********** Exiting application **********");
+        return returnCode;
     }
 }

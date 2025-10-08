@@ -1,4 +1,4 @@
-﻿using NewsScraper.Logging;
+﻿using Common.Logging;
 using NewsScraper.Models;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -9,7 +9,7 @@ namespace NewsScraper.Providers;
 /// <summary>
 /// Provides methods for scraping news articles and metadata from supported news websites.
 /// </summary>
-internal class NewsProvider
+internal class NewsProvider(Logger logger)
 {
     private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
     private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
@@ -115,12 +115,12 @@ internal class NewsProvider
         }
         catch (Win32Exception ex)
         {
-            Logger.Log($"Failed to start process: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
+            logger.Log($"Failed to start process: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
             throw;
         }
         catch (JsonException ex)
         {
-            Logger.Log($"JSON parsing failed: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
+            logger.Log($"JSON parsing failed: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
             throw;
         }
     }

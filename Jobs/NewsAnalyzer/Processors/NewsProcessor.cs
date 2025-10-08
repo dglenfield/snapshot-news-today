@@ -1,16 +1,15 @@
 using Common.Logging;
 using NewsAnalyzer.Providers;
 
-namespace NewsAnalyzer;
+namespace NewsAnalyzer.Processors;
 
-public class NewsProcessor(Logger logger, PerplexityApiProvider perplexityApiProvider)
+public class NewsAnalyzerProcessor(Logger logger, PerplexityApiProvider perplexityApiProvider)
 {
     private readonly Logger _logger = logger;
     private readonly PerplexityApiProvider _perplexityApiProvider = perplexityApiProvider;
 
-    public void Run(string[] args)
+    public void Run()
     {
-        _logger.Log("********** Application started **********");
         // Use _perplexityApiProvider as needed
     }
 }

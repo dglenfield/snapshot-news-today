@@ -23,14 +23,14 @@ public static class Configuration
     /// </summary>
     /// <remarks>This class exposes static properties for retrieving logging configuration values from the
     /// application's configuration source.</remarks>
-    public static class LoggingSettings
+    public static class Logging
     {
         public static LogLevel ApplicationLogLevel 
         { 
             get 
             {
                 var logLevelSetting = _config["Logging:ApplicationLogLevel:Default"] ?? throw new KeyNotFoundException("\"Logging:ApplicationLogLevel:Default\" not found in appsettings.");
-                LogLevel logLevel = logLevelSetting.ToLower() switch
+                return logLevelSetting.ToLower() switch
                 {
                     "debug" => LogLevel.Debug,
                     "success" => LogLevel.Success,
@@ -38,7 +38,6 @@ public static class Configuration
                     "error" => LogLevel.Error,
                     _ => LogLevel.Info
                 };
-                return logLevel;
             }
         }
         public static string LogDirectory => _config["Logging:LogToFile:Directory"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Directory\" not found in appsettings.");
@@ -58,8 +57,8 @@ public static class Configuration
         {
             public static class CurateArticles
             {
-                public static bool UseTestResponseFile => !_useProductionSettings && bool.Parse(_config["Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile\" not found in appsettings."));
                 public static string TestResponseFile => _config["Testing:PerplexityApiProvider:CurateArticles:TestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:TestResponseFile\" not found in appsettings.");
+                public static bool UseTestResponseFile => !_useProductionSettings && bool.Parse(_config["Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile\" not found in appsettings."));
             }
         }
     }
@@ -96,7 +95,7 @@ public static class Configuration
     public static string ToJson() => JsonSerializer.Serialize(new
     {
         UseProductionSettings = _useProductionSettings, PerplexityApiKey = $"{PerplexityApiKey[..10]}...", PerplexityApiUrl,
-        LoggingSettings.ApplicationLogLevel, LoggingSettings.LogDirectory, LoggingSettings.LogToFile,
+        Logging.ApplicationLogLevel, Logging.LogDirectory, Logging.LogToFile,
         TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile, TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile,
     });
 }

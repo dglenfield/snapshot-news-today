@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
-using NewsScraper.Logging;
+﻿using Common.Logging;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
 namespace NewsScraper;
@@ -16,22 +16,20 @@ namespace NewsScraper;
 internal static class Configuration
 {
     public static string CnnBaseUrl => _config["NewsProvider:CnnBaseUrl"] ?? throw new KeyNotFoundException("\"NewsProvider:CnnBaseUrl\" not found in appsettings.");
-    public static string PerplexityApiKey => _config["PerplexityApiProvider:PerplexityApiKey"] ?? throw new KeyNotFoundException("\"PerplexityApiProvider:PerplexityApiKey\" not found in User Secrets or appsettings.");
-    public static string PerplexityApiUrl => _config["PerplexityApiProvider:PerplexityApiUrl"] ?? throw new KeyNotFoundException("\"PerplexityApiProvider:PerplexityApiUrl\" not found in appsettings.");
 
     /// <summary>
     /// Provides access to logging configuration settings.
     /// </summary>
     /// <remarks>This class exposes static properties for retrieving logging configuration values from the
     /// application's configuration source.</remarks>
-    internal static class LoggingSettings
+    internal static class Logging
     {
         internal static LogLevel ApplicationLogLevel 
         { 
             get 
             {
                 var logLevelSetting = _config["Logging:ApplicationLogLevel:Default"] ?? throw new KeyNotFoundException("\"Logging:ApplicationLogLevel:Default\" not found in appsettings.");
-                LogLevel logLevel = logLevelSetting.ToLower() switch
+                return logLevelSetting.ToLower() switch
                 {
                     "debug" => LogLevel.Debug,
                     "success" => LogLevel.Success,
@@ -39,7 +37,6 @@ internal static class Configuration
                     "error" => LogLevel.Error,
                     _ => LogLevel.Info
                 };
-                return logLevel;
             }
         }
         internal static string LogDirectory => _config["Logging:LogToFile:Directory"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Directory\" not found in appsettings.");
@@ -56,8 +53,8 @@ internal static class Configuration
     /// configuration keys to be present; otherwise, a KeyNotFoundException is thrown.</remarks>
     internal static class PythonSettings
     {
-        internal static string PythonExePath => _config["Python:PythonExePath"] ?? throw new KeyNotFoundException("\"Python:PythonExePath\" not found in appsettings.");
         internal static string GetNewsFromCnnScript => _config["Python:Scripts:GetNewsFromCnn"] ?? throw new KeyNotFoundException("\"Python:Scripts:GetNewsFromCnn\" not found in appsettings.");
+        internal static string PythonExePath => _config["Python:PythonExePath"] ?? throw new KeyNotFoundException("\"Python:PythonExePath\" not found in appsettings.");
     }
 
     /// <summary>
@@ -73,16 +70,8 @@ internal static class Configuration
         {
             internal static class GetNews 
             {
-                internal static bool UseTestLandingPageFile => !_useProductionSettings && bool.Parse(_config["Testing:NewsProvider:GetNews:UseTestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsProvider:GetNews:UseTestArticleUrl\" not found in appsettings."));
                 internal static string TestLandingPageFile => _config["Testing:NewsProvider:GetNews:TestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsProvider:GetNews:TestArticleUrl\" not found in appsettings.");
-            }
-        }
-        internal static class PerplexityApiProvider
-        {
-            internal static class CurateArticles
-            {
-                internal static bool UseTestResponseFile => !_useProductionSettings && bool.Parse(_config["Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile\" not found in appsettings."));
-                internal static string TestResponseFile => _config["Testing:PerplexityApiProvider:CurateArticles:TestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:TestResponseFile\" not found in appsettings.");
+                internal static bool UseTestLandingPageFile => !_useProductionSettings && bool.Parse(_config["Testing:NewsProvider:GetNews:UseTestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsProvider:GetNews:UseTestArticleUrl\" not found in appsettings."));
             }
         }
     }
@@ -100,27 +89,14 @@ internal static class Configuration
     /// <exception cref="KeyNotFoundException">Thrown if the "UseProductionSettings" key is not found in the appsettings.json file.</exception>
     static Configuration()
     {
-        try 
-        {
-            _config = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
+        _config = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false)
             .AddUserSecrets<Program>()
             .Build();
 
-            _useProductionSettings = bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
-            
-            ToJson(); // Access ToJson to ensure all properties are accessed and validated
-        }
-        catch (KeyNotFoundException ex) 
-        { 
-            Logger.LogException(ex);
-            throw;
-        }
-        catch (Exception ex) 
-        { 
-            Logger.LogException(ex);
-            throw;
-        }
+        _useProductionSettings = bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
+
+        ToJson(); // Access ToJson to ensure all properties are accessed and validated
     }
 
     /// <summary>
@@ -131,10 +107,9 @@ internal static class Configuration
     /// <returns>A JSON-formatted string representing the current values of the configuration settings.</returns>
     internal static string ToJson() => JsonSerializer.Serialize(new
     {
-        UseProductionSettings = _useProductionSettings, CnnBaseUrl, PerplexityApiKey = $"{PerplexityApiKey[..10]}...", PerplexityApiUrl,
-        LoggingSettings.ApplicationLogLevel, LoggingSettings.LogDirectory, LoggingSettings.LogToConsole, LoggingSettings.LogToFile,
+        UseProductionSettings = _useProductionSettings, CnnBaseUrl,
+        Logging.ApplicationLogLevel, Logging.LogDirectory, Logging.LogToConsole, Logging.LogToFile,
         PythonSettings.PythonExePath, PythonSettings.GetNewsFromCnnScript,
-        TestSettings.NewsProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsProvider.GetNews.TestLandingPageFile,
-        TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile, TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile,
+        TestSettings.NewsProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsProvider.GetNews.TestLandingPageFile
     });
 }
