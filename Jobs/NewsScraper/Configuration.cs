@@ -15,7 +15,25 @@ namespace NewsScraper;
 /// to ensure consistent and validated access to configuration throughout the application.</remarks>
 internal static class Configuration
 {
-    public static string CnnBaseUrl => _config["NewsProvider:CnnBaseUrl"] ?? throw new KeyNotFoundException("\"NewsProvider:CnnBaseUrl\" not found in appsettings.");
+    internal static string CnnBaseUrl => _config["NewsProvider:CnnBaseUrl"] ?? throw new KeyNotFoundException("\"NewsProvider:CnnBaseUrl\" not found in appsettings.");
+
+    internal static class Database
+    {
+        internal static class Sqlite
+        {
+            internal static string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
+            /// <summary>
+            /// Gets the configured version string of the SQLite database as specified in the application settings.
+            /// </summary>
+            /// <remarks>A value followed by -overwrite will delete any existing database and create a new one. 
+            /// Use this option with caution as it will result in data loss. Only intended for development or 
+            /// testing scenarios. <para>If the key is not found in the configuration, 
+            /// a <see cref="KeyNotFoundException"/> is thrown.</para></remarks>
+            internal static string DatabaseVersion => _config["Database:Sqlite:DatabaseVersion"] ?? throw new KeyNotFoundException("\"Database:Sqlite:DatabaseVersion\" not found in appsettings.");
+            internal static string DirectoryPath => _config["Database:Sqlite:DirectoryPath"] ?? throw new KeyNotFoundException("\"Database:Sqlite:DirectoryPath\" not found in appsettings.");
+            internal static string FileName => _config["Database:Sqlite:FileName"] ?? throw new KeyNotFoundException("\"Database:Sqlite:FileName\" not found in appsettings.");
+        }        
+    }
 
     /// <summary>
     /// Provides access to logging configuration settings.
@@ -40,7 +58,6 @@ internal static class Configuration
             }
         }
         internal static string LogDirectory => _config["Logging:LogToFile:Directory"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Directory\" not found in appsettings.");
-        internal static bool LogToConsole => bool.Parse(_config["Logging:LogToConsole:Default"] ?? throw new KeyNotFoundException("\"Logging:LogToConsole:Default\" not found in appsettings."));
         internal static bool LogToFile => bool.Parse(_config["Logging:LogToFile:Default"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Default\" not found in appsettings."));
     }
 
@@ -108,7 +125,7 @@ internal static class Configuration
     internal static string ToJson() => JsonSerializer.Serialize(new
     {
         UseProductionSettings = _useProductionSettings, CnnBaseUrl,
-        Logging.ApplicationLogLevel, Logging.LogDirectory, Logging.LogToConsole, Logging.LogToFile,
+        Logging.ApplicationLogLevel, Logging.LogDirectory, Logging.LogToFile,
         PythonSettings.PythonExePath, PythonSettings.GetNewsFromCnnScript,
         TestSettings.NewsProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsProvider.GetNews.TestLandingPageFile
     });

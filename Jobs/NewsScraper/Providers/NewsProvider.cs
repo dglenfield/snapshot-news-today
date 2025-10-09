@@ -111,7 +111,11 @@ internal class NewsProvider(Logger logger)
         try
         {
             using var process = Process.Start(pythonScript) ?? throw new InvalidOperationException("Failed to start Python process.\nScript: {scriptPath}");
-            return JsonDocument.Parse(process.StandardOutput.ReadToEnd());
+
+            // TODO: Save raw output
+            var output = process.StandardOutput.ReadToEnd();
+
+            return JsonDocument.Parse(output);
         }
         catch (Win32Exception ex)
         {
