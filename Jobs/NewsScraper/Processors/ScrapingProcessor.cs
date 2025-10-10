@@ -1,4 +1,5 @@
 ﻿using Common.Logging;
+using NewsScraper.Enums;
 using NewsScraper.Models;
 using NewsScraper.Providers;
 
