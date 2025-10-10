@@ -26,11 +26,11 @@ internal class ScrapingProcessor(Logger logger, NewsProvider newsProvider, Sqlit
             scrapeNewsJobRun.Id = await sqliteDataProvider.InsertScrapeNewsJobRunAsync(scrapeNewsJobRun);
 
             // Get current news articles from CNN
-            List<NewsArticle> sourceArticles = await newsProvider.GetNewsArticles(targetSite, scrapeNewsJobRun.Id);
+            List<ArticleSource> sourceArticles = await newsProvider.GetNewsArticles(targetSite, scrapeNewsJobRun.Id);
             
             // Log retrieved articles
             logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}", LogLevel.Debug);
-            foreach (NewsArticle article in sourceArticles)
+            foreach (ArticleSource article in sourceArticles)
             {
                 // Save each article to the database
                 article.Id = await sqliteDataProvider.InsertArticleSourceAsync(article);

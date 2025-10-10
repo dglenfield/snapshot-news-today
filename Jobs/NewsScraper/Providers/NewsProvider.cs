@@ -20,7 +20,7 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
     /// </summary>
     /// <param name="newsWebsite">The news website to scrape.</param>
     /// <returns>A set of unique article URLs, or null if none found.</returns>
-    public async Task<List<NewsArticle>> GetNewsArticles(NewsWebsite newsWebsite, long jobRunId)
+    public async Task<List<ArticleSource>> GetNewsArticles(NewsWebsite newsWebsite, long jobRunId)
     {
         return newsWebsite switch
         {
@@ -30,7 +30,7 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
         };
     }
 
-    private async Task<List<NewsArticle>> GetArticlesFromCNN(long jobRunId)
+    private async Task<List<ArticleSource>> GetArticlesFromCNN(long jobRunId)
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
         scriptPath += $" --db-path {_sqliteDataProvider.DatabaseFilePath}";
@@ -42,8 +42,8 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
         
-        List<NewsArticle> articles = [];
-        var distinctArticles = new HashSet<NewsArticle>();
+        List<ArticleSource> articles = [];
+        var distinctArticles = new HashSet<ArticleSource>();
 
         // Run the Python script and parse its JSON output
         var jsonDocument = await RunPythonScript(scriptPath);
@@ -68,7 +68,7 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
         
         // Group articles by category and assign category to each article
         foreach (var grouped in GroupArticlesByCategory([.. distinctArticles]))
-            foreach (NewsArticle article in grouped.Value)
+            foreach (ArticleSource article in grouped.Value)
                 article.SourceCategory = grouped.Key;
 
         return [.. distinctArticles.OrderBy(a => a.SourceCategory).ThenByDescending(a => a.SourcePublishDate)];
@@ -82,10 +82,10 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
     /// <param name="articles">The list of news articles to group. Cannot be null.</param>
     /// <returns>A dictionary where each key is a category name and the value is a list of articles belonging to that category.
     /// Articles with an unrecognized or missing category are grouped under the key "unknown".</returns>
-    private Dictionary<string, List<NewsArticle>> GroupArticlesByCategory(List<NewsArticle> articles)
+    private Dictionary<string, List<ArticleSource>> GroupArticlesByCategory(List<ArticleSource> articles)
     {
-        var groupedArticles = new Dictionary<string, List<NewsArticle>>();
-        foreach (NewsArticle article in articles)
+        var groupedArticles = new Dictionary<string, List<ArticleSource>>();
+        foreach (ArticleSource article in articles)
         {
             // Category is the 4th segment in path (assuming "/2025/09/28/category/...")
             string[] segments = article.SourceUri.AbsolutePath.Trim('/').Split('/');

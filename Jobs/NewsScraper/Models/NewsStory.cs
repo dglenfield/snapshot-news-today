@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NewsScraper.Models;
+﻿namespace NewsScraper.Models;
 
 //  https://snapshots.azurewebsites.net/1759860432 - Unix timestamp used for the page snapshot
 // {

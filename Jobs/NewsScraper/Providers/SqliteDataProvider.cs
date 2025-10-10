@@ -180,7 +180,7 @@ public class SqliteDataProvider(string databaseFilePath, string databaseVersion,
         throw new InvalidOperationException("Insert scrape_news_job_run failed, no row id returned.");
     }
 
-    public async Task<long> InsertArticleSourceAsync(NewsArticle sourceArticle)
+    public async Task<long> InsertArticleSourceAsync(ArticleSource sourceArticle)
     {
         if (!File.Exists(_databaseFilePath))
             throw new FileNotFoundException($"Database file not found: {_databaseFilePath}");

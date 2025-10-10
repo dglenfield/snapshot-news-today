@@ -9,7 +9,7 @@ namespace NewsScraper.Models;
 /// </summary>
 /// <remarks>Use this type to encapsulate information about a news article as provided by its original source. All
 /// properties reflect the source's data and may be null if not available.</remarks>
-public class NewsArticle
+public class ArticleSource
 {
     public long Id { get; set; }
     public long JobRunId { get; set; }
