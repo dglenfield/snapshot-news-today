@@ -50,6 +50,10 @@ public class Program
                             provider.GetRequiredService<Logger>()));
                 }).Build();
 
+            // Ensure the SQLite database is created
+            var sqliteDataProvider = host.Services.GetRequiredService<SqliteDataProvider>();
+            await sqliteDataProvider.CreateAsync();
+
             // Resolve and run the main service
             var processor = host.Services.GetRequiredService<ScrapingProcessor>();
             await processor.Run();

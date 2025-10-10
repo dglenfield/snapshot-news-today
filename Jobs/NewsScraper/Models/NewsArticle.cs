@@ -9,8 +9,10 @@ namespace NewsScraper.Models;
 /// </summary>
 /// <remarks>Use this type to encapsulate information about a news article as provided by its original source. All
 /// properties reflect the source's data and may be null if not available.</remarks>
-internal class NewsArticle
+public class NewsArticle
 {
+    public long Id { get; set; }
+    public long JobRunId { get; set; }
     /// <summary>
     /// Gets or sets the URI of the source from which the new article is obtained.
     /// </summary>

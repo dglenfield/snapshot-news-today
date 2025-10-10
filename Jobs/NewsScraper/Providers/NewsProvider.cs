@@ -9,29 +9,32 @@ namespace NewsScraper.Providers;
 /// <summary>
 /// Provides methods for scraping news articles and metadata from supported news websites.
 /// </summary>
-internal class NewsProvider(Logger logger)
+internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider)
 {
     private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
     private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
+    private readonly SqliteDataProvider _sqliteDataProvider = sqliteDataProvider;
     
     /// <summary>
     /// Retrieves a set of news article URLs from the specified news website.
     /// </summary>
     /// <param name="newsWebsite">The news website to scrape.</param>
     /// <returns>A set of unique article URLs, or null if none found.</returns>
-    public List<NewsArticle> GetNewsArticles(NewsWebsite newsWebsite)
+    public async Task<List<NewsArticle>> GetNewsArticles(NewsWebsite newsWebsite, long jobRunId)
     {
         return newsWebsite switch
         {
-            NewsWebsite.CNN => GetArticlesFromCNN(),
+            NewsWebsite.CNN => await GetArticlesFromCNN(jobRunId),
             NewsWebsite.FoxNews => throw new NotImplementedException("Fox News scraping not yet implemented."),
             _ => throw new NotSupportedException("Unsupported news website."),
         };
     }
 
-    private List<NewsArticle> GetArticlesFromCNN()
+    private async Task<List<NewsArticle>> GetArticlesFromCNN(long jobRunId)
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
+        scriptPath += $" --db-path {_sqliteDataProvider.DatabaseFilePath}";
+        scriptPath += $" --id {jobRunId}";
 
         // FOR TESTING: Append test landing page file argument
         bool useTestLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile;
@@ -41,7 +44,10 @@ internal class NewsProvider(Logger logger)
         
         List<NewsArticle> articles = [];
         var distinctArticles = new HashSet<NewsArticle>();
-        foreach (var jsonElement in RunPythonScript(scriptPath).RootElement.EnumerateArray())
+
+        // Run the Python script and parse its JSON output
+        var jsonDocument = await RunPythonScript(scriptPath);
+        foreach (var jsonElement in jsonDocument.RootElement.EnumerateArray())
         {
             Uri.TryCreate($"{_cnnBaseUrl}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
             if (uri is null)
@@ -52,6 +58,7 @@ internal class NewsProvider(Logger logger)
 
             distinctArticles.Add(new()
             {
+                JobRunId = jobRunId,
                 SourceName = "CNN",
                 SourceUri = uri,
                 SourceHeadline = jsonElement.GetProperty("headline").GetString(),
@@ -98,7 +105,7 @@ internal class NewsProvider(Logger logger)
     /// <param name="scriptPath">The full file path to the Python script to execute. Cannot be null or empty.</param>
     /// <returns>A JsonDocument representing the parsed JSON output from the Python script's standard output.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the Python process cannot be started.</exception>
-    private JsonDocument RunPythonScript(string scriptPath)
+    private async Task<JsonDocument> RunPythonScript(string scriptPath)
     {
         var pythonScript = new ProcessStartInfo(_pythonExePath)
         {
@@ -111,10 +118,7 @@ internal class NewsProvider(Logger logger)
         try
         {
             using var process = Process.Start(pythonScript) ?? throw new InvalidOperationException("Failed to start Python process.\nScript: {scriptPath}");
-
-            // TODO: Save raw output
             var output = process.StandardOutput.ReadToEnd();
-
             return JsonDocument.Parse(output);
         }
         catch (Win32Exception ex)

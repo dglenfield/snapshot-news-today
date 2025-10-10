@@ -19,7 +19,10 @@ internal class ScrapingProcessor(Logger logger, NewsProvider newsProvider, Sqlit
     {
         // Get current news articles from CNN
         NewsWebsite targetSite = NewsWebsite.CNN;
-        List<NewsArticle> sourceArticles = newsProvider.GetNewsArticles(targetSite);
+        // Insert a ScrapeNewsJobRun record
+        ScrapeNewsJobRun scrapeNewsJobRun = new() { SourceName = targetSite.ToString(), SourceUri = new Uri("https://www.cnn.com") };
+        scrapeNewsJobRun.Id = await sqliteDataProvider.InsertScrapeNewsJobRunAsync(scrapeNewsJobRun);
+        List<NewsArticle> sourceArticles = await newsProvider.GetNewsArticles(targetSite, scrapeNewsJobRun.Id);
         if (sourceArticles.Count == 0)
         {
             logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
@@ -28,10 +31,15 @@ internal class ScrapingProcessor(Logger logger, NewsProvider newsProvider, Sqlit
 
         // Log retrieved articles
         logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}", LogLevel.Debug);
-        //foreach (NewsArticle article in sourceArticles)
-        //    logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
+        foreach (NewsArticle article in sourceArticles)
+        {
+            // Save each article to the database
+            article.Id = await sqliteDataProvider.InsertArticleSourceAsync(article); 
+            logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
+        }
 
-        // Save articles to local storage
-        await sqliteDataProvider.CreateAsync();
+        // Update ScrapeNewsJobRun record with results
+        scrapeNewsJobRun.ScrapeEnd = DateTime.UtcNow;
+        await sqliteDataProvider.UpdateScrapeNewsJobRunAsync(scrapeNewsJobRun);
     }
 }

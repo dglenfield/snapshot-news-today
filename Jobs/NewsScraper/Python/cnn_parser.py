@@ -1,6 +1,7 @@
 import json
 import re
 import requests
+import sqlite3
 import sys
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -9,6 +10,8 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test-landing-page-file', type=str, help='Path to test landing page file')
+    parser.add_argument('--db-path', type=str, required=True, help='Path to SQLite database file')
+    parser.add_argument('--id', type=int, required=True, help='ID of the job run to update')
     args = parser.parse_args()
 
     if args.test_landing_page_file:
@@ -19,13 +22,32 @@ def main():
         response = requests.get(url)
         html = response.text
 
+    # Parse the HTML
     soup = BeautifulSoup(html, 'html.parser')
+
+    # Remove all script tags and their contents
+    for script in soup.find_all('script'):
+        script.decompose()
+
+    # Get the cleaned HTML back as a string, Remove extra whitespace, and save to DB
+    cleaned_html = re.sub(r'\s+', ' ', str(soup))
+    update_job_run(args.db_path, args.id, cleaned_html)
 
     # Match article links (e.g., /2025/09/26/...)
     pattern = re.compile(r'^/\d{4}/\d{2}/\d{2}')
     date_pattern = re.compile(r'^/(\d{4})/(\d{2})/(\d{2})')
 
     excluded_contains = ["/video/"]
+
+    # Log only the actual href links found
+    # hrefs = [a['href'] for a in soup.find_all('a', href=True)]
+    # json_hrefs = json.dumps(hrefs)
+    # update_job_run(args.db_path, args.id, json_hrefs)
+
+    # Log the raw HTML for each <a> tag
+    #hrefs_html = [str(a) for a in soup.find_all('a', href=True)]
+    #json_hrefs = json.dumps(hrefs_html)
+    #update_job_run(args.db_path, args.id, json_hrefs)
 
     results = []
     for a in soup.find_all('a', href=True):
@@ -75,6 +97,16 @@ def main():
 
     print(json.dumps(sorted_values, default=serialize_datetime, indent=2))
     #print(json.dumps(list(unique.values()), default=serialize_datetime, indent=2))
+
+def update_job_run(db_path, job_id, raw_output):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE scrape_news_job_run SET raw_output = ? WHERE id = ?",
+        (raw_output, job_id)
+    )
+    conn.commit()
+    conn.close()
 
 if __name__ == "__main__":
     main()
