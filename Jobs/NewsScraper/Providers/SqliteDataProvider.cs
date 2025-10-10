@@ -58,9 +58,12 @@ public class SqliteDataProvider(string databaseFilePath, string databaseVersion,
             @"CREATE TABLE IF NOT EXISTS scrape_news_job_run (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 source_name TEXT NOT NULL,
-                source_uri TEXT NOT NULL, 
+                source_uri TEXT NOT NULL,
+                source_articles_found INTEGER,
                 scrape_start TEXT NOT NULL DEFAULT (datetime('now')),
                 scrape_end TEXT,
+                success INTEGER,
+                error_message TEXT,
                 raw_output TEXT
             );";
         await createScrapeNewsJobRunTableCommand.ExecuteNonQueryAsync();
@@ -116,9 +119,12 @@ public class SqliteDataProvider(string databaseFilePath, string databaseVersion,
         await using var command = connection.CreateCommand();
         command.CommandText =
             @"UPDATE scrape_news_job_run
-            SET scrape_end = @scrape_end
+            SET source_articles_found = @source_articles_found, scrape_end = @scrape_end, success = @success, error_message = @error_message
             WHERE id = @id;";
+        command.Parameters.AddWithValue("@source_articles_found", (object?)scrapeNewsJobRun.SourceArticlesFound ?? DBNull.Value);
         command.Parameters.AddWithValue("@scrape_end", (object?)scrapeNewsJobRun.ScrapeEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value);
+        command.Parameters.AddWithValue("@success", scrapeNewsJobRun.Success.HasValue ? (scrapeNewsJobRun.Success.Value ? 1 : 0) : (object?)DBNull.Value);
+        command.Parameters.AddWithValue("@error_message", (object?)scrapeNewsJobRun.ErrorMessage ?? DBNull.Value);
         command.Parameters.AddWithValue("@id", scrapeNewsJobRun.Id);
 
         try
@@ -144,11 +150,14 @@ public class SqliteDataProvider(string databaseFilePath, string databaseVersion,
         
         await using var command = connection.CreateCommand();
         command.CommandText =
-            @"INSERT INTO scrape_news_job_run (source_name, source_uri, scrape_end, raw_output)
-            VALUES (@source_name, @source_uri, @scrape_end, @raw_output);";
+            @"INSERT INTO scrape_news_job_run (source_name, source_uri, source_articles_found, scrape_end, success, error_message, raw_output)
+            VALUES (@source_name, @source_uri, @source_articles_found, @scrape_end, @success, @error_message, @raw_output);";
         command.Parameters.AddWithValue("@source_name", (object)scrapeNewsJobRun.SourceName);
         command.Parameters.AddWithValue("@source_uri", (object)scrapeNewsJobRun.SourceUri.AbsoluteUri);
+        command.Parameters.AddWithValue("@source_articles_found", (object?)scrapeNewsJobRun.SourceArticlesFound ?? DBNull.Value);
         command.Parameters.AddWithValue("@scrape_end", (object?)scrapeNewsJobRun.ScrapeEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value);
+        command.Parameters.AddWithValue("@success", scrapeNewsJobRun.Success.HasValue ? (object?)(scrapeNewsJobRun.Success.Value ? 1 : 0) : (object?)DBNull.Value);
+        command.Parameters.AddWithValue("@error_message", (object?)scrapeNewsJobRun.ErrorMessage ?? DBNull.Value);
         command.Parameters.AddWithValue("@raw_output", (object?)scrapeNewsJobRun.RawOutput ?? DBNull.Value);
 
         try

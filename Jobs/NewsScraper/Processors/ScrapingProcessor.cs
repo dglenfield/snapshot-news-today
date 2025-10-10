@@ -17,29 +17,40 @@ internal class ScrapingProcessor(Logger logger, NewsProvider newsProvider, Sqlit
 {
     public async Task Run()
     {
-        // Get current news articles from CNN
         NewsWebsite targetSite = NewsWebsite.CNN;
-        // Insert a ScrapeNewsJobRun record
         ScrapeNewsJobRun scrapeNewsJobRun = new() { SourceName = targetSite.ToString(), SourceUri = new Uri("https://www.cnn.com") };
-        scrapeNewsJobRun.Id = await sqliteDataProvider.InsertScrapeNewsJobRunAsync(scrapeNewsJobRun);
-        List<NewsArticle> sourceArticles = await newsProvider.GetNewsArticles(targetSite, scrapeNewsJobRun.Id);
-        if (sourceArticles.Count == 0)
-        {
-            logger.Log($"No articles found from {targetSite}.", LogLevel.Warning);
-            return;
-        }
 
-        // Log retrieved articles
-        logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}", LogLevel.Debug);
-        foreach (NewsArticle article in sourceArticles)
+        try
         {
-            // Save each article to the database
-            article.Id = await sqliteDataProvider.InsertArticleSourceAsync(article); 
-            logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
-        }
+            // Insert initial ScrapeNewsJobRun record to track this scraping session
+            scrapeNewsJobRun.Id = await sqliteDataProvider.InsertScrapeNewsJobRunAsync(scrapeNewsJobRun);
 
-        // Update ScrapeNewsJobRun record with results
-        scrapeNewsJobRun.ScrapeEnd = DateTime.UtcNow;
-        await sqliteDataProvider.UpdateScrapeNewsJobRunAsync(scrapeNewsJobRun);
+            // Get current news articles from CNN
+            List<NewsArticle> sourceArticles = await newsProvider.GetNewsArticles(targetSite, scrapeNewsJobRun.Id);
+            
+            // Log retrieved articles
+            logger.Log($"Total articles retrieved from {targetSite}: {sourceArticles.Count}", LogLevel.Debug);
+            foreach (NewsArticle article in sourceArticles)
+            {
+                // Save each article to the database
+                article.Id = await sqliteDataProvider.InsertArticleSourceAsync(article);
+                logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
+            }
+
+            scrapeNewsJobRun.SourceArticlesFound = sourceArticles.Count;
+            scrapeNewsJobRun.Success = true;
+        }
+        catch (Exception ex)
+        {
+            scrapeNewsJobRun.Success = false;
+            scrapeNewsJobRun.ErrorMessage = ex.Message;
+            throw;
+        }
+        finally
+        {
+            // Update ScrapeNewsJobRun record with scrape results
+            scrapeNewsJobRun.ScrapeEnd = DateTime.UtcNow;
+            await sqliteDataProvider.UpdateScrapeNewsJobRunAsync(scrapeNewsJobRun);
+        }
     }
 }
