@@ -5,7 +5,7 @@ using System.Data.Common;
 
 namespace NewsScraper.Data.Providers;
 
-public class ScraperDataProvider(string databaseFilePath, string databaseVersion, Logger logger) 
+internal class ScraperRawDataProvider(string databaseFilePath, string databaseVersion, Logger logger) 
     : SqliteDataProvider(databaseFilePath)
 {
     private readonly string _databaseVersion = string.IsNullOrWhiteSpace(databaseVersion) 
@@ -21,8 +21,7 @@ public class ScraperDataProvider(string databaseFilePath, string databaseVersion
             await DeleteAsync(); // Delete existing database if overwrite flag is set
 
         await CreateDatabaseInfoTable();
-        await CreateScrapeJobRunTable();
-        await CreateSourceArticleTable();
+        await CreateScrapeRawJobRunTable();
 
         _logger.Log($"Database '{_fileName}' created successfully at '{_directoryPath}'.", LogLevel.Success);
     }
@@ -57,51 +56,21 @@ public class ScraperDataProvider(string databaseFilePath, string databaseVersion
         }
     }
 
-    private async Task CreateScrapeJobRunTable()
+    private async Task CreateScrapeRawJobRunTable()
     {
         try
         {
-            // Create the scrape_job_run table if it doesn't exist
+            // Create the scrape_raw_job_run table if it doesn't exist
             string commandText =
-                @"CREATE TABLE IF NOT EXISTS scrape_job_run (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source_name TEXT NOT NULL,
-                source_uri TEXT NOT NULL,
-                source_articles_found INTEGER,
-                scrape_start TEXT NOT NULL DEFAULT (datetime('now')),
-                scrape_end TEXT,
-                success INTEGER,
-                error_message TEXT);";
+                @"CREATE TABLE IF NOT EXISTS scrape_raw_job_run (
+                id INTEGER NOT NULL PRIMARY KEY,
+                scraped_on TEXT NOT NULL DEFAULT (datetime('now')),
+                raw_content TEXT);";
             await ExecuteNonQueryAsync(commandText);
         }
         catch (DbException)
         {
-            _logger.Log($"Error creating the scrape_job_run table.", LogLevel.Error);
-            throw;
-        }
-    }
-
-    private async Task CreateSourceArticleTable()
-    {
-        try
-        {
-            // Create the source_article table if it doesn't exist
-            string commandText =
-                @"CREATE TABLE IF NOT EXISTS source_article (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_run_id INTEGER, -- Foreign key to link to scrape_news_job_run table
-                create_date TEXT NOT NULL DEFAULT (datetime('now')),
-                source_name TEXT NOT NULL, 
-                article_uri TEXT NOT NULL UNIQUE, -- article_uri is unique to prevent duplicate articles
-                headline TEXT,
-                publish_date TEXT,
-                category TEXT,
-                FOREIGN KEY(job_run_id) REFERENCES scrape_job_run(id) ON DELETE CASCADE);";
-            await ExecuteNonQueryAsync(commandText);
-        }
-        catch (DbException)
-        {
-            _logger.Log($"Error creating the source_article table.", LogLevel.Error);
+            _logger.Log($"Error creating the scrape_raw_job_run table.", LogLevel.Error);
             throw;
         }
     }

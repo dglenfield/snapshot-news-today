@@ -46,6 +46,7 @@ internal static class Configuration
             internal static string DirectoryPath => _config["Database:NewsScraperJobRaw:DirectoryPath"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:DirectoryPath\" not found in appsettings.");
             internal static string FileName => _config["Database:NewsScraperJobRaw:FileName"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:FileName\" not found in appsettings.");
             internal static string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
+            internal static bool IsEnabled => bool.Parse(_config["Database:NewsScraperJobRaw:IsEnabled"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:IsEnabled\" not found in appsettings."));
         }
     }
 

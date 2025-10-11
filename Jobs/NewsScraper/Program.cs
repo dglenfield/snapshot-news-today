@@ -51,11 +51,22 @@ public class Program
                             Configuration.Database.NewsScraperJob.DatabaseVersion,
                             provider.GetRequiredService<Logger>()));
                     services.AddTransient<ScrapeJobRunRepository>();
+                    services.AddTransient<ScraperRawDataProvider>(provider =>
+                        new ScraperRawDataProvider(
+                            Configuration.Database.NewsScraperJobRaw.DatabaseFilePath,
+                            Configuration.Database.NewsScraperJobRaw.DatabaseVersion,
+                            provider.GetRequiredService<Logger>()));
                 }).Build();
 
             // Ensure the SQLite database is created
             var scraperDataProvider = host.Services.GetRequiredService<ScraperDataProvider>();
             await scraperDataProvider.CreateDatabaseAsync();
+
+            if (Configuration.Database.NewsScraperJobRaw.IsEnabled)
+            {
+                var scraperRawDataProvider = host.Services.GetRequiredService<ScraperRawDataProvider>();
+                await scraperRawDataProvider.CreateDatabaseAsync();
+            }
 
             // Resolve and run the main service
             var processor = host.Services.GetRequiredService<ScrapingProcessor>();

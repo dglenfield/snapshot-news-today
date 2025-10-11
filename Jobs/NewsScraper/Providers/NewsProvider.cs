@@ -1,4 +1,5 @@
-﻿using Common.Logging;
+﻿using Common.Data;
+using Common.Logging;
 using NewsScraper.Data.Providers;
 using NewsScraper.Enums;
 using NewsScraper.Models;
@@ -11,11 +12,10 @@ namespace NewsScraper.Providers;
 /// <summary>
 /// Provides methods for scraping news articles and metadata from supported news websites.
 /// </summary>
-internal class NewsProvider(Logger logger, ScraperDataProvider sqliteDataProvider)
+internal class NewsProvider(Logger logger)
 {
     private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
     private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
-    private readonly ScraperDataProvider _sqliteDataProvider = sqliteDataProvider;
 
     /// <summary>
     /// Retrieves a set of news article URLs from the specified news website.
@@ -36,8 +36,9 @@ internal class NewsProvider(Logger logger, ScraperDataProvider sqliteDataProvide
     private async Task<List<SourceArticle>> GetArticlesFromCNN()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
-        //scriptPath += $" --db-path {_sqliteDataProvider.DatabaseFilePath}"; // TODO: Change to archive database
         scriptPath += $" --id {ScrapeJobRun.Id}";
+        if (Configuration.Database.NewsScraperJobRaw.IsEnabled)
+            scriptPath += $" --db-path {Configuration.Database.NewsScraperJobRaw.DatabaseFilePath}";
 
         // FOR TESTING: Append test landing page file argument
         bool useTestLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile;
