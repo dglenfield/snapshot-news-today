@@ -10,7 +10,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test-landing-page-file', type=str, help='Path to test landing page file')
-    parser.add_argument('--db-path', type=str, required=True, help='Path to SQLite database file')
+    parser.add_argument('--db-path', type=str, required=False, help='Path to SQLite database file')
     parser.add_argument('--id', type=int, required=True, help='ID of the job run to update')
     args = parser.parse_args()
 
@@ -31,7 +31,8 @@ def main():
 
     # Get the cleaned HTML back as a string, Remove extra whitespace, and save to DB
     cleaned_html = re.sub(r'\s+', ' ', str(soup))
-    update_job_run(args.db_path, args.id, cleaned_html)
+    if args.db_path:
+        update_job_run(args.db_path, args.id, cleaned_html)
 
     # Match article links (e.g., /2025/09/26/...)
     pattern = re.compile(r'^/\d{4}/\d{2}/\d{2}')

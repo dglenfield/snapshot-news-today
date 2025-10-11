@@ -1,6 +1,8 @@
 ﻿using Common.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NewsScraper.Data;
+using NewsScraper.Data.Providers;
 using NewsScraper.Processors;
 using NewsScraper.Providers;
 
@@ -43,16 +45,17 @@ public class Program
                             Configuration.Logging.LogToFile));
                     services.AddTransient<NewsProvider>();
                     services.AddTransient<ScrapingProcessor>();
-                    services.AddTransient<SqliteDataProvider>(provider =>
-                        new SqliteDataProvider(
-                            Configuration.Database.Sqlite.DatabaseFilePath,
-                            Configuration.Database.Sqlite.DatabaseVersion,
+                    services.AddTransient<ScraperDataProvider>(provider =>
+                        new ScraperDataProvider(
+                            Configuration.Database.NewsScraperJob.DatabaseFilePath,
+                            Configuration.Database.NewsScraperJob.DatabaseVersion,
                             provider.GetRequiredService<Logger>()));
+                    services.AddTransient<ScrapeJobRunRepository>();
                 }).Build();
 
             // Ensure the SQLite database is created
-            var sqliteDataProvider = host.Services.GetRequiredService<SqliteDataProvider>();
-            await sqliteDataProvider.CreateAsync();
+            var scraperDataProvider = host.Services.GetRequiredService<ScraperDataProvider>();
+            await scraperDataProvider.CreateDatabaseAsync();
 
             // Resolve and run the main service
             var processor = host.Services.GetRequiredService<ScrapingProcessor>();

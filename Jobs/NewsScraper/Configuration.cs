@@ -19,20 +19,34 @@ internal static class Configuration
 
     internal static class Database
     {
-        internal static class Sqlite
+        internal static class NewsScraperJob
         {
-            internal static string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
             /// <summary>
-            /// Gets the configured version string of the SQLite database as specified in the application settings.
+            /// Gets the configured version string of the database as specified in the application settings.
             /// </summary>
             /// <remarks>A value followed by -overwrite will delete any existing database and create a new one. 
             /// Use this option with caution as it will result in data loss. Only intended for development or 
             /// testing scenarios. <para>If the key is not found in the configuration, 
             /// a <see cref="KeyNotFoundException"/> is thrown.</para></remarks>
-            internal static string DatabaseVersion => _config["Database:Sqlite:DatabaseVersion"] ?? throw new KeyNotFoundException("\"Database:Sqlite:DatabaseVersion\" not found in appsettings.");
-            internal static string DirectoryPath => _config["Database:Sqlite:DirectoryPath"] ?? throw new KeyNotFoundException("\"Database:Sqlite:DirectoryPath\" not found in appsettings.");
-            internal static string FileName => _config["Database:Sqlite:FileName"] ?? throw new KeyNotFoundException("\"Database:Sqlite:FileName\" not found in appsettings.");
-        }        
+            internal static string DatabaseVersion => _config["Database:NewsScraperJob:DatabaseVersion"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJob:DatabaseVersion\" not found in appsettings.");
+            internal static string DirectoryPath => _config["Database:NewsScraperJob:DirectoryPath"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJob:DirectoryPath\" not found in appsettings.");
+            internal static string FileName => _config["Database:NewsScraperJob:FileName"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJob:FileName\" not found in appsettings.");
+            internal static string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
+        }
+        internal static class NewsScraperJobRaw
+        {
+            /// <summary>
+            /// Gets the configured version string of the database as specified in the application settings.
+            /// </summary>
+            /// <remarks>A value followed by -overwrite will delete any existing database and create a new one. 
+            /// Use this option with caution as it will result in data loss. Only intended for development or 
+            /// testing scenarios. <para>If the key is not found in the configuration, 
+            /// a <see cref="KeyNotFoundException"/> is thrown.</para></remarks>
+            internal static string DatabaseVersion => _config["Database:NewsScraperJobRaw:DatabaseVersion"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:DatabaseVersion\" not found in appsettings.");
+            internal static string DirectoryPath => _config["Database:NewsScraperJobRaw:DirectoryPath"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:DirectoryPath\" not found in appsettings.");
+            internal static string FileName => _config["Database:NewsScraperJobRaw:FileName"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:FileName\" not found in appsettings.");
+            internal static string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
+        }
     }
 
     /// <summary>

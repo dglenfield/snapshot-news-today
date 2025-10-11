@@ -1,4 +1,5 @@
 ﻿using Common.Logging;
+using NewsScraper.Data.Providers;
 using NewsScraper.Enums;
 using NewsScraper.Models;
 using System.ComponentModel;
@@ -10,32 +11,33 @@ namespace NewsScraper.Providers;
 /// <summary>
 /// Provides methods for scraping news articles and metadata from supported news websites.
 /// </summary>
-internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider)
+internal class NewsProvider(Logger logger, ScraperDataProvider sqliteDataProvider)
 {
     private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
     private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
-    private readonly SqliteDataProvider _sqliteDataProvider = sqliteDataProvider;
-    
+    private readonly ScraperDataProvider _sqliteDataProvider = sqliteDataProvider;
+
     /// <summary>
     /// Retrieves a set of news article URLs from the specified news website.
     /// </summary>
     /// <param name="newsWebsite">The news website to scrape.</param>
+    /// <param name="jobRunId">The ID of the job run associated with this scraping operation.</param>
     /// <returns>A set of unique article URLs, or null if none found.</returns>
-    public async Task<List<ArticleSource>> GetNewsArticles(NewsWebsite newsWebsite, long jobRunId)
+    public async Task<List<SourceArticle>> GetNewsArticles(NewsWebsite newsWebsite)
     {
         return newsWebsite switch
         {
-            NewsWebsite.CNN => await GetArticlesFromCNN(jobRunId),
+            NewsWebsite.CNN => await GetArticlesFromCNN(),
             NewsWebsite.FoxNews => throw new NotImplementedException("Fox News scraping not yet implemented."),
             _ => throw new NotSupportedException("Unsupported news website."),
         };
     }
 
-    private async Task<List<ArticleSource>> GetArticlesFromCNN(long jobRunId)
+    private async Task<List<SourceArticle>> GetArticlesFromCNN()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
-        scriptPath += $" --db-path {_sqliteDataProvider.DatabaseFilePath}";
-        scriptPath += $" --id {jobRunId}";
+        //scriptPath += $" --db-path {_sqliteDataProvider.DatabaseFilePath}"; // TODO: Change to archive database
+        scriptPath += $" --id {ScrapeJobRun.Id}";
 
         // FOR TESTING: Append test landing page file argument
         bool useTestLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile;
@@ -43,8 +45,8 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
         
-        List<ArticleSource> articles = [];
-        var distinctArticles = new HashSet<ArticleSource>();
+        List<SourceArticle> articles = [];
+        var distinctArticles = new HashSet<SourceArticle>();
 
         // Run the Python script and parse its JSON output
         var jsonDocument = await RunPythonScript(scriptPath);
@@ -59,7 +61,7 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
 
             distinctArticles.Add(new()
             {
-                JobRunId = jobRunId,
+                JobRunId = ScrapeJobRun.Id,
                 SourceName = "CNN",
                 SourceUri = uri,
                 SourceHeadline = jsonElement.GetProperty("headline").GetString(),
@@ -69,7 +71,7 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
         
         // Group articles by category and assign category to each article
         foreach (var grouped in GroupArticlesByCategory([.. distinctArticles]))
-            foreach (ArticleSource article in grouped.Value)
+            foreach (SourceArticle article in grouped.Value)
                 article.SourceCategory = grouped.Key;
 
         return [.. distinctArticles.OrderBy(a => a.SourceCategory).ThenByDescending(a => a.SourcePublishDate)];
@@ -83,10 +85,10 @@ internal class NewsProvider(Logger logger, SqliteDataProvider sqliteDataProvider
     /// <param name="articles">The list of news articles to group. Cannot be null.</param>
     /// <returns>A dictionary where each key is a category name and the value is a list of articles belonging to that category.
     /// Articles with an unrecognized or missing category are grouped under the key "unknown".</returns>
-    private Dictionary<string, List<ArticleSource>> GroupArticlesByCategory(List<ArticleSource> articles)
+    private Dictionary<string, List<SourceArticle>> GroupArticlesByCategory(List<SourceArticle> articles)
     {
-        var groupedArticles = new Dictionary<string, List<ArticleSource>>();
-        foreach (ArticleSource article in articles)
+        var groupedArticles = new Dictionary<string, List<SourceArticle>>();
+        foreach (SourceArticle article in articles)
         {
             // Category is the 4th segment in path (assuming "/2025/09/28/category/...")
             string[] segments = article.SourceUri.AbsolutePath.Trim('/').Split('/');
