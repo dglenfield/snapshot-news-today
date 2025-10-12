@@ -9,11 +9,15 @@ internal class NewsArticleProvider(Logger logger)
     public async Task<SourceArticle> GetArticle(Uri articleUri)
     {
         logger.Log($"Fetching article content from {articleUri}", LogLevel.Info);
-
         if (articleUri.AbsoluteUri.Contains("videos/"))
         {
             logger.Log($"Video articles are not supported. Article URL: {articleUri}", LogLevel.Warning);
-            throw new NotSupportedException("Video articles are not supported.");
+            return new SourceArticle
+            {
+                ArticleUri = articleUri,
+                ErrorMessage = "Video articles are not supported.",
+                Success = false
+            };
         }
 
         HtmlDocument htmlDoc = new();
@@ -55,7 +59,8 @@ internal class NewsArticleProvider(Logger logger)
             Author = authorNode?.InnerText.Trim(),
             ArticleUri = articleUri,
             PublishDate = parsedDate.ToLocalTime(),
-            LastUpdatedDate = parsedLastUpdatedDate.ToLocalTime()
+            LastUpdatedDate = parsedLastUpdatedDate.ToLocalTime(),
+            Success = true
         };
 
         // Extract article content paragraphs
@@ -67,6 +72,8 @@ internal class NewsArticleProvider(Logger logger)
                     article.ContentParagraphs.Add(paragraph.InnerText.Trim());
                 break;
             case false:
+                article.Success = false;
+                article.ErrorMessage = "Article content not found.";
                 logger.Log("Article content node not found.", LogLevel.Warning);
                 break;
         }

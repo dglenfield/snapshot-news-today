@@ -46,6 +46,7 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
                 source_name TEXT NOT NULL,
                 source_uri TEXT NOT NULL,
                 news_stories_found INTEGER,
+                news_articles_scraped INTEGER,
                 scrape_start TEXT NOT NULL DEFAULT (datetime('now')),
                 scrape_end TEXT,
                 success INTEGER,
@@ -76,9 +77,11 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
                 story_headline TEXT,
                 author TEXT,
                 original_publish_date TEXT,
-                last_publish_date TEXT,
+                last_updated_date TEXT,
                 is_paywalled INTEGER,
                 article_content TEXT,
+                success INTEGER,
+                error_message TEXT,
                 FOREIGN KEY(job_run_id) REFERENCES scrape_job_run(id) ON DELETE CASCADE);";
             await ExecuteNonQueryAsync(commandText);
         }

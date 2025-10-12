@@ -21,7 +21,7 @@ public class SourceNewsStory
     public long JobRunId { get; set; }
     public string? SourceName { get; set; }
     public string? StoryHeadline { get; set; }
-    
+
     /// <summary>
     /// Returns a JSON-formatted string that represents the current object.
     /// </summary>

@@ -16,7 +16,7 @@ namespace NewsScraper.Processors;
 /// <param name="logger">The logger instance used to record informational and warning messages during the scraping process.</param>
 /// <param name="newsStoryProvider">The news provider used to retrieve articles from the target news website.</param>
 internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvider, 
-    NewsArticleProvider articleProvider, ScrapeJobRunRepository scrapeJobRunRepository)
+    NewsArticleProvider articleProvider, ScrapeJobRunRepository scrapeJobRunRepository, NewsStoryArticleRepository articleRepository)
 {
     public async Task Run()
     {
@@ -37,7 +37,7 @@ internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvi
             foreach (SourceNewsStory newsStory in newsStories)
             {
                 // Save each article to the database
-                newsStory.Id = await scrapeJobRunRepository.CreateNewsStoryArticleAsync(newsStory);
+                newsStory.Id = await articleRepository.CreateNewsStoryArticleAsync(newsStory);
                 logger.Log(newsStory.ToString(), LogLevel.Debug, logAsRawMessage: true);
             }
 
@@ -51,11 +51,15 @@ internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvi
 
                 // Scrape and save the full article content
                 newsStory.Article = await articleProvider.GetArticle(newsStory.Article.ArticleUri);
-                logger.Log(newsStory.ToString(), LogLevel.Debug, logAsRawMessage: true);
+                if (!await articleRepository.UpdateNewsStoryArticleAsync(newsStory))
+                    logger.Log($"Failed to update article content for story ID {newsStory.Id}", LogLevel.Warning);
+                else
+                    logger.Log(newsStory.ToString(), LogLevel.Debug, logAsRawMessage: true);
                 break; // TEMPORARY: Process only the first article for testing
             }
 
             ScrapeJobRun.NewsStoriesFound = newsStories.Count;
+            ScrapeJobRun.NewsArticlesScraped = newsStories.Count(a => a.Article?.Success == true);
             ScrapeJobRun.Success = true;
         }
         catch (Exception ex)

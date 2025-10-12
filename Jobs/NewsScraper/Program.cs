@@ -54,6 +54,7 @@ public class Program
                             DbSettings.NewsScraperJobRaw.DatabaseVersion,
                             provider.GetRequiredService<Logger>()));
                     services.AddTransient<ScrapeJobRunRepository>();
+                    services.AddTransient<NewsStoryArticleRepository>();
                     // Processors and other providers
                     services.AddTransient<ScrapingProcessor>();
                     services.AddTransient<NewsArticleProvider>();
