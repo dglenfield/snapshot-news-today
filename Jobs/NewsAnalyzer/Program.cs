@@ -11,7 +11,7 @@ public class Program
     public static int Main(string[] args)
     {
         Console.Title = "News Scraper";
-        var logger = new Logger(Configuration.Logging.ApplicationLogLevel, Configuration.Logging.LogDirectory, Configuration.Logging.LogToFile);
+        var logger = new Logger(Configuration.Logging.LogLevel, Configuration.Logging.LogDirectory, Configuration.Logging.LogToFile);
         int returnCode = 0;
 
         try
@@ -23,7 +23,7 @@ public class Program
                 {
                     services.AddSingleton<Logger>(provider =>
                         new Logger(
-                            Configuration.Logging.ApplicationLogLevel,
+                            Configuration.Logging.LogLevel,
                             Configuration.Logging.LogDirectory,
                             Configuration.Logging.LogToFile
                         ));

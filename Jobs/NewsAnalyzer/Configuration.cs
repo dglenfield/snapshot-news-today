@@ -13,10 +13,11 @@ namespace NewsAnalyzer;
 /// KeyNotFoundException if a required configuration key is missing. The class also contains nested static classes for
 /// grouping related settings, such as logging, Python integration, and test-specific options. Intended for internal use
 /// to ensure consistent and validated access to configuration throughout the application.</remarks>
-public static class Configuration
+internal static class Configuration
 {
     public static string PerplexityApiKey => _config["PerplexityApiProvider:PerplexityApiKey"] ?? throw new KeyNotFoundException("\"PerplexityApiProvider:PerplexityApiKey\" not found in User Secrets or appsettings.");
     public static string PerplexityApiUrl => _config["PerplexityApiProvider:PerplexityApiUrl"] ?? throw new KeyNotFoundException("\"PerplexityApiProvider:PerplexityApiUrl\" not found in appsettings.");
+    internal static bool UseProductionSettings => bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
 
     /// <summary>
     /// Provides access to logging configuration settings.
@@ -25,7 +26,7 @@ public static class Configuration
     /// application's configuration source.</remarks>
     public static class Logging
     {
-        public static LogLevel ApplicationLogLevel 
+        public static LogLevel LogLevel 
         { 
             get 
             {
@@ -58,31 +59,24 @@ public static class Configuration
             public static class CurateArticles
             {
                 public static string TestResponseFile => _config["Testing:PerplexityApiProvider:CurateArticles:TestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:TestResponseFile\" not found in appsettings.");
-                public static bool UseTestResponseFile => !_useProductionSettings && bool.Parse(_config["Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile\" not found in appsettings."));
+                public static bool UseTestResponseFile => !UseProductionSettings && bool.Parse(_config["Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile"] ?? throw new KeyNotFoundException("\"Testing:PerplexityApiProvider:CurateArticles:UseTestResponseFile\" not found in appsettings."));
             }
         }
     }
 
-    private static readonly IConfigurationRoot _config;
-    private static readonly bool _useProductionSettings;
-
-    /// <summary>
-    /// Initializes the static configuration settings for the application by loading values from the appsettings.json
-    /// file and user secrets.
-    /// </summary>
-    /// <remarks>This static constructor ensures that configuration values are loaded and validated before any
-    /// static members of the Configuration class are accessed. If configuration loading fails, the exception is logged
-    /// and rethrown.</remarks>
-    /// <exception cref="KeyNotFoundException">Thrown if the "UseProductionSettings" key is not found in the appsettings.json file.</exception>
-    static Configuration()
-    {
-        _config = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
+    private static readonly IConfigurationRoot _config = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false)
             .AddUserSecrets<Program>()
             .Build();
 
-        _useProductionSettings = bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
-
+    /// <summary>
+    /// Initializes static members of the Configuration class and performs validation of configuration properties.
+    /// </summary>
+    /// <remarks>This static constructor ensures that all configuration properties are accessed and validated
+    /// when the class is first used. This helps detect misconfigurations early in the application's
+    /// lifecycle.</remarks>
+    static Configuration()
+    {
         ToJson(); // Access ToJson to ensure all properties are accessed and validated
     }
 
@@ -94,8 +88,26 @@ public static class Configuration
     /// <returns>A JSON-formatted string representing the current values of the configuration settings.</returns>
     public static string ToJson() => JsonSerializer.Serialize(new
     {
-        UseProductionSettings = _useProductionSettings, PerplexityApiKey = $"{PerplexityApiKey[..10]}...", PerplexityApiUrl,
-        Logging.ApplicationLogLevel, Logging.LogDirectory, Logging.LogToFile,
-        TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile, TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile,
-    });
+        
+        PerplexityApiKey = $"{PerplexityApiKey[..10]}...", 
+        PerplexityApiUrl,
+        UseProductionSettings,
+        Logging = new
+        {
+            Logging.LogDirectory,
+            Logging.LogLevel,
+            Logging.LogToFile
+        },
+        TestSettings = new
+        {
+            PerplexityApiProvider = new
+            {
+                CurateArticles = new
+                {
+                    TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile,
+                    TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile
+                }
+            }
+        }
+    }, new JsonSerializerOptions { WriteIndented = true });
 }

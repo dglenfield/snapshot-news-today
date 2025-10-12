@@ -16,6 +16,7 @@ namespace NewsScraper;
 internal static class Configuration
 {
     internal static string CnnBaseUrl => _config["NewsProvider:CnnBaseUrl"] ?? throw new KeyNotFoundException("\"NewsProvider:CnnBaseUrl\" not found in appsettings.");
+    internal static bool UseProductionSettings => bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
 
     internal static class Database
     {
@@ -103,7 +104,7 @@ internal static class Configuration
             internal static class GetArticle
             {
                 internal static string TestArticleFile => _config["Testing:NewsArticleProvider:GetArticle:TestArticleFile"] ?? throw new KeyNotFoundException("\"Testing:NewsArticleProvider:GetArticle:TestArticleFile\" not found in appsettings.");
-                internal static bool UseTestArticleFile => !_useProductionSettings && bool.Parse(_config["Testing:NewsArticleProvider:GetArticle:UseTestArticleFile"] ?? throw new KeyNotFoundException("\"Testing:NewsArticleProvider:GetArticle:UseTestArticleFile\" not found in appsettings."));
+                internal static bool UseTestArticleFile => !UseProductionSettings && bool.Parse(_config["Testing:NewsArticleProvider:GetArticle:UseTestArticleFile"] ?? throw new KeyNotFoundException("\"Testing:NewsArticleProvider:GetArticle:UseTestArticleFile\" not found in appsettings."));
             }            
         }
         internal static class NewsStoryProvider 
@@ -111,31 +112,24 @@ internal static class Configuration
             internal static class GetNews 
             {
                 internal static string TestLandingPageFile => _config["Testing:NewsStoryProvider:GetNews:TestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsStoryProvider:GetNews:TestArticleUrl\" not found in appsettings.");
-                internal static bool UseTestLandingPageFile => !_useProductionSettings && bool.Parse(_config["Testing:NewsStoryProvider:GetNews:UseTestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsStoryProvider:GetNews:UseTestArticleUrl\" not found in appsettings."));
+                internal static bool UseTestLandingPageFile => !UseProductionSettings && bool.Parse(_config["Testing:NewsStoryProvider:GetNews:UseTestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsStoryProvider:GetNews:UseTestArticleUrl\" not found in appsettings."));
             }
         }
     }
 
-    private static readonly IConfigurationRoot _config;
-    private static readonly bool _useProductionSettings;
-
-    /// <summary>
-    /// Initializes the static configuration settings for the application by loading values from the appsettings.json
-    /// file and user secrets.
-    /// </summary>
-    /// <remarks>This static constructor ensures that configuration values are loaded and validated before any
-    /// static members of the Configuration class are accessed. If configuration loading fails, the exception is logged
-    /// and rethrown.</remarks>
-    /// <exception cref="KeyNotFoundException">Thrown if the "UseProductionSettings" key is not found in the appsettings.json file.</exception>
-    static Configuration()
-    {
-        _config = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
+    private static readonly IConfigurationRoot _config = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false)
             .AddUserSecrets<Program>()
             .Build();
 
-        _useProductionSettings = bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
-
+    /// <summary>
+    /// Initializes static members of the Configuration class and performs validation of configuration properties.
+    /// </summary>
+    /// <remarks>This static constructor ensures that all configuration properties are accessed and validated
+    /// when the class is first used. This helps detect misconfigurations early in the application's
+    /// lifecycle.</remarks>
+    static Configuration()
+    {
         ToJson(); // Access ToJson to ensure all properties are accessed and validated
     }
 
@@ -148,6 +142,7 @@ internal static class Configuration
     internal static string ToJson() => JsonSerializer.Serialize(new
     {
         CnnBaseUrl,
+        UseProductionSettings,
         NewsScraperJob = new
         {
             Database.NewsScraperJob.DatabaseVersion,
@@ -164,8 +159,8 @@ internal static class Configuration
         },
         Logging = new
         {
-            Logging.LogLevel,
             Logging.LogDirectory,
+            Logging.LogLevel,
             Logging.LogToFile
         },
         PythonSettings = new
@@ -183,7 +178,6 @@ internal static class Configuration
                     TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile
                 }
             }
-        },
-        UseProductionSettings = _useProductionSettings
+        }
     }, new JsonSerializerOptions { WriteIndented = true });
 }
