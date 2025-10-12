@@ -1,7 +1,6 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
 using NewsScraper.Models;
-using System.Xml;
 
 namespace NewsScraper.Providers;
 
@@ -10,9 +9,6 @@ internal class NewsArticleProvider(Logger logger)
     public async Task<SourceArticle> GetArticle(Uri articleUri)
     {
         logger.Log($"Fetching article content from {articleUri}", LogLevel.Info);
-        
-        //if (string.IsNullOrWhiteSpace(articleUrl))
-        //    throw new ArgumentException("Article URL cannot be null or empty.", nameof(articleUrl));
 
         if (articleUri.AbsoluteUri.Contains("videos/"))
         {
@@ -20,15 +16,20 @@ internal class NewsArticleProvider(Logger logger)
             throw new NotSupportedException("Video articles are not supported.");
         }
 
-        if (articleUri is null)
-        {
-            logger.Log("Debug article requested.", LogLevel.Info);
-            SourceArticle debugArticle = new();
-            return debugArticle;
-        }
-
         HtmlDocument htmlDoc = new();
-        htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(articleUri.AbsoluteUri));
+        if (Configuration.TestSettings.NewsArticleProvider.GetArticle.UseTestArticleFile)   
+        {
+            string testArticleFile = Configuration.TestSettings.NewsArticleProvider.GetArticle.TestArticleFile;
+            if (string.IsNullOrEmpty(testArticleFile) || !File.Exists(testArticleFile))
+            {
+                logger.Log($"Test article file not found: {testArticleFile}", LogLevel.Error);
+                throw new FileNotFoundException("Test article file not found.", testArticleFile);
+            }
+            logger.Log($"Loading article from test file: {testArticleFile}", LogLevel.Info);
+            htmlDoc.Load(testArticleFile);
+        }
+        else
+            htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(articleUri.AbsoluteUri));
 
         // Extract publish date from data-first-publish attribute
         var timestampNode = htmlDoc.DocumentNode.SelectSingleNode("//span[contains(@class, 'timestamp__time-since')]");

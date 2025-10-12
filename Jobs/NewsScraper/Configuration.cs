@@ -98,12 +98,20 @@ internal static class Configuration
     /// are intended for internal use within the test infrastructure.</remarks>
     internal static class TestSettings
     {
-        internal static class NewsProvider 
+        internal static class NewsArticleProvider
+        {
+            internal static class GetArticle
+            {
+                internal static string TestArticleFile => _config["Testing:NewsArticleProvider:GetArticle:TestArticleFile"] ?? throw new KeyNotFoundException("\"Testing:NewsArticleProvider:GetArticle:TestArticleFile\" not found in appsettings.");
+                internal static bool UseTestArticleFile => !_useProductionSettings && bool.Parse(_config["Testing:NewsArticleProvider:GetArticle:UseTestArticleFile"] ?? throw new KeyNotFoundException("\"Testing:NewsArticleProvider:GetArticle:UseTestArticleFile\" not found in appsettings."));
+            }            
+        }
+        internal static class NewsStoryProvider 
         {
             internal static class GetNews 
             {
-                internal static string TestLandingPageFile => _config["Testing:NewsProvider:GetNews:TestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsProvider:GetNews:TestArticleUrl\" not found in appsettings.");
-                internal static bool UseTestLandingPageFile => !_useProductionSettings && bool.Parse(_config["Testing:NewsProvider:GetNews:UseTestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsProvider:GetNews:UseTestArticleUrl\" not found in appsettings."));
+                internal static string TestLandingPageFile => _config["Testing:NewsStoryProvider:GetNews:TestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsStoryProvider:GetNews:TestArticleUrl\" not found in appsettings.");
+                internal static bool UseTestLandingPageFile => !_useProductionSettings && bool.Parse(_config["Testing:NewsStoryProvider:GetNews:UseTestLandingPageFile"] ?? throw new KeyNotFoundException("\"Testing:NewsStoryProvider:GetNews:UseTestArticleUrl\" not found in appsettings."));
             }
         }
     }
@@ -142,6 +150,6 @@ internal static class Configuration
         UseProductionSettings = _useProductionSettings, CnnBaseUrl,
         Logging.LogLevel, Logging.LogDirectory, Logging.LogToFile,
         PythonSettings.PythonExePath, PythonSettings.GetNewsFromCnnScript,
-        TestSettings.NewsProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsProvider.GetNews.TestLandingPageFile
+        TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile
     });
 }

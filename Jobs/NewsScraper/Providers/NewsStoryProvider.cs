@@ -30,8 +30,8 @@ internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger
             scriptPath += $" --db-path {Configuration.Database.NewsScraperJobRaw.DatabaseFilePath}";
 
         // FOR TESTING: Append test landing page file argument
-        bool useTestLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.UseTestLandingPageFile;
-        string testLandingPageFile = Configuration.TestSettings.NewsProvider.GetNews.TestLandingPageFile;
+        bool useTestLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile;
+        string testLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile;
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
         
