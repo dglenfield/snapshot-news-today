@@ -5,6 +5,8 @@ using NewsScraper.Data;
 using NewsScraper.Data.Providers;
 using NewsScraper.Processors;
 using NewsScraper.Providers;
+using DbSettings = NewsScraper.Configuration.Database;
+using LogSettings = NewsScraper.Configuration.Logging;
 
 namespace NewsScraper;
 
@@ -27,44 +29,44 @@ public class Program
     public static async Task<int> Main(string[] args)
     {
         Console.Title = "News Scraper";
-        var logger = new Logger(Configuration.Logging.ApplicationLogLevel, Configuration.Logging.LogDirectory, Configuration.Logging.LogToFile);
+        var logger = new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, LogSettings.LogToFile);
         int returnCode = 0;
 
         try
         {
             logger.Log("********** Application started **********");
-
             // Set up dependency injection
             var host = Host.CreateDefaultBuilder()
                 .ConfigureServices((context, services) =>
                 {
-                    services.AddSingleton<Logger>(provider =>
-                        new Logger(
-                            Configuration.Logging.ApplicationLogLevel,
-                            Configuration.Logging.LogDirectory,
-                            Configuration.Logging.LogToFile));
-                    services.AddTransient<NewsProvider>();
-                    services.AddTransient<ScrapingProcessor>();
-                    services.AddTransient<ScraperDataProvider>(provider =>
-                        new ScraperDataProvider(
-                            Configuration.Database.NewsScraperJob.DatabaseFilePath,
-                            Configuration.Database.NewsScraperJob.DatabaseVersion,
+                    // Logging
+                    services.AddSingleton<Logger>(
+                        provider => new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, LogSettings.LogToFile));
+                    // Data providers and repositories
+                    services.AddTransient<ScraperJobDataProvider>(
+                        provider => new ScraperJobDataProvider(
+                            DbSettings.NewsScraperJob.DatabaseFilePath,
+                            DbSettings.NewsScraperJob.DatabaseVersion,
+                            provider.GetRequiredService<Logger>()));
+                    services.AddTransient<ScraperJobRawDataProvider>(
+                        provider => new ScraperJobRawDataProvider(
+                            DbSettings.NewsScraperJobRaw.DatabaseFilePath,
+                            DbSettings.NewsScraperJobRaw.DatabaseVersion,
                             provider.GetRequiredService<Logger>()));
                     services.AddTransient<ScrapeJobRunRepository>();
-                    services.AddTransient<ScraperRawDataProvider>(provider =>
-                        new ScraperRawDataProvider(
-                            Configuration.Database.NewsScraperJobRaw.DatabaseFilePath,
-                            Configuration.Database.NewsScraperJobRaw.DatabaseVersion,
-                            provider.GetRequiredService<Logger>()));
+                    // Processors and other providers
+                    services.AddTransient<ScrapingProcessor>();
+                    services.AddTransient<NewsStoryProvider>();
                 }).Build();
 
             // Ensure the SQLite database is created
-            var scraperDataProvider = host.Services.GetRequiredService<ScraperDataProvider>();
+            var scraperDataProvider = host.Services.GetRequiredService<ScraperJobDataProvider>();
             await scraperDataProvider.CreateDatabaseAsync();
 
+            // Create the raw data database if enabled
             if (Configuration.Database.NewsScraperJobRaw.IsEnabled)
             {
-                var scraperRawDataProvider = host.Services.GetRequiredService<ScraperRawDataProvider>();
+                var scraperRawDataProvider = host.Services.GetRequiredService<ScraperJobRawDataProvider>();
                 await scraperRawDataProvider.CreateDatabaseAsync();
             }
 

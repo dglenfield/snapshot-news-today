@@ -1,6 +1,4 @@
-﻿using Common.Data;
-using Common.Logging;
-using NewsScraper.Data.Providers;
+﻿using Common.Logging;
 using NewsScraper.Enums;
 using NewsScraper.Models;
 using System.ComponentModel;
@@ -10,30 +8,24 @@ using System.Text.Json;
 namespace NewsScraper.Providers;
 
 /// <summary>
-/// Provides methods for scraping news articles and metadata from supported news websites.
+/// Provides methods for scraping news stories from supported news websites.
 /// </summary>
-internal class NewsProvider(Logger logger)
+internal class NewsStoryProvider(Logger logger)
 {
     private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
     private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
 
-    /// <summary>
-    /// Retrieves a set of news article URLs from the specified news website.
-    /// </summary>
-    /// <param name="newsWebsite">The news website to scrape.</param>
-    /// <param name="jobRunId">The ID of the job run associated with this scraping operation.</param>
-    /// <returns>A set of unique article URLs, or null if none found.</returns>
-    public async Task<List<SourceArticle>> GetNewsArticles(NewsWebsite newsWebsite)
+    public async Task<List<SourceNewsStory>> GetNewsStories(NewsWebsite newsWebsite)
     {
         return newsWebsite switch
         {
-            NewsWebsite.CNN => await GetArticlesFromCNN(),
+            NewsWebsite.CNN => await GetFromCNN(),
             NewsWebsite.FoxNews => throw new NotImplementedException("Fox News scraping not yet implemented."),
             _ => throw new NotSupportedException("Unsupported news website."),
         };
     }
 
-    private async Task<List<SourceArticle>> GetArticlesFromCNN()
+    private async Task<List<SourceNewsStory>> GetFromCNN()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
         scriptPath += $" --id {ScrapeJobRun.Id}";
@@ -46,8 +38,8 @@ internal class NewsProvider(Logger logger)
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
         
-        List<SourceArticle> articles = [];
-        var distinctArticles = new HashSet<SourceArticle>();
+        List<SourceNewsStory> articles = [];
+        var distinctNewsStories = new HashSet<SourceNewsStory>();
 
         // Run the Python script and parse its JSON output
         var jsonDocument = await RunPythonScript(scriptPath);
@@ -60,45 +52,47 @@ internal class NewsProvider(Logger logger)
             if (!DateTime.TryParse(jsonElement.GetProperty("publishdate").GetString(), out DateTime publishDate))
                 continue; // Skip if publish date is invalid
 
-            distinctArticles.Add(new()
+            distinctNewsStories.Add(new()
             {
+                Article = new SourceArticle { ArticleUri = uri, PublishDate = publishDate },
                 JobRunId = ScrapeJobRun.Id,
                 SourceName = "CNN",
-                SourceUri = uri,
-                SourceHeadline = jsonElement.GetProperty("headline").GetString(),
-                SourcePublishDate = publishDate
+                StoryHeadline = jsonElement.GetProperty("headline").GetString()
             });
         }
         
-        // Group articles by category and assign category to each article
-        foreach (var grouped in GroupArticlesByCategory([.. distinctArticles]))
-            foreach (SourceArticle article in grouped.Value)
-                article.SourceCategory = grouped.Key;
+        // Group news stories by category and assign category to each article
+        foreach (var grouped in GroupNewsStoriesByCategory([.. distinctNewsStories]))
+            foreach (SourceNewsStory newsStory in grouped.Value)
+                newsStory.Category = grouped.Key;
 
-        return [.. distinctArticles.OrderBy(a => a.SourceCategory).ThenByDescending(a => a.SourcePublishDate)];
+        return [.. distinctNewsStories.OrderBy(a => a.Category).ThenByDescending(a => a.Article?.PublishDate)];
     }
 
     /// <summary>
-    /// Groups a collection of news articles by their category, as determined from the article's source URI path.
+    /// Groups a collection of news stories by their category, as determined from the article's source URI path.
     /// </summary>
     /// <remarks>The category is extracted as the fourth segment of the article's source URI path. If the path
     /// does not contain at least four segments, the article is assigned to the "unknown" category.</remarks>
-    /// <param name="articles">The list of news articles to group. Cannot be null.</param>
-    /// <returns>A dictionary where each key is a category name and the value is a list of articles belonging to that category.
-    /// Articles with an unrecognized or missing category are grouped under the key "unknown".</returns>
-    private Dictionary<string, List<SourceArticle>> GroupArticlesByCategory(List<SourceArticle> articles)
+    /// <param name="stories">The list of news stories to group. Cannot be null.</param>
+    /// <returns>A dictionary where each key is a category name and the value is a list of news stories belonging to that category.
+    /// News stories with an unrecognized or missing category are grouped under the key "unknown".</returns>
+    private Dictionary<string, List<SourceNewsStory>> GroupNewsStoriesByCategory(List<SourceNewsStory> stories)
     {
-        var groupedArticles = new Dictionary<string, List<SourceArticle>>();
-        foreach (SourceArticle article in articles)
+        var groupedStories = new Dictionary<string, List<SourceNewsStory>>();
+        foreach (SourceNewsStory story in stories)
         {
+            if (story.Article?.ArticleUri is null)
+                continue; // Skip if Article or ArticleUri is null
+
             // Category is the 4th segment in path (assuming "/2025/09/28/category/...")
-            string[] segments = article.SourceUri.AbsolutePath.Trim('/').Split('/');
+            string[] segments = story.Article.ArticleUri.AbsolutePath.Trim('/').Split('/');
             string category = segments.Length >= 4 ? segments[3] : "unknown";
-            if (!groupedArticles.ContainsKey(category))
-                groupedArticles[category] = [];
-            groupedArticles[category].Add(article);
+            if (!groupedStories.ContainsKey(category))
+                groupedStories[category] = [];
+            groupedStories[category].Add(story);
         }
-        return groupedArticles;
+        return groupedStories;
     }
 
     /// <summary>

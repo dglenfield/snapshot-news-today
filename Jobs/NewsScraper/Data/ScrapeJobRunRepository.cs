@@ -6,12 +6,17 @@ using System.Data.Common;
 
 namespace NewsScraper.Data;
 
-internal class ScrapeJobRunRepository(ScraperDataProvider dataProvider, Logger logger)
+/// <summary>
+/// Provides methods for creating and updating scrape job run and news story article records.
+/// </summary>
+/// <param name="dataProvider">The data provider used to execute database commands and manage connections for scrape job run and news story article
+/// records.</param>
+/// <param name="logger">The logger used to record errors and operational events during database operations.</param>
+internal class ScrapeJobRunRepository(ScraperJobDataProvider dataProvider, Logger logger)
 {
     public string DatabaseFilePath => _dataProvider.DatabaseFilePath;
 
-    private readonly Logger _logger = logger;
-    private readonly ScraperDataProvider _dataProvider = dataProvider;
+    private readonly ScraperJobDataProvider _dataProvider = dataProvider;
 
     public async Task<long> CreateJobRunAsync()
     {
@@ -22,39 +27,35 @@ internal class ScrapeJobRunRepository(ScraperDataProvider dataProvider, Logger l
         try
         {
             long id = await _dataProvider.InsertAsync(commandText, parameters);
-            if (id == -1)
-                throw new InvalidOperationException("Insert scrape_job_run failed, no row id returned.");
-            return id;
+            return id > 0 ? id : throw new InvalidOperationException("Insert scrape_job_run failed, no row id returned.");
         }
         catch (DbException)
         {
-            _logger.Log("Error inserting record into scrape_job_run.", LogLevel.Error);
+            logger.Log("Error inserting record into scrape_job_run.", LogLevel.Error);
             throw;
         }
     }
 
-    public async Task<long> CreateSourceArticleAsync(SourceArticle sourceArticle)
+    public async Task<long> CreateNewsStoryArticleAsync(SourceNewsStory newsStory)
     {
         string commandText =
-            @"INSERT INTO source_article (job_run_id, source_name, article_uri, headline, publish_date, category)
-            VALUES (@job_run_id, @source_name, @article_uri, @headline, @publish_date, @category);";
+            @"INSERT INTO news_story_article (job_run_id, source_name, article_uri, category, story_headline, original_publish_date)
+            VALUES (@job_run_id, @source_name, @article_uri, @category, @story_headline, @original_publish_date);";
         SqliteParameter[] parameters = [
-            new("@job_run_id", (object?)sourceArticle.JobRunId ?? DBNull.Value),
-            new("@source_name", (object?)sourceArticle.SourceName ?? DBNull.Value),
-            new("@article_uri", (object?)sourceArticle.SourceUri.AbsoluteUri ?? DBNull.Value),
-            new("@headline", (object?)sourceArticle.SourceHeadline ?? DBNull.Value),
-            new("@publish_date", (object?)sourceArticle.SourcePublishDate ?? DBNull.Value),
-            new("@category", (object?)sourceArticle.SourceCategory ?? DBNull.Value)];
+            new("@job_run_id", (object?)newsStory.JobRunId ?? DBNull.Value),
+            new("@source_name", (object?)newsStory.SourceName ?? DBNull.Value),
+            new("@article_uri", (object?)newsStory.Article?.ArticleUri.AbsoluteUri ?? DBNull.Value),
+            new("@category", (object?)newsStory.Category ?? DBNull.Value),
+            new("@story_headline", (object?)newsStory.StoryHeadline ?? DBNull.Value),
+            new("@original_publish_date", (object?)newsStory.Article?.PublishDate ?? DBNull.Value)];
         try
         {
             long id = await _dataProvider.InsertAsync(commandText, parameters);
-            if (id == -1)
-                throw new InvalidOperationException("Insert source_article failed, no row id returned.");
-            return id;
+            return id > 0 ? id : throw new InvalidOperationException("Insert news_story_article failed, no row id returned.");
         }
         catch (DbException)
         {
-            _logger.Log("Error inserting record into source_article.", LogLevel.Error);
+            logger.Log("Error inserting record into news_story_article.", LogLevel.Error);
             throw;
         }
     }
@@ -63,11 +64,11 @@ internal class ScrapeJobRunRepository(ScraperDataProvider dataProvider, Logger l
     {
         string commandText =
             @"UPDATE scrape_job_run
-            SET source_articles_found = @source_articles_found, scrape_end = @scrape_end, success = @success, error_message = @error_message
+            SET news_stories_found = @news_stories_found, scrape_end = @scrape_end, success = @success, error_message = @error_message
             WHERE id = @id;";
         SqliteParameter[] parameters = [
             new("@id", ScrapeJobRun.Id),
-            new("@source_articles_found", (object?)ScrapeJobRun.SourceArticlesFound ?? DBNull.Value),
+            new("@news_stories_found", (object?)ScrapeJobRun.NewsStoriesFound ?? DBNull.Value),
             new("@scrape_end", (object?)ScrapeJobRun.ScrapeEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@success", ScrapeJobRun.Success.HasValue ? (ScrapeJobRun.Success.Value ? 1 : 0) : (object?)DBNull.Value),
             new("@error_message", (object?)ScrapeJobRun.ErrorMessage ?? DBNull.Value)];
@@ -79,7 +80,7 @@ internal class ScrapeJobRunRepository(ScraperDataProvider dataProvider, Logger l
         }
         catch (DbException)
         {
-            _logger.Log("Error updating record in scrape_job_run.", LogLevel.Error);
+            logger.Log("Error updating record in scrape_job_run.", LogLevel.Error);
             throw;
         }
     }

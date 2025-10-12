@@ -57,11 +57,12 @@ internal static class Configuration
     /// application's configuration source.</remarks>
     internal static class Logging
     {
-        internal static LogLevel ApplicationLogLevel 
+        internal static string LogDirectory => _config["Logging:LogToFile:Directory"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Directory\" not found in appsettings.");
+        internal static LogLevel LogLevel 
         { 
             get 
             {
-                var logLevelSetting = _config["Logging:ApplicationLogLevel:Default"] ?? throw new KeyNotFoundException("\"Logging:ApplicationLogLevel:Default\" not found in appsettings.");
+                var logLevelSetting = _config["Logging:LogLevel:Default"] ?? throw new KeyNotFoundException("\"Logging:LogLevel:Default\" not found in appsettings.");
                 return logLevelSetting.ToLower() switch
                 {
                     "debug" => LogLevel.Debug,
@@ -72,7 +73,6 @@ internal static class Configuration
                 };
             }
         }
-        internal static string LogDirectory => _config["Logging:LogToFile:Directory"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Directory\" not found in appsettings.");
         internal static bool LogToFile => bool.Parse(_config["Logging:LogToFile:Default"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Default\" not found in appsettings."));
     }
 
@@ -140,7 +140,7 @@ internal static class Configuration
     internal static string ToJson() => JsonSerializer.Serialize(new
     {
         UseProductionSettings = _useProductionSettings, CnnBaseUrl,
-        Logging.ApplicationLogLevel, Logging.LogDirectory, Logging.LogToFile,
+        Logging.LogLevel, Logging.LogDirectory, Logging.LogToFile,
         PythonSettings.PythonExePath, PythonSettings.GetNewsFromCnnScript,
         TestSettings.NewsProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsProvider.GetNews.TestLandingPageFile
     });
