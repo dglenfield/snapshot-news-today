@@ -10,11 +10,8 @@ namespace NewsScraper.Providers;
 /// <summary>
 /// Provides methods for scraping news stories from supported news websites.
 /// </summary>
-internal class NewsStoryProvider(Logger logger)
+internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
 {
-    private readonly string _cnnBaseUrl = Configuration.CnnBaseUrl;
-    private readonly string _pythonExePath = Configuration.PythonSettings.PythonExePath;
-
     public async Task<List<SourceNewsStory>> GetNewsStories(NewsWebsite newsWebsite)
     {
         return newsWebsite switch
@@ -45,7 +42,7 @@ internal class NewsStoryProvider(Logger logger)
         var jsonDocument = await RunPythonScript(scriptPath);
         foreach (var jsonElement in jsonDocument.RootElement.EnumerateArray())
         {
-            Uri.TryCreate($"{_cnnBaseUrl}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
+            Uri.TryCreate($"{cnnBaseUrl}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
             if (uri is null)
                 continue; // Skip if URI is invalid
 
@@ -105,7 +102,7 @@ internal class NewsStoryProvider(Logger logger)
     /// <exception cref="InvalidOperationException">Thrown if the Python process cannot be started.</exception>
     private async Task<JsonDocument> RunPythonScript(string scriptPath)
     {
-        var pythonScript = new ProcessStartInfo(_pythonExePath)
+        var pythonScript = new ProcessStartInfo(pythonExePath)
         {
             Arguments = scriptPath,
             UseShellExecute = false,

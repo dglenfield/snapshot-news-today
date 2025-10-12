@@ -56,7 +56,10 @@ public class Program
                     services.AddTransient<ScrapeJobRunRepository>();
                     // Processors and other providers
                     services.AddTransient<ScrapingProcessor>();
-                    services.AddTransient<NewsStoryProvider>();
+                    services.AddTransient<NewsStoryProvider>(
+                        provider => new NewsStoryProvider(
+                            Configuration.CnnBaseUrl, Configuration.PythonSettings.PythonExePath,
+                        provider.GetRequiredService<Logger>()));
                 }).Build();
 
             // Ensure the SQLite database is created
