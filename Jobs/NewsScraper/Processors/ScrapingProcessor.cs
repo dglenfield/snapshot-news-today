@@ -15,7 +15,8 @@ namespace NewsScraper.Processors;
 /// of articles retrieved and their content.</remarks>
 /// <param name="logger">The logger instance used to record informational and warning messages during the scraping process.</param>
 /// <param name="newsStoryProvider">The news provider used to retrieve articles from the target news website.</param>
-internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvider, ScrapeJobRunRepository scrapeJobRunRepository)
+internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvider, 
+    NewsArticleProvider articleProvider, ScrapeJobRunRepository scrapeJobRunRepository)
 {
     public async Task Run()
     {
@@ -38,6 +39,20 @@ internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvi
                 // Save each article to the database
                 newsStory.Id = await scrapeJobRunRepository.CreateNewsStoryArticleAsync(newsStory);
                 logger.Log(newsStory.ToString(), LogLevel.Debug, logAsRawMessage: true);
+            }
+
+            foreach (SourceNewsStory newsStory in newsStories)
+            {
+                if (newsStory.Article?.ArticleUri is null)
+                {
+                    logger.Log($"Skipping article with missing URI for story ID {newsStory.Id}", LogLevel.Warning);
+                    continue;
+                }
+
+                // Scrape and save the full article content
+                newsStory.Article = await articleProvider.GetArticle(newsStory.Article.ArticleUri);
+                logger.Log(newsStory.ToString(), LogLevel.Debug, logAsRawMessage: true);
+                break; // TEMPORARY: Process only the first article for testing
             }
 
             ScrapeJobRun.NewsStoriesFound = newsStories.Count;
