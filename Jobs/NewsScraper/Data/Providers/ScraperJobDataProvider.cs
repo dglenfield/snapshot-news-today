@@ -1,5 +1,4 @@
 ﻿using Common.Logging;
-using Microsoft.Data.Sqlite;
 using System.Data.Common;
 
 namespace NewsScraper.Data.Providers;
@@ -19,6 +18,8 @@ namespace NewsScraper.Data.Providers;
 public class ScraperJobDataProvider(string databaseFilePath, string databaseVersion, Logger logger) 
     : BaseDataProvider(databaseFilePath, databaseVersion, logger)
 {
+    private readonly Logger _logger = logger;
+
     public async Task CreateDatabaseAsync()
     {
         bool overwriteFlag = _databaseVersion.EndsWith("-overwrite", StringComparison.OrdinalIgnoreCase);
@@ -40,17 +41,17 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
         try
         {
             // Create the scrape_job_run table if it doesn't exist
-            string commandText =
-                @"CREATE TABLE IF NOT EXISTS scrape_job_run (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source_name TEXT NOT NULL,
-                source_uri TEXT NOT NULL,
-                news_stories_found INTEGER,
-                news_articles_scraped INTEGER,
-                scrape_start TEXT NOT NULL DEFAULT (datetime('now')),
-                scrape_end TEXT,
-                success INTEGER,
-                error_message TEXT);";
+            string commandText = @"
+                CREATE TABLE IF NOT EXISTS scrape_job_run (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source_name TEXT NOT NULL,
+                    source_uri TEXT NOT NULL,
+                    news_stories_found INTEGER,
+                    news_articles_scraped INTEGER,
+                    scrape_start TEXT NOT NULL DEFAULT (datetime('now')),
+                    scrape_end TEXT,
+                    success INTEGER,
+                    error_message TEXT);";
             await ExecuteNonQueryAsync(commandText);
         }
         catch (DbException)
@@ -65,24 +66,24 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
         try
         {
             // Create the news_story_article table if it doesn't exist
-            string commandText =
-                @"CREATE TABLE IF NOT EXISTS news_story_article (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_run_id INTEGER, -- Foreign key to link to scrape_news_job_run table
-                create_date TEXT NOT NULL DEFAULT (datetime('now')),
-                source_name TEXT NOT NULL, 
-                article_uri TEXT NOT NULL UNIQUE, -- article_uri is unique to prevent duplicate articles
-                category TEXT,
-                article_headline TEXT,
-                story_headline TEXT,
-                author TEXT,
-                original_publish_date TEXT,
-                last_updated_date TEXT,
-                is_paywalled INTEGER,
-                article_content TEXT,
-                success INTEGER,
-                error_message TEXT,
-                FOREIGN KEY(job_run_id) REFERENCES scrape_job_run(id) ON DELETE CASCADE);";
+            string commandText = @"
+                CREATE TABLE IF NOT EXISTS news_story_article (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_run_id INTEGER, -- Foreign key to link to scrape_news_job_run table
+                    create_date TEXT NOT NULL DEFAULT (datetime('now')),
+                    source_name TEXT NOT NULL, 
+                    article_uri TEXT NOT NULL UNIQUE, -- article_uri is unique to prevent duplicate articles
+                    category TEXT,
+                    article_headline TEXT,
+                    story_headline TEXT,
+                    author TEXT,
+                    original_publish_date TEXT,
+                    last_updated_date TEXT,
+                    is_paywalled INTEGER,
+                    article_content TEXT,
+                    success INTEGER,
+                    error_message TEXT,
+                    FOREIGN KEY(job_run_id) REFERENCES scrape_job_run(id) ON DELETE CASCADE);";
             await ExecuteNonQueryAsync(commandText);
         }
         catch (DbException)

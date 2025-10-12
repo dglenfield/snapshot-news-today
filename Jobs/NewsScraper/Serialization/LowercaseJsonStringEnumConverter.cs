@@ -23,17 +23,11 @@ public class LowercaseJsonStringEnumConverter : JsonConverterFactory
     {
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var enumText = reader.GetString();
-            if (enumText == null)
-            {
-                throw new JsonException("Enum value cannot be null.");
-            }
+            var enumText = reader.GetString() ?? throw new JsonException("Enum value cannot be null.");
 
             // Match case-insensitively
             if (Enum.TryParse(enumText, true, out T value))
-            {
                 return value;
-            }
 
             throw new JsonException($"Unable to convert \"{enumText}\" to Enum \"{typeof(T)}\".");
         }

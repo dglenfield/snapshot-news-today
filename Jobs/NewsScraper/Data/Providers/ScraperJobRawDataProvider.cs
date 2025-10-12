@@ -14,6 +14,8 @@ namespace NewsScraper.Data.Providers;
 internal class ScraperJobRawDataProvider(string databaseFilePath, string databaseVersion, Logger logger)
     : BaseDataProvider(databaseFilePath, databaseVersion, logger)
 {
+    private readonly Logger _logger = logger;
+
     public async Task CreateDatabaseAsync()
     {
         bool overwriteFlag = _databaseVersion.EndsWith("-overwrite", StringComparison.OrdinalIgnoreCase);
@@ -34,11 +36,11 @@ internal class ScraperJobRawDataProvider(string databaseFilePath, string databas
         try
         {
             // Create the scrape_raw_job_run table if it doesn't exist
-            string commandText =
-                @"CREATE TABLE IF NOT EXISTS scrape_raw_job_run (
-                id INTEGER NOT NULL PRIMARY KEY,
-                scraped_on TEXT NOT NULL DEFAULT (datetime('now')),
-                raw_content TEXT);";
+            string commandText = @"
+                CREATE TABLE IF NOT EXISTS scrape_raw_job_run (
+                    id INTEGER NOT NULL PRIMARY KEY,
+                    scraped_on TEXT NOT NULL DEFAULT (datetime('now')),
+                    raw_content TEXT);";
             await ExecuteNonQueryAsync(commandText);
         }
         catch (DbException)

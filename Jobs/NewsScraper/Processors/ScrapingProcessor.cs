@@ -16,13 +16,14 @@ namespace NewsScraper.Processors;
 /// <param name="logger">The logger instance used to record informational and warning messages during the scraping process.</param>
 /// <param name="newsStoryProvider">The news provider used to retrieve articles from the target news website.</param>
 internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvider, 
-    NewsArticleProvider articleProvider, ScrapeJobRunRepository scrapeJobRunRepository, NewsStoryArticleRepository articleRepository)
+    NewsArticleProvider articleProvider, ScrapeJobRunRepository scrapeJobRunRepository, 
+    NewsStoryArticleRepository articleRepository)
 {
     public async Task Run()
     {
         NewsWebsite targetSite = NewsWebsite.CNN;
         ScrapeJobRun.SourceName = targetSite.ToString(); 
-        ScrapeJobRun.SourceUri = new Uri("https://www.cnn.com");
+        ScrapeJobRun.SourceUri = new Uri(Configuration.CnnBaseUrl);
 
         try
         {

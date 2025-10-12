@@ -36,10 +36,13 @@ internal class ScrapeJobRunRepository(ScraperJobDataProvider dataProvider, Logge
 
     public async Task UpdateJobRunAsync()
     {
-        string commandText =
-            @"UPDATE scrape_job_run
-            SET news_stories_found = @news_stories_found, news_articles_scraped = @news_articles_scraped, 
-                scrape_end = @scrape_end, success = @success, error_message = @error_message
+        string commandText = @"
+            UPDATE scrape_job_run
+            SET news_stories_found = @news_stories_found, 
+                news_articles_scraped = @news_articles_scraped, 
+                scrape_end = @scrape_end, 
+                success = @success, 
+                error_message = @error_message
             WHERE id = @id;";
         SqliteParameter[] parameters = [
             new("@id", ScrapeJobRun.Id),

@@ -18,7 +18,6 @@ public abstract class BaseDataProvider(string databaseFilePath, string databaseV
 {
     protected readonly string _databaseVersion = string.IsNullOrWhiteSpace(databaseVersion) 
         ? throw new ArgumentNullException(nameof(databaseVersion)) : databaseVersion;
-    protected readonly Logger _logger = logger;
 
     /// <summary>
     /// Asynchronously retrieves the current version string of the database.
@@ -47,10 +46,10 @@ public abstract class BaseDataProvider(string databaseFilePath, string databaseV
         try
         {
             // Create the database_info table if it doesn't exist
-            await ExecuteNonQueryAsync(
-                @"CREATE TABLE IF NOT EXISTS database_info (
-                version TEXT NOT NULL PRIMARY KEY, 
-                created_on TEXT NOT NULL DEFAULT (datetime('now')));");
+            await ExecuteNonQueryAsync(@"
+                CREATE TABLE IF NOT EXISTS database_info (
+                    version TEXT NOT NULL PRIMARY KEY, 
+                    created_on TEXT NOT NULL DEFAULT (datetime('now')));");
 
             // Insert database_info record with database version
             string commandText = "PRAGMA foreign_keys = ON; INSERT INTO database_info (version) VALUES (@version);";
@@ -61,7 +60,7 @@ public abstract class BaseDataProvider(string databaseFilePath, string databaseV
         }
         catch (DbException)
         {
-            _logger.Log($"Error creating the database_info table.", LogLevel.Error);
+            logger.Log($"Error creating the database_info table.", LogLevel.Error);
             throw;
         }
     }

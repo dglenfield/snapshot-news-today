@@ -12,11 +12,11 @@ internal class NewsStoryArticleRepository(ScraperJobDataProvider dataProvider, L
 
     public async Task<long> CreateNewsStoryArticleAsync(SourceNewsStory newsStory)
     {
-        string commandText =
-            @"INSERT INTO news_story_article 
-            (job_run_id, source_name, article_uri, category, story_headline, original_publish_date)
-            VALUES 
-            (@job_run_id, @source_name, @article_uri, @category, @story_headline, @original_publish_date);";
+        string commandText = @"
+            INSERT INTO news_story_article (
+                job_run_id, source_name, article_uri, category, story_headline, original_publish_date)
+            VALUES (
+                @job_run_id, @source_name, @article_uri, @category, @story_headline, @original_publish_date);";
         SqliteParameter[] parameters = [
             new("@job_run_id", (object?)newsStory.JobRunId ?? DBNull.Value),
             new("@source_name", (object?)newsStory.SourceName ?? DBNull.Value),
@@ -40,8 +40,8 @@ internal class NewsStoryArticleRepository(ScraperJobDataProvider dataProvider, L
     {
         if (newsStory.Id == 0)
             throw new ArgumentException("News story must have a valid Id to update.", nameof(newsStory));
-        string commandText =
-            @"UPDATE news_story_article
+        string commandText = @"
+            UPDATE news_story_article
             SET article_headline = @article_headline, 
                 author = @author,
                 original_publish_date = @original_publish_date, 

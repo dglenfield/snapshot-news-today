@@ -3,7 +3,7 @@
 /// <summary>
 /// Supported news websites for scraping.
 /// </summary>
-internal enum NewsWebsite
+public enum NewsWebsite
 {
     CNN,
     FoxNews

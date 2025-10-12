@@ -147,9 +147,43 @@ internal static class Configuration
     /// <returns>A JSON-formatted string representing the current values of the configuration settings.</returns>
     internal static string ToJson() => JsonSerializer.Serialize(new
     {
-        UseProductionSettings = _useProductionSettings, CnnBaseUrl,
-        Logging.LogLevel, Logging.LogDirectory, Logging.LogToFile,
-        PythonSettings.PythonExePath, PythonSettings.GetNewsFromCnnScript,
-        TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile, TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile
-    });
+        CnnBaseUrl,
+        NewsScraperJob = new
+        {
+            Database.NewsScraperJob.DatabaseVersion,
+            Database.NewsScraperJob.DirectoryPath,
+            Database.NewsScraperJob.FileName,
+            Database.NewsScraperJob.DatabaseFilePath
+        },
+        NewsScraperJobRaw = new
+        {
+            Database.NewsScraperJobRaw.IsEnabled,
+            Database.NewsScraperJobRaw.DirectoryPath,
+            Database.NewsScraperJobRaw.FileName,
+            Database.NewsScraperJobRaw.DatabaseFilePath
+        },
+        Logging = new
+        {
+            Logging.LogLevel,
+            Logging.LogDirectory,
+            Logging.LogToFile
+        },
+        PythonSettings = new
+        {
+            PythonSettings.PythonExePath,
+            PythonSettings.GetNewsFromCnnScript
+        },
+        TestSettings = new
+        {
+            NewsStoryProvider = new
+            {
+                GetNews = new
+                {
+                    TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile,
+                    TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile
+                }
+            }
+        },
+        UseProductionSettings = _useProductionSettings
+    }, new JsonSerializerOptions { WriteIndented = true });
 }
