@@ -25,27 +25,51 @@ internal class ScraperJobRawDataProvider(string databaseFilePath, string databas
             await DeleteAsync(); // Delete existing database if overwrite flag is set
 
         await CreateDatabaseInfoTable();
-        await CreateScrapeRawJobRunTable();
+        await CreateNewsSourceScrapeTable();
+        await CreateNewsArticleScrapeTable();
         _logger.Log($"Database '{_fileName}' created successfully at '{_directoryPath}'.", LogLevel.Success);
     }
 
     #region Table Creation
 
-    private async Task CreateScrapeRawJobRunTable()
+    private async Task CreateNewsSourceScrapeTable()
     {
         try
         {
-            // Create the scrape_raw_job_run table if it doesn't exist
+            // Create the news_source_scrape table if it doesn't exist
             string commandText = @"
-                CREATE TABLE IF NOT EXISTS scrape_raw_job_run (
-                    id INTEGER NOT NULL PRIMARY KEY,
+                CREATE TABLE IF NOT EXISTS news_source_scrape (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scrape_job_run_id INTEGER NOT NULL,
                     scraped_on TEXT NOT NULL DEFAULT (datetime('now')),
                     raw_content TEXT);";
             await ExecuteNonQueryAsync(commandText);
         }
         catch (DbException)
         {
-            _logger.Log($"Error creating the scrape_raw_job_run table.", LogLevel.Error);
+            _logger.Log($"Error creating the news_source_scrape table.", LogLevel.Error);
+            throw;
+        }
+    }
+
+    private async Task CreateNewsArticleScrapeTable()
+    {
+        try
+        {
+            // Create the news_article_scrape table if it doesn't exist
+            string commandText = @"
+                CREATE TABLE IF NOT EXISTS news_article_scrape (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scrape_job_run_id INTEGER NOT NULL,
+                    news_story_article_id INTEGER NOT NULL,
+                    scraped_on TEXT NOT NULL DEFAULT (datetime('now')),
+                    article_uri TEXT NOT NULL,
+                    raw_content TEXT);";
+            await ExecuteNonQueryAsync(commandText);
+        }
+        catch (DbException)
+        {
+            _logger.Log($"Error creating the news_article_scrape table.", LogLevel.Error);
             throw;
         }
     }

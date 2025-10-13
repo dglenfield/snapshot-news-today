@@ -12,7 +12,7 @@ namespace NewsScraper.Data;
 /// <param name="dataProvider">The data provider used to execute database commands and manage connections for scrape job run and news story article
 /// records.</param>
 /// <param name="logger">The logger used to record errors and operational events during database operations.</param>
-internal class ScrapeJobRunRepository(ScraperJobDataProvider dataProvider, Logger logger)
+internal class ScraperJobRunRepository(ScraperJobDataProvider dataProvider, Logger logger)
 {
     public string DatabaseFilePath => dataProvider.DatabaseFilePath;
 

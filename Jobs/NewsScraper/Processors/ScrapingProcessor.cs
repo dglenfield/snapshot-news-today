@@ -16,7 +16,7 @@ namespace NewsScraper.Processors;
 /// <param name="logger">The logger instance used to record informational and warning messages during the scraping process.</param>
 /// <param name="newsStoryProvider">The news provider used to retrieve articles from the target news website.</param>
 internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvider, 
-    NewsArticleProvider articleProvider, ScrapeJobRunRepository scrapeJobRunRepository, 
+    NewsArticleProvider articleProvider, ScraperJobRunRepository scrapeJobRunRepository, 
     NewsStoryArticleRepository articleRepository)
 {
     public async Task Run()
@@ -51,7 +51,7 @@ internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvi
                 }
 
                 // Scrape and save the full article content
-                newsStory.Article = await articleProvider.GetArticle(newsStory.Article.ArticleUri);
+                newsStory.Article = await articleProvider.GetArticle(newsStory.Article.ArticleUri, newsStory.Id);
                 if (!await articleRepository.UpdateNewsStoryArticleAsync(newsStory))
                     logger.Log($"Failed to update article content for story ID {newsStory.Id}", LogLevel.Warning);
                 else

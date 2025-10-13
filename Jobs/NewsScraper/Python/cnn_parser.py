@@ -103,7 +103,7 @@ def update_job_run(db_path, job_id, raw_output):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO scrape_raw_job_run (raw_content, id) VALUES (?, ?);",
+        "INSERT INTO news_source_scrape (raw_content, scrape_job_run_id) VALUES (?, ?);",
         (raw_output, job_id)
     )
     conn.commit()
