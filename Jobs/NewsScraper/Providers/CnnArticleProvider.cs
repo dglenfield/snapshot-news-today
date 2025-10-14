@@ -7,9 +7,9 @@ using System.Text.Json;
 
 namespace NewsScraper.Providers;
 
-internal class NewsArticleProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
+internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
 {
-    public async Task<List<SourceArticle>> GetFromCnn()
+    public async Task<List<SourceArticle>> GetArticles()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
         scriptPath += $" --id {ScrapeJobRun.Id}";

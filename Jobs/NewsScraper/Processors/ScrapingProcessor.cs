@@ -6,7 +6,7 @@ using NewsScraper.Providers;
 
 namespace NewsScraper.Processors;
 
-internal class ScrapingProcessor(Logger logger, NewsArticleProvider articleProvider, 
+internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvider, 
     ScraperJobRunRepository scrapeJobRunRepository, NewsArticleRepository articleRepository)
 {
     public async Task Run()
@@ -21,7 +21,7 @@ internal class ScrapingProcessor(Logger logger, NewsArticleProvider articleProvi
             ScrapeJobRun.Id = await scrapeJobRunRepository.CreateJobRunAsync();
 
             // Get current news articles from CNN
-            List<SourceArticle> newsArticles = await articleProvider.GetFromCnn();
+            List<SourceArticle> newsArticles = await articleProvider.GetArticles();
             
             // Log retrieved news articles
             logger.Log($"Total news articles retrieved from {targetSite}: {newsArticles.Count}", LogLevel.Debug);
