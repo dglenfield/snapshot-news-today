@@ -34,21 +34,6 @@ internal static class Configuration
             internal static string FileName => _config["Database:NewsScraperJob:FileName"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJob:FileName\" not found in appsettings.");
             internal static string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
         }
-        internal static class NewsScraperJobRaw
-        {
-            /// <summary>
-            /// Gets the configured version string of the database as specified in the application settings.
-            /// </summary>
-            /// <remarks>A value followed by -overwrite will delete any existing database and create a new one. 
-            /// Use this option with caution as it will result in data loss. Only intended for development or 
-            /// testing scenarios. <para>If the key is not found in the configuration, 
-            /// a <see cref="KeyNotFoundException"/> is thrown.</para></remarks>
-            internal static string DatabaseVersion => _config["Database:NewsScraperJobRaw:DatabaseVersion"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:DatabaseVersion\" not found in appsettings.");
-            internal static string DirectoryPath => _config["Database:NewsScraperJobRaw:DirectoryPath"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:DirectoryPath\" not found in appsettings.");
-            internal static string FileName => _config["Database:NewsScraperJobRaw:FileName"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:FileName\" not found in appsettings.");
-            internal static string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
-            internal static bool IsEnabled => bool.Parse(_config["Database:NewsScraperJobRaw:IsEnabled"] ?? throw new KeyNotFoundException("\"Database:NewsScraperJobRaw:IsEnabled\" not found in appsettings."));
-        }
     }
 
     /// <summary>
@@ -149,13 +134,6 @@ internal static class Configuration
             Database.NewsScraperJob.DirectoryPath,
             Database.NewsScraperJob.FileName,
             Database.NewsScraperJob.DatabaseFilePath
-        },
-        NewsScraperJobRaw = new
-        {
-            Database.NewsScraperJobRaw.IsEnabled,
-            Database.NewsScraperJobRaw.DirectoryPath,
-            Database.NewsScraperJobRaw.FileName,
-            Database.NewsScraperJobRaw.DatabaseFilePath
         },
         Logging = new
         {

@@ -48,13 +48,7 @@ public class Program
                             DbSettings.NewsScraperJob.DatabaseFilePath,
                             DbSettings.NewsScraperJob.DatabaseVersion,
                             provider.GetRequiredService<Logger>()));
-                    services.AddTransient<ScraperJobRawDataProvider>(
-                        provider => new ScraperJobRawDataProvider(
-                            DbSettings.NewsScraperJobRaw.DatabaseFilePath,
-                            DbSettings.NewsScraperJobRaw.DatabaseVersion,
-                            provider.GetRequiredService<Logger>()));
                     services.AddTransient<ScraperJobRunRepository>();
-                    services.AddTransient<ScraperJobRawRepository>();
                     services.AddTransient<NewsArticleRepository>();
                     // Processors and other providers
                     services.AddTransient<ScrapingProcessor>();
@@ -68,13 +62,6 @@ public class Program
             // Ensure the SQLite database is created
             var scraperDataProvider = host.Services.GetRequiredService<ScraperJobDataProvider>();
             await scraperDataProvider.CreateDatabaseAsync();
-
-            // Create the raw data database if enabled
-            if (Configuration.Database.NewsScraperJobRaw.IsEnabled)
-            {
-                var scraperRawDataProvider = host.Services.GetRequiredService<ScraperJobRawDataProvider>();
-                await scraperRawDataProvider.CreateDatabaseAsync();
-            }
 
             // Resolve and run the main service
             var processor = host.Services.GetRequiredService<ScrapingProcessor>();

@@ -1,11 +1,10 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
-using NewsScraper.Data;
 using NewsScraper.Models;
 
 namespace NewsScraper.Providers;
 
-internal class NewsArticleProvider(ScraperJobRawRepository scraperJobRawRepository, Logger logger)
+internal class NewsArticleProvider(Logger logger)
 {
     public async Task GetArticle(SourceArticle article)
     {
@@ -31,26 +30,7 @@ internal class NewsArticleProvider(ScraperJobRawRepository scraperJobRawReposito
             htmlDoc.Load(testArticleFile);
         }
         else
-        {
             htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(article.ArticleUri.AbsoluteUri));
-            // Strip out tags
-            htmlDoc.DocumentNode.Descendants("script").ToList().ForEach(n => n.Remove());
-            htmlDoc.DocumentNode.Descendants("link").ToList().ForEach(n => n.Remove());
-            htmlDoc.DocumentNode.Descendants("style").ToList().ForEach(n => n.Remove());
-            htmlDoc.DocumentNode.Descendants("meta").ToList().ForEach(n => n.Remove());
-            htmlDoc.DocumentNode.Descendants("footer").ToList().ForEach(n => n.Remove());
-            htmlDoc.DocumentNode.Descendants("header").ToList().ForEach(n => n.Remove());
-            htmlDoc.DocumentNode.Descendants("svg").ToList().ForEach(n => n.Remove());
-            // Normalize whitespace in the HTML:
-            htmlDoc.DocumentNode.InnerHtml = System.Text.RegularExpressions.Regex.Replace(htmlDoc.DocumentNode.InnerHtml, @"\s{2,}", " ");
-            // Save a copy of the raw HTML for debugging if enabled
-            if (Configuration.Database.NewsScraperJobRaw.IsEnabled)
-            {
-                string rawHtml = htmlDoc.DocumentNode.OuterHtml;
-                await scraperJobRawRepository.CreateNewsArticleScrapeAsync(article.Id, article.ArticleUri, rawHtml);
-                logger.Log("Raw HTML content saved to database.", LogLevel.Info);
-            }
-        }
         
         // Extract publish date from data-first-publish attribute
         var timestampNode = htmlDoc.DocumentNode.SelectSingleNode("//span[contains(@class, 'timestamp__time-since')]");

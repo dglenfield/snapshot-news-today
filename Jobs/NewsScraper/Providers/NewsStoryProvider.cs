@@ -26,8 +26,6 @@ internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
         scriptPath += $" --id {ScrapeJobRun.Id}";
-        if (Configuration.Database.NewsScraperJobRaw.IsEnabled)
-            scriptPath += $" --db-path {Configuration.Database.NewsScraperJobRaw.DatabaseFilePath}";
 
         // FOR TESTING: Append test landing page file argument
         bool useTestLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile;

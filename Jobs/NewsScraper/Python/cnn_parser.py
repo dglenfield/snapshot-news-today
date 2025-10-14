@@ -31,8 +31,8 @@ def main():
 
     # Get the cleaned HTML back as a string, Remove extra whitespace, and save to DB
     cleaned_html = re.sub(r'\s+', ' ', str(soup))
-    if args.db_path:
-        update_job_run(args.db_path, args.id, cleaned_html)
+    #if args.db_path:
+        #update_job_run(args.db_path, args.id, cleaned_html)
 
     # Match article links (e.g., /2025/09/26/...)
     pattern = re.compile(r'^/\d{4}/\d{2}/\d{2}')
