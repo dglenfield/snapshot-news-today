@@ -12,12 +12,22 @@ public class SourceArticle
 {
     public Uri ArticleUri { get; set; } = default!;
     public string? Author { get; set; }
+    public string? Category
+    {
+        get;
+        // If the value is exactly two characters long, it is converted to uppercase (e.g., "us" becomes "US").
+        // Otherwise, only the first character is capitalized (e.g., "business" becomes "Business").
+        set => field = string.IsNullOrEmpty(value) ? value
+            : (value.Length == 2 ? value.ToUpper() : char.ToUpper(value[0]) + value.Substring(1));
+    }
     public List<string> ContentParagraphs { get; set; } = [];
     public string? ErrorMessage { get; set; }
     public string? Headline { get; set; }
-    public bool? IsPaywalled { get; set; }
+    public long Id { get; set; }
+    public long JobRunId { get; set; }
     public DateTime? LastUpdatedDate { get; set; }
     public DateTime? PublishDate { get; set; }
+    public string? SourceName { get; set; }
     public bool? Success { get; set; }
 
     [JsonIgnore]

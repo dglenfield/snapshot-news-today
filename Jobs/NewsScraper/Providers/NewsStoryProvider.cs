@@ -12,7 +12,7 @@ namespace NewsScraper.Providers;
 /// </summary>
 internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
 {
-    public async Task<List<SourceNewsStory>> GetNewsStories(NewsWebsite newsWebsite)
+    public async Task<List<SourceArticle>> GetNewsStories(NewsWebsite newsWebsite)
     {
         return newsWebsite switch
         {
@@ -22,7 +22,7 @@ internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger
         };
     }
 
-    private async Task<List<SourceNewsStory>> GetFromCNN()
+    private async Task<List<SourceArticle>> GetFromCNN()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
         scriptPath += $" --id {ScrapeJobRun.Id}";
@@ -35,8 +35,8 @@ internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
         
-        List<SourceNewsStory> articles = [];
-        var distinctNewsStories = new HashSet<SourceNewsStory>();
+        List<SourceArticle> articles = [];
+        var distinctNewsStories = new HashSet<SourceArticle>();
 
         // Run the Python script and parse its JSON output
         var jsonDocument = await RunPythonScript(scriptPath);
@@ -51,19 +51,20 @@ internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger
 
             distinctNewsStories.Add(new()
             {
-                Article = new SourceArticle { ArticleUri = uri, PublishDate = publishDate },
+                ArticleUri = uri, 
+                PublishDate = publishDate,
                 JobRunId = ScrapeJobRun.Id,
                 SourceName = "CNN",
-                StoryHeadline = jsonElement.GetProperty("headline").GetString()
+                Headline = jsonElement.GetProperty("headline").GetString()
             });
         }
         
         // Group news stories by category and assign category to each article
         foreach (var grouped in GroupNewsStoriesByCategory([.. distinctNewsStories]))
-            foreach (SourceNewsStory newsStory in grouped.Value)
+            foreach (SourceArticle newsStory in grouped.Value)
                 newsStory.Category = grouped.Key;
 
-        return [.. distinctNewsStories.OrderBy(a => a.Category).ThenByDescending(a => a.Article?.PublishDate)];
+        return [.. distinctNewsStories.OrderBy(a => a.Category).ThenByDescending(a => a.PublishDate)];
     }
 
     /// <summary>
@@ -74,16 +75,16 @@ internal class NewsStoryProvider(string cnnBaseUrl, string pythonExePath, Logger
     /// <param name="stories">The list of news stories to group. Cannot be null.</param>
     /// <returns>A dictionary where each key is a category name and the value is a list of news stories belonging to that category.
     /// News stories with an unrecognized or missing category are grouped under the key "unknown".</returns>
-    private Dictionary<string, List<SourceNewsStory>> GroupNewsStoriesByCategory(List<SourceNewsStory> stories)
+    private Dictionary<string, List<SourceArticle>> GroupNewsStoriesByCategory(List<SourceArticle> stories)
     {
-        var groupedStories = new Dictionary<string, List<SourceNewsStory>>();
-        foreach (SourceNewsStory story in stories)
+        var groupedStories = new Dictionary<string, List<SourceArticle>>();
+        foreach (SourceArticle story in stories)
         {
-            if (story.Article?.ArticleUri is null)
+            if (story.ArticleUri is null)
                 continue; // Skip if Article or ArticleUri is null
 
             // Category is the 4th segment in path (assuming "/2025/09/28/category/...")
-            string[] segments = story.Article.ArticleUri.AbsolutePath.Trim('/').Split('/');
+            string[] segments = story.ArticleUri.AbsolutePath.Trim('/').Split('/');
             string category = segments.Length >= 4 ? segments[3] : "unknown";
             if (!groupedStories.ContainsKey(category))
                 groupedStories[category] = [];

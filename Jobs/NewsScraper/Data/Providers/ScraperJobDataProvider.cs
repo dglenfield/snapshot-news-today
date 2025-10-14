@@ -30,7 +30,7 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
 
         await CreateDatabaseInfoTable();
         await CreateScrapeJobRunTable();
-        await CreateNewsStoryArticleTable();
+        await CreateNewsArticleTable();
         _logger.Log($"Database '{_fileName}' created successfully at '{_directoryPath}'.", LogLevel.Success);
     }
 
@@ -61,25 +61,24 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
         }
     }
 
-    private async Task CreateNewsStoryArticleTable()
+    private async Task CreateNewsArticleTable()
     {
         try
         {
-            // Create the news_story_article table if it doesn't exist
+            // Create the news_article table if it doesn't exist
             string commandText = @"
-                CREATE TABLE IF NOT EXISTS news_story_article (
+                CREATE TABLE IF NOT EXISTS news_article (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     job_run_id INTEGER, -- Foreign key to link to scrape_news_job_run table
                     create_date TEXT NOT NULL DEFAULT (datetime('now')),
                     source_name TEXT NOT NULL, 
                     article_uri TEXT NOT NULL UNIQUE, -- article_uri is unique to prevent duplicate articles
                     category TEXT,
-                    article_headline TEXT,
+                    headline TEXT,
                     story_headline TEXT,
                     author TEXT,
                     original_publish_date TEXT,
                     last_updated_date TEXT,
-                    is_paywalled INTEGER,
                     article_content TEXT,
                     success INTEGER,
                     error_message TEXT,
@@ -88,7 +87,7 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
         }
         catch (DbException)
         {
-            _logger.Log($"Error creating the news_story_article table.", LogLevel.Error);
+            _logger.Log($"Error creating the news_article table.", LogLevel.Error);
             throw;
         }
     }

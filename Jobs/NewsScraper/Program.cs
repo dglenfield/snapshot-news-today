@@ -55,7 +55,7 @@ public class Program
                             provider.GetRequiredService<Logger>()));
                     services.AddTransient<ScraperJobRunRepository>();
                     services.AddTransient<ScraperJobRawRepository>();
-                    services.AddTransient<NewsStoryArticleRepository>();
+                    services.AddTransient<NewsArticleRepository>();
                     // Processors and other providers
                     services.AddTransient<ScrapingProcessor>();
                     services.AddTransient<NewsArticleProvider>();

@@ -7,18 +7,15 @@ namespace NewsScraper.Providers;
 
 internal class NewsArticleProvider(ScraperJobRawRepository scraperJobRawRepository, Logger logger)
 {
-    public async Task<SourceArticle> GetArticle(Uri articleUri, long newsStoryId)
+    public async Task GetArticle(SourceArticle article)
     {
-        logger.Log($"Fetching article content from {articleUri}", LogLevel.Info);
-        if (articleUri.AbsoluteUri.Contains("videos/"))
+        logger.Log($"Fetching article content from {article.ArticleUri}", LogLevel.Info);
+        if (article.ArticleUri.AbsoluteUri.Contains("videos/"))
         {
-            logger.Log($"Video articles are not supported. Article URL: {articleUri}", LogLevel.Warning);
-            return new SourceArticle
-            {
-                ArticleUri = articleUri,
-                ErrorMessage = "Video articles are not supported.",
-                Success = false
-            };
+            logger.Log($"Video articles are not supported. Article URL: {article.ArticleUri}", LogLevel.Warning);
+            article.ErrorMessage = "Video articles are not supported.";
+            article.Success = false;
+            return;
         }
 
         HtmlDocument htmlDoc = new();
@@ -35,7 +32,7 @@ internal class NewsArticleProvider(ScraperJobRawRepository scraperJobRawReposito
         }
         else
         {
-            htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(articleUri.AbsoluteUri));
+            htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(article.ArticleUri.AbsoluteUri));
             // Strip out tags
             htmlDoc.DocumentNode.Descendants("script").ToList().ForEach(n => n.Remove());
             htmlDoc.DocumentNode.Descendants("link").ToList().ForEach(n => n.Remove());
@@ -50,7 +47,7 @@ internal class NewsArticleProvider(ScraperJobRawRepository scraperJobRawReposito
             if (Configuration.Database.NewsScraperJobRaw.IsEnabled)
             {
                 string rawHtml = htmlDoc.DocumentNode.OuterHtml;
-                await scraperJobRawRepository.CreateNewsArticleScrapeAsync(newsStoryId, articleUri, rawHtml);
+                await scraperJobRawRepository.CreateNewsArticleScrapeAsync(article.Id, article.ArticleUri, rawHtml);
                 logger.Log("Raw HTML content saved to database.", LogLevel.Info);
             }
         }
@@ -73,15 +70,11 @@ internal class NewsArticleProvider(ScraperJobRawRepository scraperJobRawReposito
         var headlineNode = htmlDoc.DocumentNode.SelectSingleNode("//h1[contains(@class, 'headline__text')]");
 
         // Populate Article object
-        SourceArticle article = new()
-        {
-            Headline = headlineNode?.InnerText.Trim(),
-            Author = authorNode?.InnerText.Trim(),
-            ArticleUri = articleUri,
-            PublishDate = parsedDate.ToLocalTime(),
-            LastUpdatedDate = parsedLastUpdatedDate.ToLocalTime(),
-            Success = true
-        };
+        article.Headline = headlineNode?.InnerText.Trim();
+        article.Author = authorNode?.InnerText.Trim();
+        article.PublishDate = parsedDate.ToLocalTime();
+        article.LastUpdatedDate = parsedLastUpdatedDate.ToLocalTime();
+        article.Success = true;
 
         // Extract article content paragraphs
         var articleContentNode = htmlDoc.DocumentNode.SelectSingleNode("//div[contains(@class, 'article__content')]");
@@ -97,7 +90,5 @@ internal class NewsArticleProvider(ScraperJobRawRepository scraperJobRawReposito
                 logger.Log("Article content node not found.", LogLevel.Warning);
                 break;
         }
-
-        return article;
     }
 }

@@ -17,7 +17,7 @@ namespace NewsScraper.Processors;
 /// <param name="newsStoryProvider">The news provider used to retrieve articles from the target news website.</param>
 internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvider, 
     NewsArticleProvider articleProvider, ScraperJobRunRepository scrapeJobRunRepository, 
-    NewsStoryArticleRepository articleRepository)
+    NewsArticleRepository articleRepository)
 {
     public async Task Run()
     {
@@ -30,37 +30,37 @@ internal class ScrapingProcessor(Logger logger, NewsStoryProvider newsStoryProvi
             // Insert initial ScrapeJobRun record to track this scraping session
             ScrapeJobRun.Id = await scrapeJobRunRepository.CreateJobRunAsync();
 
-            // Get current news stories from CNN
-            List<SourceNewsStory> newsStories = await newsStoryProvider.GetNewsStories(targetSite);
+            // Get current news articles from CNN
+            List<SourceArticle> newsArticles = await newsStoryProvider.GetNewsStories(targetSite);
             
-            // Log retrieved news stories
-            logger.Log($"Total news stories retrieved from {targetSite}: {newsStories.Count}", LogLevel.Debug);
-            foreach (SourceNewsStory newsStory in newsStories)
+            // Log retrieved news articles
+            logger.Log($"Total news articles retrieved from {targetSite}: {newsArticles.Count}", LogLevel.Debug);
+            foreach (SourceArticle newsStory in newsArticles)
             {
                 // Save each article to the database
-                newsStory.Id = await articleRepository.CreateNewsStoryArticleAsync(newsStory);
+                newsStory.Id = await articleRepository.CreateNewsArticleAsync(newsStory);
                 logger.Log(newsStory.ToString(), LogLevel.Debug, logAsRawMessage: true);
             }
 
-            foreach (SourceNewsStory newsStory in newsStories)
+            foreach (SourceArticle newsStory in newsArticles)
             {
-                if (newsStory.Article?.ArticleUri is null)
+                if (newsStory.ArticleUri is null)
                 {
                     logger.Log($"Skipping article with missing URI for story ID {newsStory.Id}", LogLevel.Warning);
                     continue;
                 }
 
                 // Scrape and save the full article content
-                newsStory.Article = await articleProvider.GetArticle(newsStory.Article.ArticleUri, newsStory.Id);
-                if (!await articleRepository.UpdateNewsStoryArticleAsync(newsStory))
+                await articleProvider.GetArticle(newsStory);
+                if (!await articleRepository.UpdateNewsArticleAsync(newsStory))
                     logger.Log($"Failed to update article content for story ID {newsStory.Id}", LogLevel.Warning);
                 else
                     logger.Log(newsStory.ToString(), LogLevel.Debug, logAsRawMessage: true);
                 break; // TEMPORARY: Process only the first article for testing
             }
 
-            ScrapeJobRun.NewsStoriesFound = newsStories.Count;
-            ScrapeJobRun.NewsArticlesScraped = newsStories.Count(a => a.Article?.Success == true);
+            ScrapeJobRun.NewsStoriesFound = newsArticles.Count;
+            ScrapeJobRun.NewsArticlesScraped = newsArticles.Count(a => a.Success == true);
             ScrapeJobRun.Success = true;
         }
         catch (Exception ex)
