@@ -38,7 +38,7 @@ internal class ScraperJobRunRepository(ScraperJobDataProvider dataProvider, Logg
     {
         string commandText = @"
             UPDATE scrape_job_run
-            SET news_stories_found = @news_stories_found, 
+            SET news_articles_found = @news_articles_found, 
                 news_articles_scraped = @news_articles_scraped, 
                 scrape_end = @scrape_end, 
                 success = @success, 
@@ -46,7 +46,7 @@ internal class ScraperJobRunRepository(ScraperJobDataProvider dataProvider, Logg
             WHERE id = @id;";
         SqliteParameter[] parameters = [
             new("@id", ScrapeJobRun.Id),
-            new("@news_stories_found", (object?)ScrapeJobRun.NewsStoriesFound ?? DBNull.Value),
+            new("@news_articles_found", (object?)ScrapeJobRun.NewsArticlesFound ?? DBNull.Value),
             new("@news_articles_scraped", (object?)ScrapeJobRun.NewsArticlesScraped ?? DBNull.Value),
             new("@scrape_end", (object?)ScrapeJobRun.ScrapeEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@success", ScrapeJobRun.Success.HasValue ? (ScrapeJobRun.Success.Value ? 1 : 0) : (object?)DBNull.Value),

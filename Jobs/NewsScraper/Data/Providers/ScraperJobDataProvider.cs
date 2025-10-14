@@ -46,7 +46,7 @@ public class ScraperJobDataProvider(string databaseFilePath, string databaseVers
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     source_name TEXT NOT NULL,
                     source_uri TEXT NOT NULL,
-                    news_stories_found INTEGER,
+                    news_articles_found INTEGER,
                     news_articles_scraped INTEGER,
                     scrape_start TEXT NOT NULL DEFAULT (datetime('now')),
                     scrape_end TEXT,

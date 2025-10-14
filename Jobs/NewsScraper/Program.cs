@@ -52,9 +52,8 @@ public class Program
                     services.AddTransient<NewsArticleRepository>();
                     // Processors and other providers
                     services.AddTransient<ScrapingProcessor>();
-                    services.AddTransient<NewsArticleProvider>();
-                    services.AddTransient<NewsStoryProvider>(
-                        provider => new NewsStoryProvider(
+                    services.AddTransient<NewsArticleProvider>(
+                        provider => new NewsArticleProvider(
                             Configuration.CnnBaseUrl, Configuration.PythonSettings.PythonExePath,
                         provider.GetRequiredService<Logger>()));
                 }).Build();

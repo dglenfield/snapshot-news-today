@@ -11,7 +11,7 @@ public static class ScrapeJobRun
     public static string? ErrorMessage { get; set; }
     public static long Id { get; set; }
     public static int? NewsArticlesScraped { get; set; }
-    public static int? NewsStoriesFound { get; set; }
+    public static int? NewsArticlesFound { get; set; }
     public static string? RawOutput { get; set; }
     public static DateTime? ScrapeEnd { get; set; }
     public static DateTime ScrapeStart { get; set; } = default!;
@@ -33,7 +33,7 @@ public static class ScrapeJobRun
             ErrorMessage,
             Id,
             NewsArticlesScraped,
-            NewsStoriesFound,
+            NewsArticlesFound,
             RawOutput,
             ScrapeEnd,
             ScrapeStart,
@@ -42,9 +42,7 @@ public static class ScrapeJobRun
             Success
         };
 
-        // Use your custom serialization config if needed
-        return JsonConfig.ToJson(state,
-            JsonSerializerOptions.Default,
+        return JsonConfig.ToJson(state, JsonSerializerOptions.Default,
             CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented
         );
     }

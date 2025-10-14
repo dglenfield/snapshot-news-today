@@ -1,11 +1,57 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
 using NewsScraper.Models;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace NewsScraper.Providers;
 
-internal class NewsArticleProvider(Logger logger)
+internal class NewsArticleProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
 {
+    public async Task<List<SourceArticle>> GetFromCnn()
+    {
+        string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
+        scriptPath += $" --id {ScrapeJobRun.Id}";
+
+        // FOR TESTING: Append test landing page file argument
+        bool useTestLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile;
+        string testLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile;
+        if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
+            scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
+
+        List<SourceArticle> articles = [];
+        var distinctArticles = new HashSet<SourceArticle>();
+
+        // Run the Python script and parse its JSON output
+        var jsonDocument = await RunPythonScript(scriptPath);
+        foreach (var jsonElement in jsonDocument.RootElement.EnumerateArray())
+        {
+            Uri.TryCreate($"{cnnBaseUrl}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
+            if (uri is null)
+                continue; // Skip if URI is invalid
+
+            if (!DateTime.TryParse(jsonElement.GetProperty("publishdate").GetString(), out DateTime publishDate))
+                continue; // Skip if publish date is invalid
+
+            distinctArticles.Add(new()
+            {
+                ArticleUri = uri,
+                PublishDate = publishDate,
+                JobRunId = ScrapeJobRun.Id,
+                SourceName = "CNN",
+                Headline = jsonElement.GetProperty("headline").GetString()
+            });
+        }
+
+        // Group news articles by category and assign category to each article
+        foreach (var grouped in GroupNewsArticlesByCategory([.. distinctArticles]))
+            foreach (SourceArticle newsArticle in grouped.Value)
+                newsArticle.Category = grouped.Key;
+
+        return [.. distinctArticles.OrderBy(a => a.Category).ThenByDescending(a => a.PublishDate)];
+    }
+
     public async Task GetArticle(SourceArticle article)
     {
         logger.Log($"Fetching article content from {article.ArticleUri}", LogLevel.Info);
@@ -69,6 +115,60 @@ internal class NewsArticleProvider(Logger logger)
                 article.ErrorMessage = "Article content not found.";
                 logger.Log("Article content node not found.", LogLevel.Warning);
                 break;
+        }
+    }
+
+    private Dictionary<string, List<SourceArticle>> GroupNewsArticlesByCategory(List<SourceArticle> articles)
+    {
+        var groupedArticles = new Dictionary<string, List<SourceArticle>>();
+        foreach (SourceArticle article in articles)
+        {
+            if (article.ArticleUri is null)
+                continue; // Skip if Article or ArticleUri is null
+
+            // Category is the 4th segment in path (assuming "/2025/09/28/category/...")
+            string[] segments = article.ArticleUri.AbsolutePath.Trim('/').Split('/');
+            string category = segments.Length >= 4 ? segments[3] : "unknown";
+            if (!groupedArticles.ContainsKey(category))
+                groupedArticles[category] = [];
+            groupedArticles[category].Add(article);
+        }
+        return groupedArticles;
+    }
+
+    /// <summary>
+    /// Runs a Python script located at the specified path and parses its standard output as a JSON document.
+    /// </summary>
+    /// <remarks>The Python script must write valid JSON to its standard output. Any errors in script
+    /// execution or invalid JSON output will result in an exception.</remarks>
+    /// <param name="scriptPath">The full file path to the Python script to execute. Cannot be null or empty.</param>
+    /// <returns>A JsonDocument representing the parsed JSON output from the Python script's standard output.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the Python process cannot be started.</exception>
+    private async Task<JsonDocument> RunPythonScript(string scriptPath)
+    {
+        var pythonScript = new ProcessStartInfo(pythonExePath)
+        {
+            Arguments = scriptPath,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true
+        };
+
+        try
+        {
+            using var process = Process.Start(pythonScript) ?? throw new InvalidOperationException("Failed to start Python process.\nScript: {scriptPath}");
+            var output = process.StandardOutput.ReadToEnd();
+            return JsonDocument.Parse(output);
+        }
+        catch (Win32Exception ex)
+        {
+            logger.Log($"Failed to start process: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            logger.Log($"JSON parsing failed: {ex.Message}\nScript: {scriptPath}\n", LogLevel.Error);
+            throw;
         }
     }
 }
