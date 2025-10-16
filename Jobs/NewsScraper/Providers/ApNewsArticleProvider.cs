@@ -264,7 +264,7 @@ internal class ApNewsArticleProvider(Logger logger)
             }
         }
 
-        // US News data-gtm-topic="Topics - US News"
+        // US News 
         var usNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - US News']");
         var usNewsArticles = usNewsGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
         int usNewsCount = 0;
@@ -286,10 +286,40 @@ internal class ApNewsArticleProvider(Logger logger)
             }
         }
 
+        // World News (AP News mislabels this section as "Topics - Sports")
+        var worldNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
+            "//div[normalize-space(@class) = 'PageListRightRailA' " +
+            "and @data-tb-region='Topics - Sports' " +
+            "and .//h2/a[contains(normalize-space(text()), 'WORLD NEWS')]]");
 
+        if (worldNewsGrouping == null)
+        {
+            logger.Log("World News section not found with strict selector, trying fallback...",
+                LogLevel.Warning, logAsRawMessage: true);
 
-        // World News
-
+            // Fallback: just look for the heading
+            worldNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
+                "//div[.//h2/a[contains(normalize-space(text()), 'WORLD NEWS')]]");
+        }
+        var worldNewsArticles = worldNewsGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int worldNewsCount = 0;
+        foreach (var worldNewsArticle in worldNewsArticles)
+        {
+            var otherArticleUrl = worldNewsArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var otherHeadline = worldNewsArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
+            var otherArticleUnixTimestamp = worldNewsArticle.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"World News Article {++worldNewsCount}", logAsRawMessage: true);
+            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
+            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}");
+            }
+        }
 
         // Politics
 
@@ -298,6 +328,7 @@ internal class ApNewsArticleProvider(Logger logger)
 
 
         // Sports
+        // NOTE: AP News has "Sports" as "Topics - World News" so we'll use data-module-number="10.1"
 
 
         // Business
