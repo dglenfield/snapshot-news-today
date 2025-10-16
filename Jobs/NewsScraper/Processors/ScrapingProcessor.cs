@@ -7,6 +7,7 @@ using NewsScraper.Providers;
 namespace NewsScraper.Processors;
 
 internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvider, 
+    ApNewsArticleProvider apNewsArticleProvider,
     ScraperJobRunRepository scrapeJobRunRepository, NewsArticleRepository articleRepository)
 {
     public async Task Run()
@@ -14,6 +15,11 @@ internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvid
         NewsWebsite targetSite = NewsWebsite.CNN;
         ScrapeJobRun.SourceName = targetSite.ToString(); 
         ScrapeJobRun.SourceUri = new Uri(Configuration.CnnBaseUrl);
+
+        //await apNewsArticleProvider.GetArticle();
+        await apNewsArticleProvider.GetArticles();
+
+        return;
 
         try
         {
