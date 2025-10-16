@@ -56,10 +56,12 @@ internal class ApNewsArticleProvider(Logger logger)
         return article;
     }
 
-    private void GetMainStoryArticles(HtmlDocument htmlDoc)
+    private int GetMainStoryArticles(HtmlDocument htmlDoc)
     {
         string baseUrl = "https://apnews.com";
 
+        int totalArticleCount = 0;
+        int mainArticleCount = 0;
         var storySections = htmlDoc.DocumentNode.SelectNodes("//div[normalize-space(@class) = 'PageListStandardE']");
         foreach (var storySection in storySections)
         {
@@ -69,112 +71,121 @@ internal class ApNewsArticleProvider(Logger logger)
             var mainHeadline = mainArticle.SelectSingleNode(".//span").InnerText;
             if (!mainArticleUrl.StartsWith($"{baseUrl}/article") && !mainArticleUrl.StartsWith($"{baseUrl}/live"))
                 continue;
-            logger.Log("Main Article");
-            logger.Log($"  Headline: {mainHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {mainArticleUrl}", logAsRawMessage: true);
-            //logger.Log("----------------------------------------------", logAsRawMessage: true);
-
+            logger.Log($"Main Article {++mainArticleCount}");
+            logger.Log($"  {mainHeadline}", logAsRawMessage: true);
+            logger.Log($"  {mainArticleUrl}", logAsRawMessage: true);
+            totalArticleCount++;
+            
             var secondaryArticles = storySection.SelectSingleNode(".//div[normalize-space(@class) = 'PageListStandardE-items-secondary']");
             if (secondaryArticles is null)
+            {
+                logger.Log("----------------------------------------------", logAsRawMessage: true);
                 continue;
-
+            }
+            int secondaryArticleCount = 0;
             foreach (var secondaryArticle in secondaryArticles.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']"))
             {
                 var articleUrl = secondaryArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
                 var headline = secondaryArticle.SelectSingleNode(".//span").InnerText;
                 var articleUnixTimestamp = secondaryArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
-                logger.Log($"Secondary Article", logAsRawMessage: true);
-                logger.Log($"  Headline: {headline}", logAsRawMessage: true);
-                logger.Log($"  Url: {articleUrl}", logAsRawMessage: true);
-
-                //logger.Log($"articleUnixTimestamp = {articleUnixTimestamp}");
+                logger.Log($"Secondary Article {++secondaryArticleCount}", logAsRawMessage: true);
+                logger.Log($"  {headline}", logAsRawMessage: true);
+                logger.Log($"  {articleUrl}", logAsRawMessage: true);
                 if (long.TryParse(articleUnixTimestamp, out long timestamp))
                 {
                     DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
                     DateTime dateTime = dateTimeOffset.LocalDateTime;
-                    logger.Log($"  Last Updated (Local): {dateTime}");
+                    logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
                 }
+                else
+                {
+                    logger.Log($"  ArticleUnixTimestamp = {articleUnixTimestamp}", logAsRawMessage: true);
+                }
+                totalArticleCount++;
             }
             logger.Log("----------------------------------------------", logAsRawMessage: true);
         }
+        return totalArticleCount;
     }
 
-    public async Task<List<SourceArticle>?> GetArticles()
+    private int GetCBlockArticles(HtmlDocument htmlDoc)
     {
-        string baseUrl = "https://apnews.com";
-        string articlesPrefix = $"{baseUrl}/article/";
-        string livePrefix = $"{baseUrl}/live/";
-
-        HtmlDocument htmlDoc = new();
-        //htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(baseUrl));
-        htmlDoc.Load(@"C:/Users/danny/OneDrive/Projects/SnapshotNewsToday/TestData/AssociatedPressNews.html");
-
-        // Get Main Story Articles
-        //GetMainStoryArticles(htmlDoc);
-
-        // Get news articles on right side (C block)
         var cBlockGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='C block']");
         var firstOtherArticle = cBlockGrouping.SelectSingleNode("//div[normalize-space(@class) = 'PageList-items-first']");
         var articleUrl = firstOtherArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
         var headline = firstOtherArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
         var articleUnixTimestamp = firstOtherArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
-        logger.Log($"First Other Article", logAsRawMessage: true);
-        logger.Log($"  Headline: {headline}", logAsRawMessage: true);
-        logger.Log($"  Url: {articleUrl}", logAsRawMessage: true);
-        //logger.Log($"  articleUnixTimestamp = {articleUnixTimestamp}");
+        logger.Log($"First C Block Article", logAsRawMessage: true);
+        logger.Log($"  {headline}", logAsRawMessage: true);
+        logger.Log($"  {articleUrl}", logAsRawMessage: true);
         if (long.TryParse(articleUnixTimestamp, out long timestamp))
         {
             DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
             DateTime dateTime = dateTimeOffset.LocalDateTime;
-            logger.Log($"  Last Updated (Local): {dateTime}");
+            logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+        }
+        else
+        {
+            logger.Log($"  ArticleUnixTimestamp = {articleUnixTimestamp}", logAsRawMessage: true);
         }
 
-        // PageList-items-item
         var otherArticles = cBlockGrouping.SelectNodes(".//li[normalize-space(@class) = 'PageList-items-item']");
-        //var otherArticles = cBlockGrouping.SelectNodes(".//div[normalize-space(@class) = 'PageListRightRailA-content']");
-        int count = 0;
+        int count = 1;
         foreach (var otherArticle in otherArticles)
         {
             var otherArticleUrl = otherArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
             var otherHeadline = otherArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            //var otherArticleUnixTimestamp = otherArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = otherArticle.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"Other Article {++count}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}, logAsRawMessage: true");
+            logger.Log($"C Block Article {++count}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return count;
+    }
 
-        // Get Horizontal News Articles (List B)
+    private int GetListBArticles(HtmlDocument htmlDoc)
+    {
         var listBGrouping = htmlDoc.DocumentNode.SelectSingleNode("//bsp-list-loadmore[normalize-space(@class) = 'PageListStandardB' and @data-gtm-modulestyle='List B']");
         //logger.Log($"{TrimInnerHtmlWhitespace(listBGrouping.OuterHtml)}", logAsRawMessage: true);
         var listBArticles = listBGrouping.SelectNodes(".//div[normalize-space(@class) = 'PageList-items-item']");
         int listBCount = 0;
-        foreach(var listBArticle in listBArticles)
+        foreach (var listBArticle in listBArticles)
         {
             var otherArticleUrl = listBArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
             var otherHeadline = listBArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
             //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"Other Article {++listBCount}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            logger.Log($"List B Article {++listBCount}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return listBCount;
+    }
 
-        // Get Most Read (These can be duplicates of other articles but it's good to mark as "Most Read"
+    private int GetMostReadArticles(HtmlDocument htmlDoc)
+    {
         var mostReadGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='Most read']");
         //logger.Log($"{TrimInnerHtmlWhitespace(mostReadGrouping.OuterHtml)}", logAsRawMessage: true);
         var mostReadArticles = mostReadGrouping.SelectNodes(".//li[normalize-space(@class) = 'PageList-items-item']");
@@ -185,19 +196,26 @@ internal class ApNewsArticleProvider(Logger logger)
             var otherHeadline = mostReadArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
             //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = mostReadArticle.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"Other Article {++mostReadCount}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            logger.Log($"Most Read Article {++mostReadCount}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return mostReadCount;
+    }
 
-        // B Block (Latest Published) Articles
+    private int GetBBlockLatestPublishedArticles(HtmlDocument htmlDoc)
+    {
         var bBlockLatestPublishedGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='B2']");
         var bBlockLatestPublishedArticles = bBlockLatestPublishedGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
         int bBlockLatestPublishedCount = 0;
@@ -207,19 +225,26 @@ internal class ApNewsArticleProvider(Logger logger)
             var otherHeadline = bBlockLatestPublishedArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
             //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = bBlockLatestPublishedArticle.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"Other Article {++bBlockLatestPublishedCount}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            logger.Log($"B Block (Latest Published) Article {++bBlockLatestPublishedCount}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return bBlockLatestPublishedCount;
+    }
 
-        // In Case You Missed It (ICYMI) Articles
+    private int GetIcymiArticles(HtmlDocument htmlDoc)
+    {
         var icymiGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-tb-region='ICYMI']");
         //logger.Log($"{TrimInnerHtmlWhitespace(icymiGrouping.OuterHtml)}", logAsRawMessage: true);
         var icymiArticles = icymiGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
@@ -228,21 +253,27 @@ internal class ApNewsArticleProvider(Logger logger)
         {
             var otherArticleUrl = icymiArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
             var otherHeadline = icymiArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = icymiArticle.GetAttributeValue("data-updated-date-timestamp", "");
             logger.Log($"ICYMI Article {++icymiCount}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return icymiCount;
+    }
 
-        // Be Well Articles
+    private int GetBeWellArticles(HtmlDocument htmlDoc)
+    {
         var beWellGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-region='be well headline queue']");
         var beWellArticles = beWellGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
         int beWellCount = 0;
@@ -250,21 +281,27 @@ internal class ApNewsArticleProvider(Logger logger)
         {
             var otherArticleUrl = beWellArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
             var otherHeadline = beWellArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = beWellArticle.GetAttributeValue("data-updated-date-timestamp", "");
             logger.Log($"Be Well Article {++beWellCount}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return beWellCount;
+    }
 
-        // US News 
+    private int GetUSNewsArticles(HtmlDocument htmlDoc)
+    {
         var usNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - US News']");
         var usNewsArticles = usNewsGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
         int usNewsCount = 0;
@@ -272,21 +309,27 @@ internal class ApNewsArticleProvider(Logger logger)
         {
             var otherArticleUrl = usNewsArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
             var otherHeadline = usNewsArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = usNewsArticle.GetAttributeValue("data-updated-date-timestamp", "");
             logger.Log($"US News Article {++usNewsCount}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return usNewsCount;
+    }
 
-        // World News (AP News mislabels this section as "Topics - Sports")
+    private int GetWorldNewsArticles(HtmlDocument htmlDoc)
+    {
         var worldNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
             "//div[normalize-space(@class) = 'PageListRightRailA' " +
             "and @data-tb-region='Topics - Sports' " +
@@ -307,130 +350,437 @@ internal class ApNewsArticleProvider(Logger logger)
         {
             var otherArticleUrl = worldNewsArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
             var otherHeadline = worldNewsArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            //var otherArticleUnixTimestamp = listBArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             var otherArticleUnixTimestamp = worldNewsArticle.GetAttributeValue("data-updated-date-timestamp", "");
             logger.Log($"World News Article {++worldNewsCount}", logAsRawMessage: true);
-            logger.Log($"  Headline: {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  Url: {otherArticleUrl}", logAsRawMessage: true);
-            logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
+            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
+            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
             if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
             {
                 DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
                 DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}");
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
             }
         }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return worldNewsCount;
+    }
 
-        // Politics
+    private int GetPoliticsArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - Politics']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Politics Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
+    private int GetEntertainmentArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - Entertainment']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Entertainment Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
-        // Entertainment
+    private int GetSportsArticles(HtmlDocument htmlDoc)
+    {
+        var sportsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
+            "//div[normalize-space(@class) = 'PageListRightRailA' " +
+            "and @data-tb-region='Topics - World News' " +
+            "and .//h2/a[contains(normalize-space(text()), 'SPORTS')]]");
 
+        if (sportsGrouping == null)
+        {
+            logger.Log("Sports section not found with strict selector, trying fallback...",
+                LogLevel.Warning, logAsRawMessage: true);
 
-        // Sports
-        // NOTE: AP News has "Sports" as "Topics - World News" so we'll use data-module-number="10.1"
+            // Fallback: just look for the heading
+            sportsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
+                "//div[.//h2/a[contains(normalize-space(text()), 'SPORTS')]]");
+        }
+        var sportsArticles = sportsGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int count = 0;
+        foreach (var srticle in sportsArticles)
+        {
+            var articleUrl = srticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = srticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = srticle.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Sports Article {++count}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return count;
+    }
 
+    private int GetBusinessArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - Business']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Business Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
-        // Business
+    private int GetScienceArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-region='Topics - Science']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Science Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
+    private int GetLifestyleArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-region='Topics - Lifestyle']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Lifestyle Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
-        // Science
+    private int GetTechnologyArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode(
+            "//div[normalize-space(@class) = 'PageListRightRailA' " +
+            "and @data-tb-region='Topics - Election 2024' " +
+            "and .//h2/a[contains(normalize-space(text()), 'Technology')]]");
 
+        if (articleGrouping == null)
+        {
+            logger.Log("Technology section not found with strict selector, trying fallback...",
+                LogLevel.Warning, logAsRawMessage: true);
 
-        // Lifestyle
+            // Fallback: just look for the heading
+            articleGrouping = htmlDoc.DocumentNode.SelectSingleNode(
+                "//div[.//h2/a[contains(normalize-space(text()), 'Technology')]]");
+        }
 
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Technology Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
+    private int GetHealthArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-region='Topics - Be Well']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Health Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
-        // Technology
+    private int GetClimateArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-region='Topics - Climate']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Climate Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
+    private int GetFactCheckArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-region='Topics - Fact Check']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Fact Check Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
+    private int GetLatestNewsArticles(HtmlDocument htmlDoc)
+    {
+        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//bsp-list-loadmore[@data-gtm-region='Most Recent']");
+        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
+        int articleCount = 0;
+        foreach (var article in articles)
+        {
+            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
+            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
+            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
+            logger.Log($"Latest News Article {++articleCount}", logAsRawMessage: true);
+            logger.Log($"  {headline}", logAsRawMessage: true);
+            logger.Log($"  {articleUrl}", logAsRawMessage: true);
+            if (long.TryParse(unixTimestamp, out long timestamp))
+            {
+                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+                DateTime dateTime = dateTimeOffset.LocalDateTime;
+                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
+            }
+            else
+            {
+                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
+            }
+        }
+        logger.Log("----------------------------------------------", logAsRawMessage: true);
+        return articleCount;
+    }
 
-        // Health
+    private void GetAllLinks(HtmlDocument htmlDoc)
+    {
+        string baseUrl = "https://apnews.com";
+        string articlesPrefix = $"{baseUrl}/article/";
+        string livePrefix = $"{baseUrl}/live/";
 
+        var links = htmlDoc.DocumentNode
+            .SelectNodes("//a[@href]")
+            ?.Select(node => node.GetAttributeValue("href", ""))
+            .Where(href =>
+                href.StartsWith(articlesPrefix, StringComparison.OrdinalIgnoreCase) ||
+                href.StartsWith(livePrefix, StringComparison.OrdinalIgnoreCase))
+            .Distinct()
+            .ToList() ?? new List<string>();
 
+        logger.Log($"Total links found on {baseUrl}: {links.Count}", LogLevel.Info);
+        foreach (var link in links)
+        {
+            //logger.Log($"Found link: {link}", LogLevel.Info);
+        }
+    }
 
-        // Climate
+    public async Task<List<SourceArticle>?> GetArticles()
+    {
+        int articleCount = 0;
 
+        HtmlDocument htmlDoc = new();
+        //htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(baseUrl));
+        htmlDoc.Load(@"C:/Users/danny/OneDrive/Projects/SnapshotNewsToday/TestData/AssociatedPressNews.html");
 
-        // Fact Check
+        // Get Main Story Articles
+        articleCount += GetMainStoryArticles(htmlDoc);
+        // Get news articles on right side (C block)
+        articleCount += GetCBlockArticles(htmlDoc);
+        // Get Horizontal News Articles (List B)
+        articleCount += GetListBArticles(htmlDoc);
+        // Get Most Read (These can be duplicates of other articles but it's good to mark as "Most Read"
+        articleCount += GetMostReadArticles(htmlDoc);
+        // B Block (Latest Published) Articles
+        articleCount += GetBBlockLatestPublishedArticles(htmlDoc);
+        // In Case You Missed It (ICYMI) Articles
+        articleCount += GetIcymiArticles(htmlDoc);
+        // Be Well Articles
+        articleCount += GetBeWellArticles(htmlDoc);
+        // US News Articles
+        articleCount += GetUSNewsArticles(htmlDoc);
+        // World News Articles (AP News mislabels this section as "Topics - Sports")
+        articleCount += GetWorldNewsArticles(htmlDoc);
+        // Politics Articles
+        articleCount += GetPoliticsArticles(htmlDoc);
+        // Entertainment Articles
+        articleCount += GetEntertainmentArticles(htmlDoc);
+        // Sports Articles (AP News has "Sports" as "Topics - World News")
+        articleCount += GetSportsArticles(htmlDoc);
+        // Business Articles
+        articleCount += GetBusinessArticles(htmlDoc);
+        // Science Articles
+        articleCount += GetScienceArticles(htmlDoc);
+        // Lifestyle Articles
+        articleCount += GetLifestyleArticles(htmlDoc);
+        // Technology Articles
+        articleCount += GetTechnologyArticles(htmlDoc);
+        // Health Articles
+        articleCount += GetHealthArticles(htmlDoc);
+        // Climate Articles
+        articleCount += GetClimateArticles(htmlDoc);
+        // Fact Check Articles
+        articleCount += GetFactCheckArticles(htmlDoc);
+        // Latest News Articles
+        articleCount += GetLatestNewsArticles(htmlDoc);
 
+        logger.Log($"Total articles = {articleCount}");
 
-        // Latest News
-
-
-
-
-
-
-
-        //logger.Log($"Article groupings = {articleGrouping.Count}", logAsRawMessage: true);
-        //foreach (var articleGroup in articleGrouping)
-        //{
-
-        //}
-        // PageListRightRailA-content
-        // PageList-items
-        // PageList-items-item
-        // PagePromo-content
-        //var otherNewsArticles = cBlockGrouping.SelectNodes(".//div[normalize-space(@class) = 'PageListRightRailA-content']");
-        //var otherNewsArticles = otherNewsArticlesSection.SelectNodes("//div[normalize-space(@class) = 'PageList-items-item']");
-
+        GetAllLinks(htmlDoc); // TODO: Compare articles found with all links
 
         return null;
 
-        //// Find the first story section div
-        //var storySection2 = htmlDoc.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'PageListStandardE']");
-        ////logger.Log($"{TrimInnerHtmlWhitespace(storySection.OuterHtml)}", LogLevel.Info, logAsRawMessage: true);
-
-        //// Find the main article in the story section
-        //var mainArticle2 = storySection2.SelectSingleNode(".//div[normalize-space(@class) = 'PageListStandardE-leadPromo-info']");
-        //logger.Log("----------------------------------------------", logAsRawMessage: true);
-        ////logger.Log($"{TrimInnerHtmlWhitespace(mainArticle.OuterHtml)}", LogLevel.Info, logAsRawMessage: true);
-        ////var ahref = mainArticle.SelectSingleNode(".//a[@href]");
-        //var mainArticleUrl2 = mainArticle2.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
-        //var mainHeadline2 = mainArticle2.SelectSingleNode(".//span").InnerText;
-        //logger.Log($"articleUrl = {mainArticleUrl2}");
-        //logger.Log($"headline = {mainHeadline2}");
-        //logger.Log("----------------------------------------------", logAsRawMessage: true);
-        
-        //// Find all the secondary articles in the story section
-        //var secondaryArticles2 = storySection2.SelectSingleNode(".//div[normalize-space(@class) = 'PageListStandardE-items-secondary']");
-        ////logger.Log($"{TrimInnerHtmlWhitespace(secondaryArticles.OuterHtml)}", LogLevel.Info, logAsRawMessage: true);
-        //foreach (var secondaryArticle in secondaryArticles2.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']"))
-        //{
-        //    //logger.Log($"{TrimInnerHtmlWhitespace(secondaryArticle.InnerHtml)}", LogLevel.Info, logAsRawMessage: true);
-        //    var articleUrl = secondaryArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
-        //    var headline = secondaryArticle.SelectSingleNode(".//span").InnerText;
-        //    // <bsp-timestamp data-timestamp="1760377076000" data-recent-thresholdinhours="1">
-        //    var articleUnixTimestamp = secondaryArticle.SelectSingleNode(".//bsp-timestamp[@data-timestamp]").GetAttributeValue("data-timestamp", "");
-        //    logger.Log($"articleUrl = {articleUrl}");
-        //    logger.Log($"headline = {headline}");
-        //    logger.Log($"articleUnixTimestamp = {articleUnixTimestamp}");
-        //    if (long.TryParse(articleUnixTimestamp, out long timestamp))
-        //    {
-        //        DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-        //        DateTime dateTime = dateTimeOffset.LocalDateTime;
-        //        logger.Log($"Article DateTime (Local): {dateTime}");
-        //    }
-        //    logger.Log("----------------------------------------------", logAsRawMessage: true);
-        //}
-
-        return null;
-
-        //var links = htmlDoc.DocumentNode
-        //    .SelectNodes("//a[@href]")
-        //    ?.Select(node => node.GetAttributeValue("href", ""))
-        //    .Where(href =>
-        //        href.StartsWith(articlesPrefix, StringComparison.OrdinalIgnoreCase) ||
-        //        href.StartsWith(livePrefix, StringComparison.OrdinalIgnoreCase))
-        //    .Distinct()
-        //    .ToList() ?? new List<string>();
-
-        //logger.Log($"Total links found on {baseUrl}: {links.Count}", LogLevel.Info);
-        //foreach (var link in links) 
-        //{             
-        //    logger.Log($"Found link: {link}", LogLevel.Info);
-        //}
 
         // div class="PagePromo-content"
         //var promoDivs = htmlDoc.DocumentNode
@@ -502,7 +852,6 @@ internal class ApNewsArticleProvider(Logger logger)
 
         //}
 
-        return null;
     }
 
     public async Task<List<string>> GetHyperlinksStartingWithBaseUrl()
