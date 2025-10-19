@@ -50,21 +50,17 @@ internal class MainPageScraper(Logger logger)
     {
         List<PageSection> pageSections = [];
 
-        //pageSections.Add(GetMainStory(documentNode, "A1"));
-        //pageSections.Add(GetMainStory(documentNode, "A2"));
-        
-        pageSections.Add(new A3Scraper(documentNode).Scrape());
-        pageSections.Add(new CBlockScraper(documentNode).Scrape());
-        pageSections.Add(new MostReadScraper(documentNode).Scrape()); // TODO: Most Read can be duplicates of other articles so it's good to mark as "Most Read"
-        pageSections.Add(new B1Scraper(documentNode).Scrape());
-
-
+        pageSections.Add(new MainStoryScraper(documentNode, "A1").Scrape());
+        pageSections.Add(new MainStoryScraper(documentNode, "A2").Scrape());
+        //pageSections.Add(new A3Scraper(documentNode).Scrape());
+        //pageSections.Add(new CBlockScraper(documentNode).Scrape());
+        //pageSections.Add(new MostReadScraper(documentNode).Scrape()); // TODO: Most Read can be duplicates of other articles so it's good to mark as "Most Read"
+        //pageSections.Add(new B1Scraper(documentNode).Scrape());
 
 
         //pageSections.Add(GetB2Section(documentNode));
         //pageSections.Add(GetIcymiSection(documentNode));
         //pageSections.Add(GetBeWellSection(documentNode));
-
 
         // US News Articles
         //articleCount += GetUSNewsArticles(htmlDoc);
@@ -133,142 +129,7 @@ internal class MainPageScraper(Logger logger)
             .Distinct().ToList() ?? [];
     }
 
-    private PageSection GetA1MainStory(HtmlNode documentNode) => GetMainStory(documentNode, "A1");
-    private PageSection GetA2MainStory(HtmlNode documentNode) => GetMainStory(documentNode, "A2");
-    private PageSection GetMainStory(HtmlNode documentNode, string region)
-    {
-        PageSection section = new($"{region} Main Story") { ScrapeSuccess = true };
-        var sectionNode = documentNode.SelectSingleNode($"//div[normalize-space(@class) = 'PageListStandardE' and @data-tb-region = '{region}']");
-        if (sectionNode is null)
-        {
-            section.ScrapeMessage= $"Unable to find a node with class='PageListStandardE' and @data-tb-region='{region}'";
-            return section;
-        }
-
-        // Find the main article
-        var mainArticleNode = sectionNode.SelectSingleNode(".//div[normalize-space(@class) = 'PageListStandardE-leadPromo-info']");
-        PageSectionContent mainArticle = new()
-        {
-            TargetUri = new(mainArticleNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "")),
-            Title = mainArticleNode.SelectSingleNode(".//span").InnerText.Trim()
-        };
-        section.Content.Add(mainArticle);
-
-        // Find the secondary articles
-        var articlesNode = sectionNode.SelectSingleNode(".//div[normalize-space(@class) = 'PageListStandardE-items-secondary']");
-        if (articlesNode is null)
-            return section;
-            
-        foreach (var articleNode in articlesNode.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']"))
-        {
-            string? unixTimestamp = articleNode.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
-            PageSectionContent article = new()
-            {
-                TargetUri = new(articleNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "")),
-                Title = articleNode.SelectSingleNode(".//span").InnerText.Trim(),
-                LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
-            };
-            section.Content.Add(article);
-        }
-        return section;
-    }
-
-    //private PageSection ScrapePageSection(HtmlNode documentNode, IPageSectionScrapingStrategy strategy)
-    //{
-    //    PageSection section = new(strategy.SectionName) { ScrapeSuccess = true };
-    //    foreach (var articleNode in strategy.GetArticleNodes(documentNode))
-    //        section.Content.Add(GetContent(articleNode, strategy.GetContentTargetUri, strategy.GetContentTitle, strategy.GetContentUnixTimestamp));
-    //    return section;
-    //}
-    //private PageSectionContent GetContent(HtmlNode contentNode, Func<HtmlNode, Uri?> GetTargetUri,
-    //    Func<HtmlNode, string?> GetTitle, Func<HtmlNode, string?> GetUnixTimestamp)
-    //{
-    //    string? unixTimestamp = GetUnixTimestamp(contentNode);
-    //    return new()
-    //    {
-    //        TargetUri = GetTargetUri(contentNode),
-    //        Title = GetTitle(contentNode),
-    //        LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
-    //    };
-    //}
-
-    // Method 2
-    //public PageSection GetMostReadPageSection(HtmlNode documentNode) => GetPageSection(documentNode, new MostReadSectionConfig());
-    //public interface IPageSectionScrapeConfig
-    //{
-    //    public string SectionName { get; }
-    //    public string SectionXPath { get; }
-    //    public string ArticlesXPath { get; }
-    //    public abstract HtmlNode GetSectionNode(HtmlNode documentNode);
-    //    public abstract HtmlNodeCollection GetArticleNodes(HtmlNode sectionNode);
-    //    public abstract Uri? GetContentTargetUri(HtmlNode articleNode);
-    //    public abstract string? GetContentTitle(HtmlNode articleNode);
-    //    public abstract string? GetContentUnixTimestamp(HtmlNode articleNode);
-    //}
-    //public class MostReadSectionConfig : IPageSectionScrapeConfig
-    //{
-    //    public string SectionName => "Most Read";
-    //    public string SectionXPath => "//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='Most read']";
-    //    public string ArticlesXPath => ".//li[normalize-space(@class) = 'PageList-items-item']";
-    //    public HtmlNode GetSectionNode(HtmlNode documentNode) => documentNode.SelectSingleNode(SectionXPath) ?? throw new Exception($"[{SectionName} section]: XPath failed for {SectionXPath}");
-    //    public HtmlNodeCollection GetArticleNodes(HtmlNode sectionNode) => sectionNode.SelectNodes(ArticlesXPath) ?? throw new Exception($"[{SectionName} section]: XPath failed for {ArticlesXPath}");
-    //    public Uri? GetContentTargetUri(HtmlNode articleNode) => new(articleNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", ""));
-    //    public string? GetContentTitle(HtmlNode articleNode) => articleNode.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText.Trim();
-    //    public string? GetContentUnixTimestamp(HtmlNode articleNode) => articleNode.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
-    //}
-    //private PageSection GetPageSection(HtmlNode documentNode, IPageSectionScrapeConfig config)
-    //{
-    //    PageSection section = new(config.SectionName) { ScrapeSuccess = true };
-    //    //var sectionNode = documentNode.SelectSingleNode(config.SectionXPath) ?? throw new Exception($"[{section.Name} section]: XPath failed for {config.SectionXPath}");
-    //    var sectionNode = config.GetSectionNode(documentNode);
-    //    //var articleNodes = sectionNode.SelectNodes(config.ArticlesXPath) ?? throw new Exception($"[{section.Name} section]: XPath failed for {config.ArticlesXPath}");
-    //    var articleNodes = config.GetArticleNodes(sectionNode);
-    //    foreach (var articleNode in articleNodes)
-    //        section.Content.Add(GetContent(articleNode, config.GetContentTargetUri, config.GetContentTitle, config.GetContentUnixTimestamp));
-    //    return section;
-    //}
-    //private PageSectionContent GetContent(HtmlNode contentNode, Func<HtmlNode, Uri?> GetTargetUri, 
-    //    Func<HtmlNode, string?> GetTitle, Func<HtmlNode, string?> GetUnixTimestamp)
-    //{
-    //    string? unixTimestamp = GetUnixTimestamp(contentNode);
-    //    return new()
-    //    {
-    //        TargetUri = GetTargetUri(contentNode),
-    //        Title = GetTitle(contentNode),
-    //        LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
-    //    };
-    //}
-
-    private PageSection GetMostReadSection(HtmlNode documentNode)
-    {
-        PageSection section = new("Most Read") { ScrapeSuccess = true };
-        var sectionNode = documentNode.SelectSingleNode("//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='Most read']");
-        if (sectionNode is null)
-        {
-            section.ScrapeMessage = "Unable to find a node with class='PageListRightRailA' and @data-tb-region='Most read'";
-            return section;
-        }
-
-        var articleNodes = sectionNode.SelectNodes(".//li[normalize-space(@class) = 'PageList-items-item']");
-        foreach (var articleNode in articleNodes)
-        {
-            string? unixTimestamp = articleNode.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
-            PageSectionContent article = new()
-            {
-                TargetUri = new(articleNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "")),
-                Title = articleNode.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText.Trim(),
-                LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
-            };
-            section.Content.Add(article);
-        }
-        return section;
-    }
-
-    // Note: B1 Section content has no LastUpdatedOn
-    //private PageSection GetB1Section(HtmlNode documentNode) =>
-    //    GetSection(documentNode, sectionName: "B1",
-    //        sectionXPath: "//div[normalize-space(@class) = 'PageListStandardE' and @data-tb-region='B1']",
-    //        articlesXPath: ".//bsp-custom-headline");
+   
     private PageSection GetB2Section(HtmlNode documentNode) =>
         GetSection(documentNode, sectionName: "B2",
             sectionXPath: "//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='B2']",
