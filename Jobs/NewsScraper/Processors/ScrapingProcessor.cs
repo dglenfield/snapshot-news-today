@@ -3,7 +3,7 @@ using NewsScraper.Data;
 using NewsScraper.Enums;
 using NewsScraper.Models;
 using NewsScraper.Providers;
-using NewsScraper.Scrapers.AssociatedPress;
+using NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 namespace NewsScraper.Scrapers;
 

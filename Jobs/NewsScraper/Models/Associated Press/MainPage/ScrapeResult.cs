@@ -7,6 +7,7 @@ public class ScrapeResult
 {
     public required Uri SourceUri { get; set; }
     public DateTime? ScrapedOn { get; set; }
+    public List<string> ScrapeExceptions { get; set; } = [];
     public List<string> ScrapeMessages { get; set; } = [];
     public List<PageSection> Sections { get; set; } = [];
 

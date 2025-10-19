@@ -5,9 +5,9 @@ using NewsScraper.Data;
 using NewsScraper.Data.Providers;
 using NewsScraper.Scrapers;
 using NewsScraper.Providers;
-using NewsScraper.Scrapers.AssociatedPress;
 using DbSettings = NewsScraper.Configuration.Database;
 using LogSettings = NewsScraper.Configuration.Logging;
+using NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 namespace NewsScraper;
 

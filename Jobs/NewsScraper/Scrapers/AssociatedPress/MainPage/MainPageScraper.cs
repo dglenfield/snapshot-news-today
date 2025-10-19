@@ -1,11 +1,10 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
 using NewsScraper.Models.AssociatedPress.MainPage;
-using NewsScraper.Scrapers.AssociatedPress.MainPage;
+using NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
 using System.Text.RegularExpressions;
-using static System.Collections.Specialized.BitVector32;
 
-namespace NewsScraper.Scrapers.AssociatedPress;
+namespace NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 internal class MainPageScraper(Logger logger)
 {
@@ -21,42 +20,35 @@ internal class MainPageScraper(Logger logger)
             ScrapedOn = DateTime.UtcNow
         };
 
+        // Get the Main Page HTML or the HTML test file
         HtmlDocument htmlDocument = new();
         if (_useTestFile)
             htmlDocument.Load(_testFile);
         else
             htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(_baseUrl));
 
-        var result = ProcessDocument(htmlDocument.DocumentNode);
-        scrapeResult.Sections = result.Item1;
-        foreach (var exception in result.Item2)
-        {
-            scrapeResult.ScrapeMessages.Add(exception.Message);
-        }
+        // Scrape the HTML document for Page Sections and content
+        scrapeResult.Sections = ProcessDocument(htmlDocument.DocumentNode);
 
-        if (scrapeResult.Sections.Count == 0)
-        {
-            // Log the error if no sections returned
-            scrapeResult.ScrapeMessages.Add("ERROR: No page sections found.");
-            logger.LogException(new Exception("No page sections found."));
-        }
-
-        foreach (var section in scrapeResult.Sections) 
-        {
-            // Add any scrape messages to scrapeResult    
-            if (section.ScrapeMessage is not null) 
-            {
-                logger.Log($"\n{section.Name}: {section.ScrapeMessage}");
-            }
-        }
-
+        // Logging for testing
+        logger.Log("\nScraping Exceptions:");
+        foreach (var section in scrapeResult.Sections)
+            if (section.ScrapeException is not null)
+                logger.LogException(section.ScrapeException);
+        logger.Log("\nScraping Messages:");
+        foreach (var section in scrapeResult.Sections)
+            if (section.ScrapeMessage is not null)
+                if (section.ScrapeSuccess.HasValue && section.ScrapeSuccess.Value == false)
+                    logger.Log(section.ScrapeMessage, LogLevel.Error);
+                else
+                    logger.Log(section.ScrapeMessage);
+        
         return scrapeResult;
     }
 
-    public (List<PageSection>, List<Exception>) ProcessDocument(HtmlNode documentNode)
+    public List<PageSection> ProcessDocument(HtmlNode documentNode)
     {
         List<PageSection> pageSections = [];
-        List<Exception> exceptions = [];
 
         //pageSections.Add(GetMainStory(documentNode, "A1"));
         //pageSections.Add(GetMainStory(documentNode, "A2"));
@@ -104,10 +96,16 @@ internal class MainPageScraper(Logger logger)
         // Get all "article" and "live" hyperlinks on the page
         var allLinks = GetAllHyperlinks(documentNode); // TODO: Compare articles found with all links
 
+        // Logging results
+        if (_useTestFile)
+            logger.Log($"Scraping results from test file: {_testFile}", logAsRawMessage: true);
+        else
+            logger.Log($"Scraping results from {_baseUrl}", logAsRawMessage: true);
+        logger.Log($"{pageSections.Count} page sections found");
         int articleCount = 0;
         foreach (var section in pageSections)
         {
-            logger.Log($"\n{section.Name}", logAsRawMessage: true);
+            logger.Log($"{section.Name} Section", logAsRawMessage: true);
             if (section.Content is null)
                 continue;
             foreach (var article in section.Content)
@@ -118,20 +116,12 @@ internal class MainPageScraper(Logger logger)
                 logger.Log($"  {article.Title}", logAsRawMessage: true);
                 logger.Log($"  {article.TargetUri}", logAsRawMessage: true);
             }
+            logger.Log($"{section.Content.Count} articles found\n", logAsRawMessage: true);
         }
+        logger.Log($"Total articles found: {articleCount}", logAsRawMessage: true);
+        logger.Log($"Total hyperlinks found: {allLinks.Count}", logAsRawMessage: true);
 
-        if (_useTestFile)
-        {
-            logger.Log($"\nUsing test file: {_testFile}", logAsRawMessage: true);
-            logger.Log($"Total articles found: {articleCount}", logAsRawMessage: true);
-            logger.Log($"Total hyperlinks found: {allLinks.Count}", logAsRawMessage: true);
-        }
-        else
-        {
-            logger.Log($"\nTotal articles found on {_baseUrl}: {articleCount}", logAsRawMessage: true);
-            logger.Log($"Total hyperlinks found on {_baseUrl}: {allLinks.Count}", logAsRawMessage: true);
-        }
-        return (pageSections, exceptions);
+        return pageSections;
     }
 
     private List<string> GetAllHyperlinks(HtmlNode documentNode)
@@ -181,73 +171,6 @@ internal class MainPageScraper(Logger logger)
             section.Content.Add(article);
         }
         return section;
-    }
-
-    //private PageSection GetA3Section(HtmlNode documentNode)
-    //{
-    //    PageSection section = new("A3") { ScrapeSuccess = true };
-    //    var sectionNode = documentNode.SelectSingleNode("//bsp-list-loadmore[normalize-space(@class) = 'PageListStandardB' and @data-tb-region = 'A3']");
-    //    if (sectionNode is null)
-    //    {
-    //        section.ScrapeMessage = $"Unable to find a node with class='PageListStandardB' and @data-tb-region='A3'";
-    //        return section;
-    //    }
-
-    //    var articleNodes = sectionNode.SelectNodes(".//div[normalize-space(@class) = 'PageList-items-item']");
-    //    foreach (var articleNode in articleNodes)
-    //    {
-    //        string? unixTimestamp = articleNode.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
-    //        PageSectionContent article = new()
-    //        {
-    //            TargetUri = new(articleNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "")),
-    //            Title = articleNode.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText.Trim(),
-    //            LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
-    //        };
-    //        section.Content.Add(article);
-    //    }
-    //    return section;
-    //}
-
-    public class A3Scraper(HtmlNode documentNode) : PageSectionScraperBase(documentNode) 
-    {
-        public override string SectionName => "A3";
-        public override string SectionXPath => "//bsp-list-loadmore[normalize-space(@class) = 'PageListStandardB' and @data-tb-region = 'A3']";
-        public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PageList-items-item']";
-    }
-
-    public class CBlockScraper(HtmlNode documentNode) : PageSectionScraperBase(documentNode)
-    {
-        public override string SectionName => "C Block";
-        public override string SectionXPath => "//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='C block']";
-        public override string ArticlesXPath => ".//li[normalize-space(@class) = 'PageList-items-item']";
-
-        public override PageSection Scrape()
-        {
-            PageSection section = new(SectionName) { ScrapeSuccess = true };
-
-            // Fetch the first article which is the "lead" article for this group
-            var leadArticleNode = SectionNode.SelectSingleNode("//div[normalize-space(@class) = 'PageList-items-first']");
-            section.Content.Add(GetContent(leadArticleNode));
-
-            // Find all the other articles for this group
-            foreach (var articleNode in ArticleNodes)
-                section.Content.Add(GetContent(articleNode));
-            return section;
-        }
-    }
-
-    public class MostReadScraper(HtmlNode documentNode) : PageSectionScraperBase(documentNode)
-    {
-        public override string SectionName => "Most Read";
-        public override string SectionXPath => "//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='Most read']";
-        public override string ArticlesXPath => ".//li[normalize-space(@class) = 'PageList-items-item']";
-    }
-
-    public class B1Scraper(HtmlNode documentNode) : PageSectionScraperBase(documentNode)
-    {
-        public override string SectionName => "B1";
-        public override string SectionXPath => "//div[normalize-space(@class) = 'PageListStandardE' and @data-tb-region='B1']";
-        public override string ArticlesXPath => ".//bsp-custom-headline";
     }
 
     //private PageSection ScrapePageSection(HtmlNode documentNode, IPageSectionScrapingStrategy strategy)

@@ -1,13 +1,7 @@
 ﻿using HtmlAgilityPack;
 using NewsScraper.Models.AssociatedPress.MainPage;
 
-namespace NewsScraper.Scrapers.AssociatedPress.MainPage;
-
-public interface IPageSectionScraper
-{
-    string SectionName { get; }
-    PageSection Scrape();
-}
+namespace NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
 
 public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSectionScraper
 {
@@ -16,24 +10,33 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
     public abstract string ArticlesXPath { get; }
 
     protected virtual HtmlNode SectionNode => documentNode.SelectSingleNode(SectionXPath) 
-        ?? throw new Exception($"[{SectionName} section]: XPath failed for {SectionXPath}");
+        ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {SectionXPath}");
     protected virtual HtmlNodeCollection ArticleNodes => SectionNode.SelectNodes(ArticlesXPath) 
-        ?? throw new Exception($"[{SectionName} section]: XPath failed for {ArticlesXPath}");
+        ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {ArticlesXPath}");
 
     public virtual PageSection Scrape()
     {
         PageSection section = new(SectionName) { ScrapeSuccess = true };
-        
+
         try
         {
-            foreach (var articleNode in ArticleNodes)
-                section.Content.Add(GetContent(articleNode));
-
-            PostProcessSection(section); // Hook for additional processing
+            // Hook for pre-processing - contains no default processing if not overriden
+            PreProcessSection(section); 
+            // Hook for primary processing - contains the default processing if not overridden
+            ProcessSection(section);
+            // Hook for additional processing - contains no default processing if not overriden
+            PostProcessSection(section); 
         }
-        catch (Exception ex)
+        catch (NodeNotFoundException ex)
         {
-            section.ScrapeMessage = ex.Message;
+            section.ScrapeException = ex;
+            section.ScrapeMessage = $"XPath error. {ex.Message}";
+            section.ScrapeSuccess = false;
+        }
+        catch (Exception ex) 
+        {
+            section.ScrapeException = ex;
+            section.ScrapeMessage = $"Scrape failed. {ex.Message}";
             section.ScrapeSuccess = false;
         }
 
@@ -41,13 +44,11 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
     }
 
     protected virtual void PreProcessSection(PageSection section) { }
-    
     protected virtual void ProcessSection(PageSection section) 
     {
         foreach (var articleNode in ArticleNodes)
             section.Content.Add(GetContent(articleNode));
     }
-
     protected virtual void PostProcessSection(PageSection section) { }
 
     protected virtual Uri? GetContentTargetUri(HtmlNode articleNode) 

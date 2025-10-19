@@ -7,7 +7,8 @@ public class PageSection(string name)
 {
     public string Name { get; init; } = name;
     public HashSet<PageSectionContent> Content { get; set; } = [];
-    public string? ScrapeMessage { get; set; } // Error or informational
+    public Exception? ScrapeException { get; set; }
+    public string? ScrapeMessage { get; set; } 
     public bool? ScrapeSuccess { get; set; }
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
