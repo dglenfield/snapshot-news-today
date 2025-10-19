@@ -10,103 +10,6 @@ namespace NewsScraper.Providers;
 internal class AssociatedPressArticleProvider(Logger logger)
 {
 
-    private int GetWorldNewsArticles(HtmlDocument htmlDoc)
-    {
-        var worldNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
-            "//div[normalize-space(@class) = 'PageListRightRailA' " +
-            "and @data-tb-region='Topics - Sports' " +
-            "and .//h2/a[contains(normalize-space(text()), 'WORLD NEWS')]]");
-
-        if (worldNewsGrouping == null)
-        {
-            logger.Log("World News section not found with strict selector, trying fallback...",
-                LogLevel.Warning, logAsRawMessage: true);
-
-            // Fallback: just look for the heading
-            worldNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
-                "//div[.//h2/a[contains(normalize-space(text()), 'WORLD NEWS')]]");
-        }
-        var worldNewsArticles = worldNewsGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
-        int worldNewsCount = 0;
-        foreach (var worldNewsArticle in worldNewsArticles)
-        {
-            var otherArticleUrl = worldNewsArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
-            var otherHeadline = worldNewsArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            var otherArticleUnixTimestamp = worldNewsArticle.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"World News Article {++worldNewsCount}", logAsRawMessage: true);
-            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
-            if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
-            {
-                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
-                DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
-            }
-            else
-            {
-                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
-            }
-        }
-        logger.Log("----------------------------------------------", logAsRawMessage: true);
-        return worldNewsCount;
-    }
-
-    private int GetPoliticsArticles(HtmlDocument htmlDoc)
-    {
-        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - Politics']");
-        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
-        int articleCount = 0;
-        foreach (var article in articles)
-        {
-            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
-            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"Politics Article {++articleCount}", logAsRawMessage: true);
-            logger.Log($"  {headline}", logAsRawMessage: true);
-            logger.Log($"  {articleUrl}", logAsRawMessage: true);
-            if (long.TryParse(unixTimestamp, out long timestamp))
-            {
-                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
-            }
-            else
-            {
-                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
-            }
-        }
-        logger.Log("----------------------------------------------", logAsRawMessage: true);
-        return articleCount;
-    }
-
-    private int GetEntertainmentArticles(HtmlDocument htmlDoc)
-    {
-        var articleGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - Entertainment']");
-        var articles = articleGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
-        int articleCount = 0;
-        foreach (var article in articles)
-        {
-            var articleUrl = article.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
-            var headline = article.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            var unixTimestamp = article.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"Entertainment Article {++articleCount}", logAsRawMessage: true);
-            logger.Log($"  {headline}", logAsRawMessage: true);
-            logger.Log($"  {articleUrl}", logAsRawMessage: true);
-            if (long.TryParse(unixTimestamp, out long timestamp))
-            {
-                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-                DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
-            }
-            else
-            {
-                logger.Log($"  ArticleUnixTimestamp = {unixTimestamp}", logAsRawMessage: true);
-            }
-        }
-        logger.Log("----------------------------------------------", logAsRawMessage: true);
-        return articleCount;
-    }
-
     private int GetSportsArticles(HtmlDocument htmlDoc)
     {
         var sportsGrouping = htmlDoc.DocumentNode.SelectSingleNode(
@@ -395,12 +298,7 @@ internal class AssociatedPressArticleProvider(Logger logger)
         //htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(baseUrl));
         htmlDoc.Load(@"C:/Users/danny/OneDrive/Projects/SnapshotNewsToday/TestData/AssociatedPressNews.html");
 
-        // World News Articles (AP News mislabels this section as "Topics - Sports")
-        articleCount += GetWorldNewsArticles(htmlDoc);
-        // Politics Articles
-        articleCount += GetPoliticsArticles(htmlDoc);
-        // Entertainment Articles
-        articleCount += GetEntertainmentArticles(htmlDoc);
+
         // Sports Articles (AP News has "Sports" as "Topics - World News")
         articleCount += GetSportsArticles(htmlDoc);
         // Business Articles

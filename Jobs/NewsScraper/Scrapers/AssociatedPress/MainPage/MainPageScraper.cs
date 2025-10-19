@@ -59,17 +59,13 @@ internal class MainPageScraper(Logger logger)
         //pageSections.Add(new B2Scraper(documentNode).Scrape());
         //pageSections.Add(new IcymiScraper(documentNode).Scrape());
         //pageSections.Add(new BeWellScraper(documentNode).Scrape());
+        //pageSections.Add(new USNewsScraper(documentNode).Scrape());
+        //pageSections.Add(new WorldNewsScraper(documentNode).Scrape());
+        //pageSections.Add(new PoliticsScraper(documentNode).Scrape());
+
+
+        pageSections.Add(new EntertainmentScraper(documentNode).Scrape());
         
-
-        pageSections.Add(new USNewsScraper(documentNode).Scrape());
-
-
-        // World News Articles (AP News mislabels this section as "Topics - Sports")
-        //articleCount += GetWorldNewsArticles(htmlDoc);
-        // Politics Articles
-        //articleCount += GetPoliticsArticles(htmlDoc);
-        // Entertainment Articles
-        //articleCount += GetEntertainmentArticles(htmlDoc);
         // Sports Articles (AP News has "Sports" as "Topics - World News")
         //articleCount += GetSportsArticles(htmlDoc);
         // Business Articles
@@ -129,7 +125,7 @@ internal class MainPageScraper(Logger logger)
             .Distinct().ToList() ?? [];
     }
 
-    
+
 
     private string TrimInnerHtmlWhitespace(string html)
     {
