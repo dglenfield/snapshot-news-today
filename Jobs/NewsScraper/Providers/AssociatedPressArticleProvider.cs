@@ -9,33 +9,6 @@ namespace NewsScraper.Providers;
 
 internal class AssociatedPressArticleProvider(Logger logger)
 {
-    private int GetUSNewsArticles(HtmlDocument htmlDoc)
-    {
-        var usNewsGrouping = htmlDoc.DocumentNode.SelectSingleNode("//div[@data-gtm-topic='Topics - US News']");
-        var usNewsArticles = usNewsGrouping.SelectNodes(".//div[normalize-space(@class) = 'PagePromo']");
-        int usNewsCount = 0;
-        foreach (var usNewsArticle in usNewsArticles)
-        {
-            var otherArticleUrl = usNewsArticle.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "");
-            var otherHeadline = usNewsArticle.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText;
-            var otherArticleUnixTimestamp = usNewsArticle.GetAttributeValue("data-updated-date-timestamp", "");
-            logger.Log($"US News Article {++usNewsCount}", logAsRawMessage: true);
-            logger.Log($"  {otherHeadline}", logAsRawMessage: true);
-            logger.Log($"  {otherArticleUrl}", logAsRawMessage: true);
-            if (long.TryParse(otherArticleUnixTimestamp, out long otherArticleTimestamp))
-            {
-                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(otherArticleTimestamp);
-                DateTime dateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"  Last Updated (Local): {dateTime}", logAsRawMessage: true);
-            }
-            else
-            {
-                logger.Log($"  ArticleUnixTimestamp = {otherArticleUnixTimestamp}", logAsRawMessage: true);
-            }
-        }
-        logger.Log("----------------------------------------------", logAsRawMessage: true);
-        return usNewsCount;
-    }
 
     private int GetWorldNewsArticles(HtmlDocument htmlDoc)
     {
@@ -422,8 +395,6 @@ internal class AssociatedPressArticleProvider(Logger logger)
         //htmlDoc.LoadHtml(await new HttpClient().GetStringAsync(baseUrl));
         htmlDoc.Load(@"C:/Users/danny/OneDrive/Projects/SnapshotNewsToday/TestData/AssociatedPressNews.html");
 
-        // US News Articles
-        articleCount += GetUSNewsArticles(htmlDoc);
         // World News Articles (AP News mislabels this section as "Topics - Sports")
         articleCount += GetWorldNewsArticles(htmlDoc);
         // Politics Articles

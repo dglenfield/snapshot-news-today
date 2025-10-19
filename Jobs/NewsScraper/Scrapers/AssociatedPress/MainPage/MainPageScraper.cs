@@ -56,15 +56,14 @@ internal class MainPageScraper(Logger logger)
         //pageSections.Add(new CBlockScraper(documentNode).Scrape());
         //pageSections.Add(new MostReadScraper(documentNode).Scrape()); // TODO: Most Read can be duplicates of other articles so it's good to mark as "Most Read"
         //pageSections.Add(new B1Scraper(documentNode).Scrape());
-
-
-        pageSections.Add(new B2Scraper(documentNode).Scrape());
-        pageSections.Add(new IcymiScraper(documentNode).Scrape());
-        pageSections.Add(new BeWellScraper(documentNode).Scrape());
+        //pageSections.Add(new B2Scraper(documentNode).Scrape());
+        //pageSections.Add(new IcymiScraper(documentNode).Scrape());
+        //pageSections.Add(new BeWellScraper(documentNode).Scrape());
         
 
-        // US News Articles
-        //articleCount += GetUSNewsArticles(htmlDoc);
+        pageSections.Add(new USNewsScraper(documentNode).Scrape());
+
+
         // World News Articles (AP News mislabels this section as "Topics - Sports")
         //articleCount += GetWorldNewsArticles(htmlDoc);
         // Politics Articles
@@ -130,15 +129,7 @@ internal class MainPageScraper(Logger logger)
             .Distinct().ToList() ?? [];
     }
 
-    private DateTime? ConvertUnixTimestamp(string unixTimestamp)
-    {
-        if (long.TryParse(unixTimestamp, out long timestamp))
-        {
-            DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
-            return dateTimeOffset.UtcDateTime;
-        }
-        return null;
-    }
+    
 
     private string TrimInnerHtmlWhitespace(string html)
     {
