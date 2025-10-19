@@ -14,7 +14,7 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
     protected virtual HtmlNodeCollection ArticleNodes => SectionNode.SelectNodes(ArticlesXPath) 
         ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {ArticlesXPath}");
 
-    public virtual PageSection Scrape()
+    public PageSection Scrape()
     {
         PageSection section = new(SectionName) { ScrapeSuccess = true };
 

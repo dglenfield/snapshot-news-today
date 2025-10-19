@@ -1,5 +1,6 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
+using NewsScraper.Models;
 using NewsScraper.Models.AssociatedPress.MainPage;
 using NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
 using System.Text.RegularExpressions;
@@ -30,76 +31,40 @@ internal class MainPageScraper(Logger logger)
         // Scrape the HTML document for Page Sections and content
         scrapeResult.Sections = ProcessDocument(htmlDocument.DocumentNode);
 
-        // Logging for testing
-        logger.Log("\nScraping Exceptions:");
-        foreach (var section in scrapeResult.Sections)
-            if (section.ScrapeException is not null)
-                logger.LogException(section.ScrapeException);
-        logger.Log("\nScraping Messages:");
-        foreach (var section in scrapeResult.Sections)
-            if (section.ScrapeMessage is not null)
-                if (section.ScrapeSuccess.HasValue && section.ScrapeSuccess.Value == false)
-                    logger.Log(section.ScrapeMessage, LogLevel.Error);
-                else
-                    logger.Log(section.ScrapeMessage);
+        // Get all "article" and "live" hyperlinks on the page
+        var allLinks = GetAllHyperlinks(htmlDocument.DocumentNode); // TODO: Compare articles found with all links
+
+        // Log the scraping results
+        LogScrapingResults(scrapeResult);
         
         return scrapeResult;
     }
 
-    public List<PageSection> ProcessDocument(HtmlNode documentNode)
+    private void LogScrapingResults(ScrapeResult result)
     {
-        List<PageSection> pageSections = [];
-
-        //pageSections.Add(new MainStoryScraper(documentNode, "A1").Scrape());
-        //pageSections.Add(new MainStoryScraper(documentNode, "A2").Scrape());
-        //pageSections.Add(new A3Scraper(documentNode).Scrape());
-        //pageSections.Add(new CBlockScraper(documentNode).Scrape());
-        //pageSections.Add(new MostReadScraper(documentNode).Scrape()); // TODO: Most Read can be duplicates of other articles so it's good to mark as "Most Read"
-        //pageSections.Add(new B1Scraper(documentNode).Scrape());
-        //pageSections.Add(new B2Scraper(documentNode).Scrape());
-        //pageSections.Add(new IcymiScraper(documentNode).Scrape());
-        //pageSections.Add(new BeWellScraper(documentNode).Scrape());
-        //pageSections.Add(new USNewsScraper(documentNode).Scrape());
-        //pageSections.Add(new WorldNewsScraper(documentNode).Scrape());
-        //pageSections.Add(new PoliticsScraper(documentNode).Scrape());
-
-
-        pageSections.Add(new EntertainmentScraper(documentNode).Scrape());
-        
-        // Sports Articles (AP News has "Sports" as "Topics - World News")
-        //articleCount += GetSportsArticles(htmlDoc);
-        // Business Articles
-        //articleCount += GetBusinessArticles(htmlDoc);
-        // Science Articles
-        //articleCount += GetScienceArticles(htmlDoc);
-        // Lifestyle Articles
-        //articleCount += GetLifestyleArticles(htmlDoc);
-        // Technology Articles
-        //articleCount += GetTechnologyArticles(htmlDoc);
-        // Health Articles
-        //articleCount += GetHealthArticles(htmlDoc);
-        // Climate Articles
-        //articleCount += GetClimateArticles(htmlDoc);
-        // Fact Check Articles
-        //articleCount += GetFactCheckArticles(htmlDoc);
-        // Latest News Articles
-        //articleCount += GetLatestNewsArticles(htmlDoc);
-
-        // Get all "article" and "live" hyperlinks on the page
-        var allLinks = GetAllHyperlinks(documentNode); // TODO: Compare articles found with all links
-
-        // Logging results
         if (_useTestFile)
-            logger.Log($"Scraping results from test file: {_testFile}", logAsRawMessage: true);
+            logger.Log($"Scraping results from test file: {_testFile}");
         else
-            logger.Log($"Scraping results from {_baseUrl}", logAsRawMessage: true);
-        logger.Log($"{pageSections.Count} page sections found");
+            logger.Log($"Scraping results from {_baseUrl}");
+
+        logger.Log("\nScraping Exceptions:", logAsRawMessage: true);
+        foreach (var section in result.Sections)
+            if (section.ScrapeException is not null)
+                logger.LogException(section.ScrapeException);
+
+        logger.Log("\nScraping Messages:", logAsRawMessage: true);
+        foreach (var section in result.Sections)
+            if (section.ScrapeMessage is not null)
+                if (section.ScrapeSuccess.HasValue && section.ScrapeSuccess.Value == false)
+                    logger.Log(section.ScrapeMessage, LogLevel.Error, logAsRawMessage: true);
+                else
+                    logger.Log(section.ScrapeMessage, logAsRawMessage: true);
+
+        logger.Log($"\n{result.Sections.Count} page sections found", logAsRawMessage: true);
         int articleCount = 0;
-        foreach (var section in pageSections)
+        foreach (var section in result.Sections)
         {
             logger.Log($"{section.Name} Section", logAsRawMessage: true);
-            if (section.Content is null)
-                continue;
             foreach (var article in section.Content)
             {
                 articleCount++;
@@ -108,10 +73,41 @@ internal class MainPageScraper(Logger logger)
                 logger.Log($"  {article.Title}", logAsRawMessage: true);
                 logger.Log($"  {article.TargetUri}", logAsRawMessage: true);
             }
-            logger.Log($"{section.Content.Count} articles found\n", logAsRawMessage: true);
+            logger.Log($"{section.Content.Count} articles found in {section.Name}\n", logAsRawMessage: true);
         }
         logger.Log($"Total articles found: {articleCount}", logAsRawMessage: true);
-        logger.Log($"Total hyperlinks found: {allLinks.Count}", logAsRawMessage: true);
+    }
+
+    private List<PageSection> ProcessDocument(HtmlNode documentNode)
+    {
+        List<PageSection> pageSections = [];
+        pageSections.Add(new MainStoryScraper(documentNode, "A1").Scrape());
+        pageSections.Add(new MainStoryScraper(documentNode, "A2").Scrape());
+        pageSections.Add(new A3Scraper(documentNode).Scrape());
+        pageSections.Add(new CBlockScraper(documentNode).Scrape());
+        pageSections.Add(new B1Scraper(documentNode).Scrape());
+        pageSections.Add(new B2Scraper(documentNode).Scrape());
+        pageSections.Add(new IcymiScraper(documentNode).Scrape());
+        pageSections.Add(new BeWellScraper(documentNode).Scrape());
+        pageSections.Add(new USNewsScraper(documentNode).Scrape());
+        pageSections.Add(new WorldNewsScraper(documentNode).Scrape());
+        pageSections.Add(new PoliticsScraper(documentNode).Scrape());
+        pageSections.Add(new EntertainmentScraper(documentNode).Scrape());
+        pageSections.Add(new SportsScraper(documentNode).Scrape());
+        pageSections.Add(new BusinessScraper(documentNode).Scrape());
+        pageSections.Add(new ScienceScraper(documentNode).Scrape());
+        pageSections.Add(new TechnologyScraper(documentNode).Scrape());
+        pageSections.Add(new HealthScraper(documentNode).Scrape());
+        pageSections.Add(new ClimateScraper(documentNode).Scrape());
+        pageSections.Add(new FactCheckScraper(documentNode).Scrape());
+        pageSections.Add(new LatestNewsScraper(documentNode).Scrape());
+
+        // Mark any articles as "Most Read" that were found in the Most Read section
+        var mostReadSection = new MostReadScraper(documentNode).Scrape();
+        foreach (var section in pageSections)
+            foreach (var article in section.Content)
+                if (mostReadSection.Content.Contains(article))
+                    article.MostRead = true;
 
         return pageSections;
     }
@@ -124,8 +120,6 @@ internal class MainPageScraper(Logger logger)
                 href.StartsWith($"{_baseUrl}/live/", StringComparison.OrdinalIgnoreCase))
             .Distinct().ToList() ?? [];
     }
-
-
 
     private string TrimInnerHtmlWhitespace(string html)
     {

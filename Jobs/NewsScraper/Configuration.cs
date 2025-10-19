@@ -15,7 +15,7 @@ namespace NewsScraper;
 /// to ensure consistent and validated access to configuration throughout the application.</remarks>
 internal static class Configuration
 {
-    internal static string CnnBaseUrl => _config["NewsProvider:CnnBaseUrl"] ?? throw new KeyNotFoundException("\"NewsProvider:CnnBaseUrl\" not found in appsettings.");
+    internal static bool LogConfigurationSettings => bool.Parse(_config["LogConfigurationSettings"] ?? throw new KeyNotFoundException("\"LogConfigurationSettings\" not found in appsettings."));
     internal static bool UseProductionSettings => bool.Parse(_config["UseProductionSettings"] ?? throw new KeyNotFoundException("\"UseProductionSettings\" not found in appsettings."));
 
     internal static class Database
@@ -60,6 +60,12 @@ internal static class Configuration
             }
         }
         internal static bool LogToFile => bool.Parse(_config["Logging:LogToFile:Default"] ?? throw new KeyNotFoundException("\"Logging:LogToFile:Default\" not found in appsettings."));
+    }
+
+    internal static class NewsSourceUrls
+    {
+        internal static string AssociatedPressBaseUrl => _config["NewsSourceUrls:AssociatedPressBaseUrl"] ?? throw new KeyNotFoundException("\"NewsSourceUrls:AssociatedPressBaseUrl\" not found in appsettings.");
+        internal static string CnnBaseUrl => _config["NewsSourceUrls:CnnBaseUrl"] ?? throw new KeyNotFoundException("\"NewsSourceUrls:CnnBaseUrl\" not found in appsettings.");
     }
 
     /// <summary>
@@ -126,14 +132,17 @@ internal static class Configuration
     /// <returns>A JSON-formatted string representing the current values of the configuration settings.</returns>
     internal static string ToJson() => JsonSerializer.Serialize(new
     {
-        CnnBaseUrl,
+        LogConfigurationSettings,
         UseProductionSettings,
-        NewsScraperJob = new
+        Database = new
         {
-            Database.NewsScraperJob.DatabaseVersion,
-            Database.NewsScraperJob.DirectoryPath,
-            Database.NewsScraperJob.FileName,
-            Database.NewsScraperJob.DatabaseFilePath
+            NewsScraperJob = new
+            {
+                Database.NewsScraperJob.DatabaseFilePath,
+                Database.NewsScraperJob.DatabaseVersion,
+                Database.NewsScraperJob.DirectoryPath,
+                Database.NewsScraperJob.FileName
+            }
         },
         Logging = new
         {
@@ -141,19 +150,32 @@ internal static class Configuration
             Logging.LogLevel,
             Logging.LogToFile
         },
+        NewsSourceUrls = new
+        {
+            NewsSourceUrls.AssociatedPressBaseUrl,
+            NewsSourceUrls.CnnBaseUrl
+        },
         PythonSettings = new
         {
-            PythonSettings.PythonExePath,
-            PythonSettings.GetNewsFromCnnScript
+            PythonSettings.GetNewsFromCnnScript,
+            PythonSettings.PythonExePath
         },
         TestSettings = new
         {
+            NewsArticleProvider = new
+            {
+                GetArticle = new
+                {
+                    TestSettings.NewsArticleProvider.GetArticle.TestArticleFile,
+                    TestSettings.NewsArticleProvider.GetArticle.UseTestArticleFile
+                }
+            },
             NewsStoryProvider = new
             {
                 GetNews = new
                 {
+                    TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile,
                     TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile,
-                    TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile
                 }
             }
         }

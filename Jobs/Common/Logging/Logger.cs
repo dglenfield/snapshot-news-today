@@ -2,68 +2,33 @@
 
 namespace Common.Logging;
 
-/// <summary>
-/// Provides static methods for logging messages and exceptions to configured output destinations, such as console and
-/// log files, using application-defined log levels.
-/// </summary>
-/// <remarks>The Logger class reads its configuration from the application's settings file and user secrets during
-/// static initialization. It supports logging to both the console and files, with log entries formatted to include
-/// timestamps, severity levels, and source context. Console output uses color coding based on log severity. For thread
-/// safety when logging from multiple threads, additional synchronization may be required. Exceptions encountered during
-/// logging are written to the console and rethrown. This class is intended for internal use within the
-/// application.</remarks>
 public class Logger
 {
-    private readonly LogLevel _applicationLogLevel;
-    private readonly string _logDirectory;
-    private readonly bool _logToFile;
+    private readonly string? _logDirectory;
+    private readonly LogLevel _logLevel;
+    private readonly string? _logName;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Logger"/> class with specified logging options.
-    /// </summary>
-    /// <param name="applicationLogLevel">The default log level for the application.</param>
-    /// <param name="logDirectory">The directory where log files will be created. Must exist or be creatable.</param>
-    /// <param name="logToFile">Specifies whether logging to a file is enabled.</param>
-    /// <exception cref="InvalidOperationException">Thrown if file logging is enabled but the log file path is not specified in the configuration.</exception>
-    public Logger(LogLevel applicationLogLevel, string logDirectory, bool logToFile)
+    public Logger(LogLevel logLevel, string? logDirectory = null, string? logName = null)
     {
-        _applicationLogLevel = applicationLogLevel;
         _logDirectory = logDirectory;
-        _logToFile = logToFile;
+        _logLevel = logLevel;
+        _logName = logName;
 
-        if (_logToFile)
+        if (_logDirectory is not null)
             Directory.CreateDirectory(_logDirectory);
     }
 
-    /// <summary>
-    /// Writes a log entry with the specified message and log level to the configured output destinations.
-    /// </summary>
-    /// <remarks>If logging to a file is enabled, the log entry includes a timestamp, log level, message, and
-    /// source context. Logging to the console uses color coding based on the log level. Exceptions encountered during
-    /// file logging are written to the console if enabled and then rethrown. For thread safety when logging from
-    /// multiple threads, additional synchronization may be required.</remarks>
-    /// <param name="message">The message to log. This should describe the event or information to be recorded.</param>
-    /// <param name="level">The severity level of the log entry. Determines whether the message is logged based on the application's current
-    /// log level. Defaults to <see cref="LogLevel.Info"/>.</param>
-    /// <param name="logFileName">The name of the log file to write to. If <see langword="null"/> or whitespace, a default file name is generated
-    /// based on the current date.</param>
-    /// <param name="memberName">The name of the calling member. Automatically supplied by the compiler; do not specify explicitly.</param>
-    /// <param name="sourceFilePath">The full file path of the source code that invoked the method. Automatically supplied by the compiler; do not
-    /// specify explicitly.</param>
-    /// <param name="sourceLineNumber">The line number in the source file where the method was called. Automatically supplied by the compiler; do not
-    /// specify explicitly.</param>
-    public void Log(string message, LogLevel level = LogLevel.Info, string? logFileName = null, 
-        bool logAsRawMessage = false,
+    public void Log(string message, LogLevel messageLogLevel = LogLevel.Info, bool logAsRawMessage = false,
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string sourceFilePath = "",
         [CallerLineNumber] int sourceLineNumber = 0)
     {
-        if (level < _applicationLogLevel) 
+        if (messageLogLevel < _logLevel) 
             return;
 
-        // Console logging
+        // Log to the Console
         ConsoleColor originalColor = Console.ForegroundColor;
-        Console.ForegroundColor = level switch
+        Console.ForegroundColor = messageLogLevel switch
         {
             LogLevel.Debug => ConsoleColor.Gray,
             LogLevel.Info => ConsoleColor.White,
@@ -75,22 +40,21 @@ public class Logger
         Console.WriteLine(message);
         Console.ForegroundColor = originalColor;
                 
-        if (!_logToFile)
+        if (_logDirectory is null)
             return;
         
-        // File logging
+        // Log to File
         string logEntry = message;
         if (!logAsRawMessage)
         {
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string className = Path.GetFileNameWithoutExtension(sourceFilePath);
-            logEntry = $"{timestamp} [{level.ToString().ToUpper()}] \t{message} <{className}.{memberName}> (Line {sourceLineNumber})";
+            logEntry = $"{timestamp} [{messageLogLevel.ToString().ToUpper()}] \t{message} <{className}.{memberName}> (Line {sourceLineNumber})";
         }            
         
-        if (string.IsNullOrWhiteSpace(logFileName))
-            logFileName = $"{logFileName ?? "log"}_{DateTime.Now:yyyy-MM-dd}.txt";
         try
         {
+            string logFileName = string.IsNullOrWhiteSpace(_logName) ? $"log_{DateTime.Now:yyyy-MM-dd}.txt" : $"{_logName}.txt";
             // TODO: For thread safety, use StreamWriter with lock if logging from multiple threads.
             File.AppendAllText(Path.Combine(_logDirectory, logFileName), $"{logEntry}\n");
         }

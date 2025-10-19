@@ -8,6 +8,7 @@ public class PageSectionContent
     public string? Title { get; set; } // Headline
     public Uri? TargetUri { get; set; }
     public DateTime? LastUpdatedOn { get; set; } // UTC time
+    public bool MostRead { get; set; } = false;
     public DateTime? PublishedOn { get; set; } // UTC time
     public string? ScrapeMessage { get; set; } // Error or informational
 

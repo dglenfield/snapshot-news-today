@@ -3,11 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NewsScraper.Data;
 using NewsScraper.Data.Providers;
-using NewsScraper.Scrapers;
+using NewsScraper.Enums;
+using NewsScraper.Models;
 using NewsScraper.Providers;
+using NewsScraper.Scrapers;
+using NewsScraper.Scrapers.AssociatedPress.MainPage;
 using DbSettings = NewsScraper.Configuration.Database;
 using LogSettings = NewsScraper.Configuration.Logging;
-using NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 namespace NewsScraper;
 
@@ -29,20 +31,40 @@ public class Program
     /// completes successfully; otherwise, returns 1 if an unhandled exception occurs.</returns>
     public static async Task<int> Main(string[] args)
     {
-        Console.Title = "News Scraper";
-        var logger = new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, LogSettings.LogToFile);
         int returnCode = 0;
+        Logger logger = null!;
 
         try
         {
+            Console.Title = "News Scraper";
+            NewsWebsite targetSite = NewsWebsite.AssociatedPress;
+            ScrapeJobRun.SourceName = targetSite.ToString();
+            switch (targetSite)
+            {
+                case NewsWebsite.AssociatedPress:
+                    ScrapeJobRun.SourceUri = new Uri(Configuration.NewsSourceUrls.AssociatedPressBaseUrl);
+                    break;
+                case NewsWebsite.CNN:
+                    ScrapeJobRun.SourceUri = new Uri(Configuration.NewsSourceUrls.CnnBaseUrl);
+                    break;
+                case NewsWebsite.FoxNews:
+                default:
+                    throw new NotImplementedException($"Scraping not implemented for {targetSite}");
+            }
+
+            string logName = $"{targetSite}_{DateTime.Now:yyyy-MM-dd.HHmm.ss}";
+            logger = new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, logName);
             logger.Log("********** Application started **********");
+            if (Configuration.LogConfigurationSettings)
+                logger.Log($"Configuration Settings:\n{Configuration.ToJson()}", logAsRawMessage: true);
+
             // Set up dependency injection
             var host = Host.CreateDefaultBuilder()
                 .ConfigureServices((context, services) =>
                 {
                     // Logging
                     services.AddSingleton<Logger>(
-                        provider => new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, LogSettings.LogToFile));
+                        provider => new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, logName));
                     // Data providers and repositories
                     services.AddTransient<ScraperJobDataProvider>(
                         provider => new ScraperJobDataProvider(
@@ -56,8 +78,8 @@ public class Program
                     services.AddTransient<MainPageScraper>();
                     services.AddTransient<CnnArticleProvider>(
                         provider => new CnnArticleProvider(
-                            Configuration.CnnBaseUrl, Configuration.PythonSettings.PythonExePath,
-                        provider.GetRequiredService<Logger>()));
+                            Configuration.NewsSourceUrls.CnnBaseUrl, Configuration.PythonSettings.PythonExePath,
+                            provider.GetRequiredService<Logger>()));
                 }).Build();
 
             // Ensure the SQLite database is created
@@ -70,6 +92,7 @@ public class Program
         }
         catch (Exception ex)
         {
+            logger ??= new(LogSettings.LogLevel, LogSettings.LogDirectory);
             logger.LogException(ex);
             returnCode = 1;
         }

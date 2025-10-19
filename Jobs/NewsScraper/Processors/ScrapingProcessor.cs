@@ -13,9 +13,20 @@ internal class ScrapingProcessor(Logger logger, CnnArticleProvider cnnArticlePro
 {
     public async Task Run()
     {
-        NewsWebsite targetSite = NewsWebsite.CNN;
-        ScrapeJobRun.SourceName = targetSite.ToString(); 
-        ScrapeJobRun.SourceUri = new Uri(Configuration.CnnBaseUrl);
+        NewsWebsite targetSite = NewsWebsite.AssociatedPress;
+        ScrapeJobRun.SourceName = targetSite.ToString();
+        switch (targetSite)
+        {   
+            case NewsWebsite.AssociatedPress:
+                ScrapeJobRun.SourceUri = new Uri(Configuration.NewsSourceUrls.AssociatedPressBaseUrl);
+                break;
+            case NewsWebsite.CNN:
+                ScrapeJobRun.SourceUri = new Uri(Configuration.NewsSourceUrls.CnnBaseUrl);
+                break;
+            case NewsWebsite.FoxNews:
+            default:
+                throw new NotImplementedException($"Scraping not implemented for {targetSite}");
+        }
 
         //await apArticleProvider.GetArticle();
         var scrapeResult = await mainPageScraper.Scrape();

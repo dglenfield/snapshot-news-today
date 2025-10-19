@@ -5,6 +5,7 @@
 /// </summary>
 public enum NewsWebsite
 {
+    AssociatedPress,
     CNN,
     FoxNews
 }
