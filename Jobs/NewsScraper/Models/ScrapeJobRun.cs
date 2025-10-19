@@ -8,7 +8,7 @@ namespace NewsScraper.Models;
 /// </summary>
 public static class ScrapeJobRun
 {
-    public static string? ErrorMessage { get; set; }
+    public static List<string>? ErrorMessage { get; set; }
     public static long Id { get; set; }
     public static int? NewsArticlesScraped { get; set; }
     public static int? NewsArticlesFound { get; set; }

@@ -3,8 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NewsScraper.Data;
 using NewsScraper.Data.Providers;
-using NewsScraper.Processors;
+using NewsScraper.Scrapers;
 using NewsScraper.Providers;
+using NewsScraper.Scrapers.AssociatedPress;
 using DbSettings = NewsScraper.Configuration.Database;
 using LogSettings = NewsScraper.Configuration.Logging;
 
@@ -52,7 +53,7 @@ public class Program
                     services.AddTransient<NewsArticleRepository>();
                     // Processors and other providers
                     services.AddTransient<ScrapingProcessor>();
-                    services.AddTransient<ApNewsArticleProvider>();
+                    services.AddTransient<MainPageScraper>();
                     services.AddTransient<CnnArticleProvider>(
                         provider => new CnnArticleProvider(
                             Configuration.CnnBaseUrl, Configuration.PythonSettings.PythonExePath,

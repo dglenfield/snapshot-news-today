@@ -1,6 +1,7 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
 using NewsScraper.Models;
+using NewsScraper.Models.CNN;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
@@ -9,7 +10,7 @@ namespace NewsScraper.Providers;
 
 internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
 {
-    public async Task<List<SourceArticle>> GetArticles()
+    public async Task<List<Models.CNN.Article>> GetArticles()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
         scriptPath += $" --id {ScrapeJobRun.Id}";
@@ -20,8 +21,8 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
 
-        List<SourceArticle> articles = [];
-        var distinctArticles = new HashSet<SourceArticle>();
+        List<Models.CNN.Article> articles = [];
+        var distinctArticles = new HashSet<Models.CNN.Article>();
 
         // Run the Python script and parse its JSON output
         var jsonDocument = await RunPythonScript(scriptPath);
@@ -46,13 +47,13 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
 
         // Group news articles by category and assign category to each article
         foreach (var grouped in GroupNewsArticlesByCategory([.. distinctArticles]))
-            foreach (SourceArticle newsArticle in grouped.Value)
+            foreach (Models.CNN.Article newsArticle in grouped.Value)
                 newsArticle.Category = grouped.Key;
 
         return [.. distinctArticles.OrderBy(a => a.Category).ThenByDescending(a => a.PublishDate)];
     }
 
-    public async Task GetArticle(SourceArticle article)
+    public async Task GetArticle(Models.CNN.Article article)
     {
         logger.Log($"Fetching article content from {article.ArticleUri}", LogLevel.Info);
         if (article.ArticleUri.AbsoluteUri.Contains("videos/"))
@@ -118,10 +119,10 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
         }
     }
 
-    private Dictionary<string, List<SourceArticle>> GroupNewsArticlesByCategory(List<SourceArticle> articles)
+    private Dictionary<string, List<Models.CNN.Article>> GroupNewsArticlesByCategory(List<Models.CNN.Article> articles)
     {
-        var groupedArticles = new Dictionary<string, List<SourceArticle>>();
-        foreach (SourceArticle article in articles)
+        var groupedArticles = new Dictionary<string, List<Models.CNN.Article>>();
+        foreach (Models.CNN.Article article in articles)
         {
             if (article.ArticleUri is null)
                 continue; // Skip if Article or ArticleUri is null

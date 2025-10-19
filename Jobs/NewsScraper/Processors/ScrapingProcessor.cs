@@ -3,11 +3,12 @@ using NewsScraper.Data;
 using NewsScraper.Enums;
 using NewsScraper.Models;
 using NewsScraper.Providers;
+using NewsScraper.Scrapers.AssociatedPress;
 
-namespace NewsScraper.Processors;
+namespace NewsScraper.Scrapers;
 
-internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvider, 
-    ApNewsArticleProvider apNewsArticleProvider,
+internal class ScrapingProcessor(Logger logger, CnnArticleProvider cnnArticleProvider, 
+    MainPageScraper mainPageScraper,
     ScraperJobRunRepository scrapeJobRunRepository, NewsArticleRepository articleRepository)
 {
     public async Task Run()
@@ -16,8 +17,8 @@ internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvid
         ScrapeJobRun.SourceName = targetSite.ToString(); 
         ScrapeJobRun.SourceUri = new Uri(Configuration.CnnBaseUrl);
 
-        //await apNewsArticleProvider.GetArticle();
-        await apNewsArticleProvider.GetArticles();
+        //await apArticleProvider.GetArticle();
+        var scrapeResult = await mainPageScraper.Scrape();
 
         return;
 
@@ -27,18 +28,18 @@ internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvid
             ScrapeJobRun.Id = await scrapeJobRunRepository.CreateJobRunAsync();
 
             // Get current news articles from CNN
-            List<SourceArticle> newsArticles = await articleProvider.GetArticles();
+            List<Models.CNN.Article> newsArticles = await cnnArticleProvider.GetArticles();
             
             // Log retrieved news articles
             logger.Log($"Total news articles retrieved from {targetSite}: {newsArticles.Count}", LogLevel.Debug);
-            foreach (SourceArticle article in newsArticles)
+            foreach (Models.CNN.Article article in newsArticles)
             {
                 // Save each article to the database
                 article.Id = await articleRepository.CreateNewsArticleAsync(article);
                 logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
             }
 
-            foreach (SourceArticle article in newsArticles)
+            foreach (Models.CNN.Article article in newsArticles)
             {
                 if (article.ArticleUri is null)
                 {
@@ -47,7 +48,7 @@ internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvid
                 }
 
                 // Scrape and save the full article content
-                await articleProvider.GetArticle(article);
+                await cnnArticleProvider.GetArticle(article);
                 if (!await articleRepository.UpdateNewsArticleAsync(article))
                     logger.Log($"Failed to update article content for story ID {article.Id}", LogLevel.Warning);
                 else
@@ -62,7 +63,7 @@ internal class ScrapingProcessor(Logger logger, CnnArticleProvider articleProvid
         catch (Exception ex)
         {
             ScrapeJobRun.Success = false;
-            ScrapeJobRun.ErrorMessage = ex.Message;
+            ScrapeJobRun.ErrorMessage = [ex.Message];
             throw;
         }
         finally

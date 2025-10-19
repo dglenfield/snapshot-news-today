@@ -1,7 +1,7 @@
 ﻿using Common.Logging;
 using Microsoft.Data.Sqlite;
 using NewsScraper.Data.Providers;
-using NewsScraper.Models;
+using NewsScraper.Models.CNN;
 using System.Data.Common;
 
 namespace NewsScraper.Data;
@@ -10,7 +10,7 @@ internal class NewsArticleRepository(ScraperJobDataProvider dataProvider, Logger
 {
     public string DatabaseFilePath => dataProvider.DatabaseFilePath;
 
-    public async Task<long> CreateNewsArticleAsync(SourceArticle article)
+    public async Task<long> CreateNewsArticleAsync(Article article)
     {
         string commandText = @"
             INSERT INTO news_article (
@@ -36,7 +36,7 @@ internal class NewsArticleRepository(ScraperJobDataProvider dataProvider, Logger
         }
     }
 
-    public async Task<bool> UpdateNewsArticleAsync(SourceArticle article)
+    public async Task<bool> UpdateNewsArticleAsync(Article article)
     {
         if (article.Id == 0)
             throw new ArgumentException("News article must have a valid Id to update.", nameof(article));

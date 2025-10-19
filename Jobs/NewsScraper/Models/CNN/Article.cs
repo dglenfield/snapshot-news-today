@@ -3,12 +3,15 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NewsScraper.Models;
+namespace NewsScraper.Models.CNN;
 
 /// <summary>
-/// Represents a news article and its content.
+/// Represents a news article from CNN and its content.
 /// </summary>
-public class SourceArticle
+/// <remarks>
+/// This class is for backwards compatibilty with the existing CNN scraping process.
+/// </remarks>
+public class Article
 {
     public Uri ArticleUri { get; set; } = default!;
     public string? Author { get; set; }
@@ -45,13 +48,27 @@ public class SourceArticle
         return builder.ToString();
     }
 
+    public override bool Equals(object? obj)
+    {
+        return obj is Article other && ArticleUri?.Equals(other.ArticleUri) == true;
+    }
+
+    public override int GetHashCode()
+    {
+        return ArticleUri?.GetHashCode() ?? 0;
+    }
+
     /// <summary>
     /// Returns a JSON-formatted string that represents the current object.
     /// </summary>
-    /// <remarks>The returned JSON string uses default serialization options and omits properties with null
-    /// values for readability. This method is useful for logging, debugging, or exporting the object's state.</remarks>
-    /// <returns>A string containing the JSON representation of the object, formatted with indentation and excluding properties
-    /// with null values.</returns>
+    /// <remarks>
+    /// The returned JSON string uses default serialization options and omits properties with null
+    /// values for readability. This method is useful for logging, debugging, or exporting the object's state.
+    /// </remarks>
+    /// <returns>
+    /// A string containing the JSON representation of the object, formatted with indentation and excluding properties
+    /// with null values.
+    /// </returns>
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }
