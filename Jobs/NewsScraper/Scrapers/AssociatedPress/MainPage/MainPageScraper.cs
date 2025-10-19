@@ -50,17 +50,18 @@ internal class MainPageScraper(Logger logger)
     {
         List<PageSection> pageSections = [];
 
-        pageSections.Add(new MainStoryScraper(documentNode, "A1").Scrape());
-        pageSections.Add(new MainStoryScraper(documentNode, "A2").Scrape());
+        //pageSections.Add(new MainStoryScraper(documentNode, "A1").Scrape());
+        //pageSections.Add(new MainStoryScraper(documentNode, "A2").Scrape());
         //pageSections.Add(new A3Scraper(documentNode).Scrape());
         //pageSections.Add(new CBlockScraper(documentNode).Scrape());
         //pageSections.Add(new MostReadScraper(documentNode).Scrape()); // TODO: Most Read can be duplicates of other articles so it's good to mark as "Most Read"
         //pageSections.Add(new B1Scraper(documentNode).Scrape());
 
 
-        //pageSections.Add(GetB2Section(documentNode));
-        //pageSections.Add(GetIcymiSection(documentNode));
-        //pageSections.Add(GetBeWellSection(documentNode));
+        pageSections.Add(new B2Scraper(documentNode).Scrape());
+        pageSections.Add(new IcymiScraper(documentNode).Scrape());
+        pageSections.Add(new BeWellScraper(documentNode).Scrape());
+        
 
         // US News Articles
         //articleCount += GetUSNewsArticles(htmlDoc);
@@ -127,51 +128,6 @@ internal class MainPageScraper(Logger logger)
                 href.StartsWith($"{_baseUrl}/article/", StringComparison.OrdinalIgnoreCase) ||
                 href.StartsWith($"{_baseUrl}/live/", StringComparison.OrdinalIgnoreCase))
             .Distinct().ToList() ?? [];
-    }
-
-   
-    private PageSection GetB2Section(HtmlNode documentNode) =>
-        GetSection(documentNode, sectionName: "B2",
-            sectionXPath: "//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='B2']",
-            articlesXPath: ".//div[normalize-space(@class) = 'PagePromo']");
-
-    private PageSection GetIcymiSection(HtmlNode documentNode) =>
-        GetSection(documentNode, sectionName: "ICYMI",
-            sectionXPath: "//div[@data-tb-region='ICYMI']",
-            articlesXPath: ".//div[normalize-space(@class) = 'PagePromo']");
-
-    private PageSection GetBeWellSection(HtmlNode documentNode) => 
-        GetSection(documentNode, sectionName: "Be Well",
-            sectionXPath: "//div[@data-gtm-region='be well headline queue']", 
-            articlesXPath: ".//div[normalize-space(@class) = 'PagePromo']");
-    
-    private PageSection GetSection(HtmlNode documentNode, string sectionName, string sectionXPath, string articlesXPath)
-    {
-        PageSection section = new(sectionName) { ScrapeSuccess = true };
-        try
-        {
-            var sectionNode = documentNode.SelectSingleNode(sectionXPath) ?? throw new Exception($"[{section.Name} section]: XPath failed for {sectionXPath}");
-            var articleNodes = sectionNode.SelectNodes(articlesXPath) ?? throw new Exception($"[{section.Name} section]: XPath failed for {articlesXPath}");
-            foreach (var articleNode in articleNodes)
-                section.Content.Add(GetContent(articleNode));
-        }
-        catch (Exception ex)
-        {
-            section.ScrapeMessage = ex.Message;
-            section.ScrapeSuccess = false;
-        }
-        return section;
-    }
-
-    private PageSectionContent GetContent(HtmlNode contentNode)
-    {
-        string? unixTimestamp = contentNode.GetAttributeValue("data-updated-date-timestamp", "").Trim();
-        return new()
-        {
-            TargetUri = new(contentNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", "").Trim()),
-            Title = contentNode.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText.Trim(),
-            LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
-        };
     }
 
     private DateTime? ConvertUnixTimestamp(string unixTimestamp)

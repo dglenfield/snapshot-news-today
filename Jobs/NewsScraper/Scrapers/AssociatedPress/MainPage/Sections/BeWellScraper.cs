@@ -1,0 +1,13 @@
+﻿using HtmlAgilityPack;
+
+namespace NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
+
+public class BeWellScraper(HtmlNode documentNode) : PageSectionScraperBase(documentNode)
+{
+    public override string SectionName => "Be Well";
+    public override string SectionXPath => "//div[@data-gtm-region='be well headline queue']";
+    public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
+
+    protected override string? GetContentUnixTimestamp(HtmlNode articleNode)
+        => articleNode.GetAttributeValue("data-updated-date-timestamp", "");
+}
