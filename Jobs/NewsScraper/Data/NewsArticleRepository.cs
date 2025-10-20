@@ -6,7 +6,7 @@ using System.Data.Common;
 
 namespace NewsScraper.Data;
 
-internal class NewsArticleRepository(ScraperJobDataProvider dataProvider, Logger logger)
+internal class NewsArticleRepository(ScrapeJobDataProvider dataProvider, Logger logger)
 {
     public string DatabaseFilePath => dataProvider.DatabaseFilePath;
 

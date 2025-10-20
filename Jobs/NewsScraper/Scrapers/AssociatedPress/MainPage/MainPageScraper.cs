@@ -1,13 +1,11 @@
-﻿using Common.Logging;
-using HtmlAgilityPack;
-using NewsScraper.Models;
+﻿using HtmlAgilityPack;
 using NewsScraper.Models.AssociatedPress.MainPage;
 using NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
 using System.Text.RegularExpressions;
 
 namespace NewsScraper.Scrapers.AssociatedPress.MainPage;
 
-internal class MainPageScraper(Logger logger)
+internal class MainPageScraper
 {
     private readonly string _baseUrl = "https://apnews.com";
     private readonly string _testFile = @"C:/Users/danny/OneDrive/Projects/SnapshotNewsToday/TestData/AssociatedPressNews.html";
@@ -33,49 +31,8 @@ internal class MainPageScraper(Logger logger)
 
         // Get all "article" and "live" hyperlinks on the page
         var allLinks = GetAllHyperlinks(htmlDocument.DocumentNode); // TODO: Compare articles found with all links
-
-        // Log the scraping results
-        LogScrapingResults(scrapeResult);
         
         return scrapeResult;
-    }
-
-    private void LogScrapingResults(ScrapeResult result)
-    {
-        if (_useTestFile)
-            logger.Log($"Scraping results from test file: {_testFile}");
-        else
-            logger.Log($"Scraping results from {_baseUrl}");
-
-        logger.Log("\nScraping Exceptions:", logAsRawMessage: true);
-        foreach (var section in result.Sections)
-            if (section.ScrapeException is not null)
-                logger.LogException(section.ScrapeException);
-
-        logger.Log("\nScraping Messages:", logAsRawMessage: true);
-        foreach (var section in result.Sections)
-            if (section.ScrapeMessage is not null)
-                if (section.ScrapeSuccess.HasValue && section.ScrapeSuccess.Value == false)
-                    logger.Log(section.ScrapeMessage, LogLevel.Error, logAsRawMessage: true);
-                else
-                    logger.Log(section.ScrapeMessage, logAsRawMessage: true);
-
-        logger.Log($"\n{result.Sections.Count} page sections found", logAsRawMessage: true);
-        int articleCount = 0;
-        foreach (var section in result.Sections)
-        {
-            logger.Log($"{section.Name} Section", logAsRawMessage: true);
-            foreach (var article in section.Content)
-            {
-                articleCount++;
-                if (article.LastUpdatedOn.HasValue)
-                    logger.Log($"{article.LastUpdatedOn}", logAsRawMessage: true);
-                logger.Log($"  {article.Title}", logAsRawMessage: true);
-                logger.Log($"  {article.TargetUri}", logAsRawMessage: true);
-            }
-            logger.Log($"{section.Content.Count} articles found in {section.Name}\n", logAsRawMessage: true);
-        }
-        logger.Log($"Total articles found: {articleCount}", logAsRawMessage: true);
     }
 
     private List<PageSection> ProcessDocument(HtmlNode documentNode)

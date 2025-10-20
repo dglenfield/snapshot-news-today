@@ -10,10 +10,10 @@ namespace NewsScraper.Providers;
 
 internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
 {
-    public async Task<List<Models.CNN.Article>> GetArticles()
+    public async Task<List<Article>> GetArticles()
     {
         string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
-        scriptPath += $" --id {ScrapeJobRun.Id}";
+        scriptPath += $" --id {ScrapeJob.Id}";
 
         // FOR TESTING: Append test landing page file argument
         bool useTestLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile;
@@ -22,7 +22,7 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
 
         List<Models.CNN.Article> articles = [];
-        var distinctArticles = new HashSet<Models.CNN.Article>();
+        var distinctArticles = new HashSet<Article>();
 
         // Run the Python script and parse its JSON output
         var jsonDocument = await RunPythonScript(scriptPath);
@@ -39,7 +39,7 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
             {
                 ArticleUri = uri,
                 PublishDate = publishDate,
-                JobRunId = ScrapeJobRun.Id,
+                JobRunId = ScrapeJob.Id,
                 SourceName = "CNN",
                 Headline = jsonElement.GetProperty("headline").GetString()
             });

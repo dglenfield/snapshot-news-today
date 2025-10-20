@@ -6,7 +6,7 @@ namespace NewsScraper.Models;
 /// <summary>
 /// Represents the single execution of a scraping job.
 /// </summary>
-public static class ScrapeJobRun
+public static class ScrapeJob
 {
     public static List<string>? ErrorMessage { get; set; }
     public static long Id { get; set; }

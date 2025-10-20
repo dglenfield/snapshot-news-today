@@ -5,6 +5,7 @@ using NewsScraper.Data;
 using NewsScraper.Data.Providers;
 using NewsScraper.Enums;
 using NewsScraper.Models;
+using NewsScraper.Processors;
 using NewsScraper.Providers;
 using NewsScraper.Scrapers;
 using NewsScraper.Scrapers.AssociatedPress.MainPage;
@@ -38,20 +39,13 @@ public class Program
         {
             Console.Title = "News Scraper";
             NewsWebsite targetSite = NewsWebsite.AssociatedPress;
-            ScrapeJobRun.SourceName = targetSite.ToString();
-            switch (targetSite)
+            ScrapeJob.SourceName = targetSite.ToString();
+            ScrapeJob.SourceUri = targetSite switch
             {
-                case NewsWebsite.AssociatedPress:
-                    ScrapeJobRun.SourceUri = new Uri(Configuration.NewsSourceUrls.AssociatedPressBaseUrl);
-                    break;
-                case NewsWebsite.CNN:
-                    ScrapeJobRun.SourceUri = new Uri(Configuration.NewsSourceUrls.CnnBaseUrl);
-                    break;
-                case NewsWebsite.FoxNews:
-                default:
-                    throw new NotImplementedException($"Scraping not implemented for {targetSite}");
-            }
-
+                NewsWebsite.AssociatedPress => new Uri(Configuration.NewsSourceUrls.AssociatedPressBaseUrl),
+                NewsWebsite.CNN => new Uri(Configuration.NewsSourceUrls.CnnBaseUrl),
+                _ => throw new NotImplementedException($"Scraping not implemented for {targetSite}"),
+            };
             string logName = $"{targetSite}_{DateTime.Now:yyyy-MM-dd.HHmm.ss}";
             logger = new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, logName);
             logger.Log("********** Application started **********");
@@ -63,32 +57,47 @@ public class Program
                 .ConfigureServices((context, services) =>
                 {
                     // Logging
-                    services.AddSingleton<Logger>(
-                        provider => new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, logName));
+                    services.AddSingleton<Logger>(provider 
+                        => new Logger(LogSettings.LogLevel, LogSettings.LogDirectory, logName));
                     // Data providers and repositories
-                    services.AddTransient<ScraperJobDataProvider>(
-                        provider => new ScraperJobDataProvider(
-                            DbSettings.NewsScraperJob.DatabaseFilePath,
-                            DbSettings.NewsScraperJob.DatabaseVersion,
+                    services.AddTransient<ScrapeJobDataProvider>(provider 
+                        => new ScrapeJobDataProvider(
+                            DbSettings.NewsScraperJob.DatabaseFilePath, DbSettings.NewsScraperJob.DatabaseVersion,
                             provider.GetRequiredService<Logger>()));
-                    services.AddTransient<ScraperJobRunRepository>();
+                    services.AddTransient<ScrapeJobRepository>();
                     services.AddTransient<NewsArticleRepository>();
                     // Processors and other providers
-                    services.AddTransient<ScrapingProcessor>();
-                    services.AddTransient<MainPageScraper>();
-                    services.AddTransient<CnnArticleProvider>(
-                        provider => new CnnArticleProvider(
-                            Configuration.NewsSourceUrls.CnnBaseUrl, Configuration.PythonSettings.PythonExePath,
-                            provider.GetRequiredService<Logger>()));
+                    if (targetSite == NewsWebsite.AssociatedPress)
+                    {
+                        services.AddTransient<AssociatePressProcessor>();
+                        services.AddTransient<MainPageScraper>();
+                    }
+                    if (targetSite == NewsWebsite.CNN)
+                    {
+                        services.AddTransient<CnnArticleProvider>(provider 
+                            => new CnnArticleProvider(
+                                Configuration.NewsSourceUrls.CnnBaseUrl, Configuration.PythonSettings.PythonExePath,
+                                provider.GetRequiredService<Logger>()));
+                    }
+                        
                 }).Build();
 
             // Ensure the SQLite database is created
-            var scraperDataProvider = host.Services.GetRequiredService<ScraperJobDataProvider>();
-            await scraperDataProvider.CreateDatabaseAsync();
+            var scrapeJobDataProvider = host.Services.GetRequiredService<ScrapeJobDataProvider>();
+            await scrapeJobDataProvider.CreateDatabaseAsync();
 
             // Resolve and run the main service
-            var processor = host.Services.GetRequiredService<ScrapingProcessor>();
-            await processor.Run();
+            if (targetSite == NewsWebsite.AssociatedPress)
+            {
+                var processor = host.Services.GetRequiredService<AssociatePressProcessor>();
+                await processor.Run();
+            }
+            else if (targetSite == NewsWebsite.CNN)
+            {
+                var processor = host.Services.GetRequiredService<CnnProcessor>();
+                await processor.Run();
+            }
+                
         }
         catch (Exception ex)
         {

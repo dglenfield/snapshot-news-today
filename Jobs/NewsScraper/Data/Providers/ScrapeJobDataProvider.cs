@@ -15,7 +15,7 @@ namespace NewsScraper.Data.Providers;
 /// write operations.</param>
 /// <param name="databaseVersion">The version identifier for the database schema. Used to determine schema setup and overwrite behavior.</param>
 /// <param name="logger">The logger instance used to record informational and error messages during database operations.</param>
-public class ScraperJobDataProvider(string databaseFilePath, string databaseVersion, Logger logger) 
+public class ScrapeJobDataProvider(string databaseFilePath, string databaseVersion, Logger logger) 
     : BaseDataProvider(databaseFilePath, databaseVersion, logger)
 {
     private readonly Logger _logger = logger;
