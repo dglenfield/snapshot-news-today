@@ -31,6 +31,11 @@ internal class MainPageScraper(IOptions<NewsSourceOptions> newsSourceOptions)
         // Scrape the HTML document for Page Sections and content
         scrapeResult.Sections = ProcessDocument(htmlDocument.DocumentNode);
 
+        // Update the number of news sections and articles scraped
+        scrapeResult.SectionsScraped = scrapeResult.Sections.Count(s => s.ScrapeSuccess == true);
+        foreach (var section in scrapeResult.Sections.Where(s => s.ScrapeSuccess == true))
+            scrapeResult.ArticlesScraped += section.Content.Count;
+
         // Get all "article" and "live" hyperlinks on the page
         var allLinks = GetAllHyperlinks(htmlDocument.DocumentNode); // TODO: Compare articles found with all links
         

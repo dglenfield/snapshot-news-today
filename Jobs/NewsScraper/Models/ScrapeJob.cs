@@ -10,8 +10,8 @@ public static class ScrapeJob
 {
     public static List<string>? ErrorMessages { get; set; }
     public static long Id { get; set; }
-    public static int? NewsArticlesScraped { get; set; }
-    public static int? NewsArticlesFound { get; set; }
+    public static int ArticlesScraped { get; set; }
+    public static int SectionsScraped { get; set; }
     public static DateTime? ScrapeEnd { get; set; }
     public static DateTime ScrapeStart { get; set; } = default!;
     public static string SourceName { get; set; } = default!;
@@ -31,8 +31,8 @@ public static class ScrapeJob
         {
             ErrorMessages,
             Id,
-            NewsArticlesScraped,
-            NewsArticlesFound,
+            ArticlesScraped,
+            SectionsScraped,
             ScrapeEnd,
             ScrapeStart,
             SourceName,

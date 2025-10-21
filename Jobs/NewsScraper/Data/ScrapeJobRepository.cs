@@ -38,16 +38,16 @@ internal class ScrapeJobRepository(ScrapeJobDataProvider dataProvider, Logger lo
     {
         string commandText = @"
             UPDATE scrape_job_run
-            SET news_articles_found = @news_articles_found, 
-                news_articles_scraped = @news_articles_scraped, 
+            SET sections_scraped = @sections_scraped, 
+                articles_scraped = @articles_scraped, 
                 scrape_end = @scrape_end, 
                 success = @success, 
                 error_message = @error_message
             WHERE id = @id;";
         SqliteParameter[] parameters = [
             new("@id", ScrapeJob.Id),
-            new("@news_articles_found", (object?)ScrapeJob.NewsArticlesFound ?? DBNull.Value),
-            new("@news_articles_scraped", (object?)ScrapeJob.NewsArticlesScraped ?? DBNull.Value),
+            new("@sections_scraped", (object?)ScrapeJob.SectionsScraped ?? DBNull.Value),
+            new("@articles_scraped", (object?)ScrapeJob.ArticlesScraped ?? DBNull.Value),
             new("@scrape_end", (object?)ScrapeJob.ScrapeEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@success", ScrapeJob.Success.HasValue ? (ScrapeJob.Success.Value ? 1 : 0) : (object?)DBNull.Value),
             new("@error_message", (object?)(ScrapeJob.ErrorMessages != null && ScrapeJob.ErrorMessages.Any() ? string.Join(" | ", ScrapeJob.ErrorMessages) : null) ?? DBNull.Value)];

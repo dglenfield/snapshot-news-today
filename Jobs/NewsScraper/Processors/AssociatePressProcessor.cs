@@ -21,16 +21,15 @@ internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, 
             ScrapeJob.Id = await scrapeJobRepository.CreateJobRunAsync();
             ScrapeJob.ScrapeStart = DateTime.UtcNow;
 
+            // Scrape the main page
             ScrapeResult scrapeResult = await mainPageScraper.Scrape();
 
-            //await apArticleProvider.GetArticle();
+            ScrapeJob.SectionsScraped = scrapeResult.SectionsScraped;
+            ScrapeJob.ArticlesScraped = scrapeResult.ArticlesScraped;
+            ScrapeJob.Success = true;
 
             // Log the scraping results
             LogScrapingResults(scrapeResult);
-
-            //ScrapeJobRun.NewsArticlesFound = newsArticles.Count;
-            //ScrapeJobRun.NewsArticlesScraped = newsArticles.Count(a => a.Success == true);
-            ScrapeJob.Success = true;
         }
         catch (Exception ex)
         {
@@ -82,5 +81,7 @@ internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, 
             logger.Log($"{section.Content.Count} articles found in {section.Name}\n", logAsRawMessage: true);
         }
         logger.Log($"Total articles found: {articleCount}", logAsRawMessage: true);
+        logger.Log($"Sections scraped: {ScrapeJob.SectionsScraped}", logAsRawMessage: true);
+        logger.Log($"Articles scraped: {ScrapeJob.ArticlesScraped}", logAsRawMessage: true);
     }
 }

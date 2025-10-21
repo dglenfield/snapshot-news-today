@@ -5,6 +5,8 @@ namespace NewsScraper.Models.AssociatedPress.MainPage;
 
 public class ScrapeResult
 {
+    public int ArticlesScraped { get; set; }
+    public int SectionsScraped { get; set; }
     public required Uri SourceUri { get; set; }
     public DateTime? ScrapedOn { get; set; }
     public List<string> ScrapeExceptions { get; set; } = [];
