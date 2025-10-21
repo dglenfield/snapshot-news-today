@@ -1,5 +1,7 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
+using Microsoft.Extensions.Options;
+using NewsScraper.Configuration.Options;
 using NewsScraper.Models;
 using NewsScraper.Models.CNN;
 using System.ComponentModel;
@@ -8,16 +10,23 @@ using System.Text.Json;
 
 namespace NewsScraper.Providers;
 
-internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logger logger)
+internal class CnnArticleProvider(Logger logger, IOptions<PythonOptions> pythonOptions)
 {
+    private readonly PythonOptions _pythonOptions = pythonOptions.Value;
+
+    private readonly string _getArticlesTestFile = @"C:\Users\danny\OneDrive\Projects\SnapshotNewsToday\TestData\CNN-Test-Landing-Page-2025-10-03-0200.html";
+    private readonly bool _getArticlesUseTestFile = true;
+    private readonly string _getArticleTestFile = @"C:\Users\danny\OneDrive\Projects\SnapshotNewsToday\TestData\CNN-test-article.html";
+    private readonly bool _getArticleUseTestFile = true;
+
     public async Task<List<Article>> GetArticles()
     {
-        string scriptPath = Configuration.PythonSettings.GetNewsFromCnnScript;
+        string scriptPath = _pythonOptions.Scripts.GetNewsFromCnn;
         scriptPath += $" --id {ScrapeJob.Id}";
 
         // FOR TESTING: Append test landing page file argument
-        bool useTestLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.UseTestLandingPageFile;
-        string testLandingPageFile = Configuration.TestSettings.NewsStoryProvider.GetNews.TestLandingPageFile;
+        bool useTestLandingPageFile = _getArticlesUseTestFile;
+        string testLandingPageFile = _getArticlesTestFile;
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
 
@@ -28,7 +37,7 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
         var jsonDocument = await RunPythonScript(scriptPath);
         foreach (var jsonElement in jsonDocument.RootElement.EnumerateArray())
         {
-            Uri.TryCreate($"{cnnBaseUrl}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
+            Uri.TryCreate($"{ScrapeJob.SourceUri}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
             if (uri is null)
                 continue; // Skip if URI is invalid
 
@@ -53,7 +62,7 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
         return [.. distinctArticles.OrderBy(a => a.Category).ThenByDescending(a => a.PublishDate)];
     }
 
-    public async Task GetArticle(Models.CNN.Article article)
+    public async Task GetArticle(Article article)
     {
         logger.Log($"Fetching article content from {article.ArticleUri}", LogLevel.Info);
         if (article.ArticleUri.AbsoluteUri.Contains("videos/"))
@@ -65,9 +74,9 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
         }
 
         HtmlDocument htmlDoc = new();
-        if (Configuration.TestSettings.NewsArticleProvider.GetArticle.UseTestArticleFile)   
+        if (_getArticleUseTestFile)   
         {
-            string testArticleFile = Configuration.TestSettings.NewsArticleProvider.GetArticle.TestArticleFile;
+            string testArticleFile = _getArticleTestFile;
             if (string.IsNullOrEmpty(testArticleFile) || !File.Exists(testArticleFile))
             {
                 logger.Log($"Test article file not found: {testArticleFile}", LogLevel.Error);
@@ -147,7 +156,7 @@ internal class CnnArticleProvider(string cnnBaseUrl, string pythonExePath, Logge
     /// <exception cref="InvalidOperationException">Thrown if the Python process cannot be started.</exception>
     private async Task<JsonDocument> RunPythonScript(string scriptPath)
     {
-        var pythonScript = new ProcessStartInfo(pythonExePath)
+        var pythonScript = new ProcessStartInfo(_pythonOptions.PythonExePath)
         {
             Arguments = scriptPath,
             UseShellExecute = false,

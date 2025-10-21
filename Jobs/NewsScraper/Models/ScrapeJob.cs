@@ -8,11 +8,10 @@ namespace NewsScraper.Models;
 /// </summary>
 public static class ScrapeJob
 {
-    public static List<string>? ErrorMessage { get; set; }
+    public static List<string>? ErrorMessages { get; set; }
     public static long Id { get; set; }
     public static int? NewsArticlesScraped { get; set; }
     public static int? NewsArticlesFound { get; set; }
-    public static string? RawOutput { get; set; }
     public static DateTime? ScrapeEnd { get; set; }
     public static DateTime ScrapeStart { get; set; } = default!;
     public static string SourceName { get; set; } = default!;
@@ -30,11 +29,10 @@ public static class ScrapeJob
     {
         var state = new
         {
-            ErrorMessage,
+            ErrorMessages,
             Id,
             NewsArticlesScraped,
             NewsArticlesFound,
-            RawOutput,
             ScrapeEnd,
             ScrapeStart,
             SourceName,

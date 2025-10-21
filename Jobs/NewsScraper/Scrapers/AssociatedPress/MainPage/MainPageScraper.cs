@@ -1,21 +1,23 @@
 ﻿using HtmlAgilityPack;
+using Microsoft.Extensions.Options;
+using NewsScraper.Configuration.Options;
 using NewsScraper.Models.AssociatedPress.MainPage;
 using NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
 using System.Text.RegularExpressions;
 
 namespace NewsScraper.Scrapers.AssociatedPress.MainPage;
 
-internal class MainPageScraper
+internal class MainPageScraper(IOptions<NewsSourceOptions> newsSourceOptions)
 {
-    private readonly string _baseUrl = "https://apnews.com";
-    private readonly string _testFile = @"C:/Users/danny/OneDrive/Projects/SnapshotNewsToday/TestData/AssociatedPressNews.html";
-    private readonly bool _useTestFile = true;
+    private readonly Uri _baseUri = newsSourceOptions.Value.AssociatedPress.BaseUri;
+    private readonly string _testFile = newsSourceOptions.Value.AssociatedPress.Scrapers.MainPage.TestFile;
+    private readonly bool _useTestFile = newsSourceOptions.Value.AssociatedPress.Scrapers.MainPage.UseTestFile;
 
     public async Task<ScrapeResult> Scrape()
     {
         ScrapeResult scrapeResult = new()
         {
-            SourceUri = new Uri(_baseUrl),
+            SourceUri = _baseUri,
             ScrapedOn = DateTime.UtcNow
         };
 
@@ -24,7 +26,7 @@ internal class MainPageScraper
         if (_useTestFile)
             htmlDocument.Load(_testFile);
         else
-            htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(_baseUrl));
+            htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(_baseUri));
 
         // Scrape the HTML document for Page Sections and content
         scrapeResult.Sections = ProcessDocument(htmlDocument.DocumentNode);
@@ -73,8 +75,8 @@ internal class MainPageScraper
     {
         return documentNode.SelectNodes("//a[@href]")?.Select(node => node.GetAttributeValue("href", ""))
             .Where(href =>
-                href.StartsWith($"{_baseUrl}/article/", StringComparison.OrdinalIgnoreCase) ||
-                href.StartsWith($"{_baseUrl}/live/", StringComparison.OrdinalIgnoreCase))
+                href.StartsWith($"{_baseUri}/article/", StringComparison.OrdinalIgnoreCase) ||
+                href.StartsWith($"{_baseUri}/live/", StringComparison.OrdinalIgnoreCase))
             .Distinct().ToList() ?? [];
     }
 

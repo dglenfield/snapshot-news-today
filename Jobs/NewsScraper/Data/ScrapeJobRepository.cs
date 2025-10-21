@@ -50,7 +50,7 @@ internal class ScrapeJobRepository(ScrapeJobDataProvider dataProvider, Logger lo
             new("@news_articles_scraped", (object?)ScrapeJob.NewsArticlesScraped ?? DBNull.Value),
             new("@scrape_end", (object?)ScrapeJob.ScrapeEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@success", ScrapeJob.Success.HasValue ? (ScrapeJob.Success.Value ? 1 : 0) : (object?)DBNull.Value),
-            new("@error_message", (object?)ScrapeJob.ErrorMessage ?? DBNull.Value)];
+            new("@error_message", (object?)(ScrapeJob.ErrorMessages != null && ScrapeJob.ErrorMessages.Any() ? string.Join(" | ", ScrapeJob.ErrorMessages) : null) ?? DBNull.Value)];
         try
         {
             int rowsAffected = await dataProvider.ExecuteNonQueryAsync(commandText, parameters);

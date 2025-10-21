@@ -7,12 +7,14 @@ public class Logger
     private readonly string? _logDirectory;
     private readonly LogLevel _logLevel;
     private readonly string? _logName;
+    private readonly bool _logToFile;
 
-    public Logger(LogLevel logLevel, string? logDirectory = null, string? logName = null)
+    public Logger(LogLevel logLevel, bool logToFile = true, string? logDirectory = null, string? logName = null)
     {
         _logDirectory = logDirectory;
         _logLevel = logLevel;
         _logName = logName;
+        _logToFile = logToFile;
 
         if (_logDirectory is not null)
             Directory.CreateDirectory(_logDirectory);
@@ -40,7 +42,7 @@ public class Logger
         Console.WriteLine(message);
         Console.ForegroundColor = originalColor;
                 
-        if (_logDirectory is null)
+        if (!_logToFile)
             return;
         
         // Log to File
@@ -49,7 +51,7 @@ public class Logger
         {
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string className = Path.GetFileNameWithoutExtension(sourceFilePath);
-            logEntry = $"{timestamp} [{messageLogLevel.ToString().ToUpper()}] \t{message} <{className}.{memberName}> (Line {sourceLineNumber})";
+            logEntry = $"{timestamp} [{messageLogLevel.ToString().ToUpper()}] \t{message}\t <{className}.{memberName}> (Line {sourceLineNumber})";
         }            
         
         try

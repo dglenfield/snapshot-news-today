@@ -1,28 +1,19 @@
 ﻿using Common.Logging;
+using Microsoft.Extensions.Options;
+using NewsScraper.Configuration.Options;
 using System.Data.Common;
 
 namespace NewsScraper.Data.Providers;
 
-/// <summary>
-/// Provides data access and management functionality for the scraper job, including database creation and schema
-/// setup for storing job runs and news story articles.
-/// </summary>
-/// <remarks>This provider is responsible for initializing the database and creating required tables for tracking
-/// scrape job runs and associated news story articles. If the database version ends with '-overwrite', any existing
-/// database at the specified path will be deleted and recreated. All operations are logged using the provided logger.
-/// </remarks>
-/// <param name="databaseFilePath">The file path to the SQLite database used for storing scraper job data. Must be a valid path accessible for read and
-/// write operations.</param>
-/// <param name="databaseVersion">The version identifier for the database schema. Used to determine schema setup and overwrite behavior.</param>
-/// <param name="logger">The logger instance used to record informational and error messages during database operations.</param>
-public class ScrapeJobDataProvider(string databaseFilePath, string databaseVersion, Logger logger) 
-    : BaseDataProvider(databaseFilePath, databaseVersion, logger)
+public class ScrapeJobDataProvider(Logger logger, IOptions<DatabaseOptions> databaseOptions)
+    : BaseDataProvider(logger, databaseOptions)
 {
+    private readonly DatabaseOptions _databaseOptions = databaseOptions.Value;
     private readonly Logger _logger = logger;
 
     public async Task CreateDatabaseAsync()
     {
-        bool overwriteFlag = _databaseVersion.EndsWith("-overwrite", StringComparison.OrdinalIgnoreCase);
+        bool overwriteFlag = _databaseOptions.NewsScraperJob.DatabaseVersion.EndsWith("-overwrite", StringComparison.OrdinalIgnoreCase);
         if (File.Exists(_databaseFilePath) && !overwriteFlag)
             return; // Database file already exists, no need to create it again
         else if (overwriteFlag)

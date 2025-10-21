@@ -3,7 +3,7 @@ using HtmlAgilityPack;
 using NewsScraper.Models.CNN;
 using System.Text.RegularExpressions;
 
-namespace NewsScraper.Scrapers.AssociatedPress;
+namespace NewsScraper.Processors;
 
 internal class ArticlePageProcessor(Logger logger)
 {

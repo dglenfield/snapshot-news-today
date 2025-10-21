@@ -1,23 +1,16 @@
 ﻿using Common.Data;
 using Common.Logging;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Options;
+using NewsScraper.Configuration.Options;
 using System.Data.Common;
 
 namespace NewsScraper.Data.Providers;
 
-/// <summary>
-/// Provides a base implementation for NewsScraper data providers that interact with a SQLite database.
-/// </summary>
-/// <param name="databaseFilePath">The path to the SQLite database file to be used by the provider. Must not be null, empty, or contain only
-/// whitespace.</param>
-/// <param name="databaseVersion">The version string representing the expected database schema or data version. Must not be null, empty, or contain
-/// only whitespace.</param>
-/// <param name="logger">The logger instance used to record diagnostic and operational messages for the provider. Must not be null.</param>
-public abstract class BaseDataProvider(string databaseFilePath, string databaseVersion, Logger logger)
-    : SqliteDataProvider(databaseFilePath)
+public abstract class BaseDataProvider(Logger logger, IOptions<DatabaseOptions> databaseOptions)
+    : SqliteDataProvider(databaseOptions.Value.NewsScraperJob.DatabaseFilePath)
 {
-    protected readonly string _databaseVersion = string.IsNullOrWhiteSpace(databaseVersion) 
-        ? throw new ArgumentNullException(nameof(databaseVersion)) : databaseVersion;
+    private readonly DatabaseOptions _databaseOptions = databaseOptions.Value;    
 
     /// <summary>
     /// Asynchronously retrieves the current version string of the database.
@@ -53,7 +46,7 @@ public abstract class BaseDataProvider(string databaseFilePath, string databaseV
 
             // Insert database_info record with database version
             string commandText = "PRAGMA foreign_keys = ON; INSERT INTO database_info (version) VALUES (@version);";
-            SqliteParameter[] parameters = [new("@version", _databaseVersion.Split('-')[0])];
+            SqliteParameter[] parameters = [new("@version", _databaseOptions.NewsScraperJob.DatabaseVersion.Split('-')[0])];
             int affectedRows = await this.ExecuteNonQueryAsync(commandText, parameters);
             if (affectedRows == 0)
                 throw new InvalidOperationException("Insert database_info failed, no rows affected.");

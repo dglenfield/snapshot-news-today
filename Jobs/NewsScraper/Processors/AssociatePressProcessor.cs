@@ -1,4 +1,6 @@
 ﻿using Common.Logging;
+using Microsoft.Extensions.Options;
+using NewsScraper.Configuration.Options;
 using NewsScraper.Data;
 using NewsScraper.Models;
 using NewsScraper.Models.AssociatedPress.MainPage;
@@ -6,11 +8,10 @@ using NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 namespace NewsScraper.Processors;
 
-internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, MainPageScraper mainPageScraper, Logger logger)
+internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, MainPageScraper mainPageScraper, Logger logger, 
+    IOptions<NewsSourceOptions> newsSourceOptions)
 {
-    private readonly string _baseUrl = "https://apnews.com";
-    private readonly string _testFile = @"C:/Users/danny/OneDrive/Projects/SnapshotNewsToday/TestData/AssociatedPressNews.html";
-    private readonly bool _useTestFile = true;
+    private readonly NewsSourceOptions _newsSourceOptions = newsSourceOptions.Value;
 
     internal async Task Run()
     {
@@ -20,7 +21,7 @@ internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, 
             ScrapeJob.Id = await scrapeJobRepository.CreateJobRunAsync();
             ScrapeJob.ScrapeStart = DateTime.UtcNow;
 
-            var scrapeResult = await mainPageScraper.Scrape();
+            ScrapeResult scrapeResult = await mainPageScraper.Scrape();
 
             //await apArticleProvider.GetArticle();
 
@@ -34,7 +35,7 @@ internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, 
         catch (Exception ex)
         {
             ScrapeJob.Success = false;
-            ScrapeJob.ErrorMessage = [ex.Message];
+            ScrapeJob.ErrorMessages = [ex.Message];
             throw;
         }
         finally
@@ -47,10 +48,10 @@ internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, 
 
     private void LogScrapingResults(ScrapeResult result)
     {
-        if (_useTestFile)
-            logger.Log($"Scraping results from test file: {_testFile}");
+        if (_newsSourceOptions.AssociatedPress.Scrapers.MainPage.UseTestFile)
+            logger.Log($"Scraping results from test file: {_newsSourceOptions.AssociatedPress.Scrapers.MainPage.UseTestFile}");
         else
-            logger.Log($"Scraping results from {_baseUrl}");
+            logger.Log($"Scraping results from {ScrapeJob.SourceUri.AbsoluteUri}");
 
         logger.Log("\nScraping Exceptions:", logAsRawMessage: true);
         foreach (var section in result.Sections)

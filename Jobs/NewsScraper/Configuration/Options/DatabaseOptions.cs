@@ -1,0 +1,29 @@
+﻿using NewsScraper.Serialization;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+
+namespace NewsScraper.Configuration.Options;
+
+public class DatabaseOptions
+{
+    public const string SectionName = "Database";
+
+    [Required]
+    public NewsScraperJobOptions NewsScraperJob { get; set; } = new();
+    public class NewsScraperJobOptions
+    {
+        [Required]
+        public string DatabaseVersion { get; set; } = default!;
+
+        [Required]
+        public string DirectoryPath { get; set; } = default!;
+
+        [Required]
+        public string FileName { get; set; } = default!;
+
+        public string DatabaseFilePath => Path.Combine(DirectoryPath, FileName);
+    }
+
+    public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
+        CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
+}
