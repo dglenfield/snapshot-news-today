@@ -1,4 +1,4 @@
-﻿namespace NewsScraper.Enums;
+﻿namespace NewsScraper;
 
 /// <summary>
 /// Supported news websites for scraping.

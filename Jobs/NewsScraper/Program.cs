@@ -6,7 +6,6 @@ using NewsScraper.Configuration;
 using NewsScraper.Configuration.Options;
 using NewsScraper.Data;
 using NewsScraper.Data.Providers;
-using NewsScraper.Enums;
 using NewsScraper.Models;
 using NewsScraper.Processors;
 using NewsScraper.Providers;
