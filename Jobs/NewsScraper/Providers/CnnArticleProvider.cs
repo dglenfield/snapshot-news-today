@@ -22,7 +22,7 @@ internal class CnnArticleProvider(Logger logger, IOptions<PythonOptions> pythonO
     public async Task<List<Article>> GetArticles()
     {
         string scriptPath = _pythonOptions.Scripts.GetNewsFromCnn;
-        scriptPath += $" --id {ScrapeJob.Id}";
+        //scriptPath += $" --id {ScrapeJob.Id}";
 
         // FOR TESTING: Append test landing page file argument
         bool useTestLandingPageFile = _getArticlesUseTestFile;
@@ -37,21 +37,21 @@ internal class CnnArticleProvider(Logger logger, IOptions<PythonOptions> pythonO
         var jsonDocument = await RunPythonScript(scriptPath);
         foreach (var jsonElement in jsonDocument.RootElement.EnumerateArray())
         {
-            Uri.TryCreate($"{ScrapeJob.SourceUri}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
-            if (uri is null)
-                continue; // Skip if URI is invalid
+            //Uri.TryCreate($"{ScrapeJob.SourceUri}{jsonElement.GetProperty("url").GetString()}", UriKind.Absolute, out Uri? uri);
+            //if (uri is null)
+            //    continue; // Skip if URI is invalid
 
-            if (!DateTime.TryParse(jsonElement.GetProperty("publishdate").GetString(), out DateTime publishDate))
-                continue; // Skip if publish date is invalid
+            //if (!DateTime.TryParse(jsonElement.GetProperty("publishdate").GetString(), out DateTime publishDate))
+            //    continue; // Skip if publish date is invalid
 
-            distinctArticles.Add(new()
-            {
-                ArticleUri = uri,
-                PublishDate = publishDate,
-                JobRunId = ScrapeJob.Id,
-                SourceName = "CNN",
-                Headline = jsonElement.GetProperty("headline").GetString()
-            });
+            //distinctArticles.Add(new()
+            //{
+            //    ArticleUri = uri,
+            //    PublishDate = publishDate,
+            //    JobRunId = ScrapeJob.Id,
+            //    SourceName = "CNN",
+            //    Headline = jsonElement.GetProperty("headline").GetString()
+            //});
         }
 
         // Group news articles by category and assign category to each article

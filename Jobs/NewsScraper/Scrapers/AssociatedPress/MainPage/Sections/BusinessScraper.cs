@@ -6,8 +6,8 @@ public class BusinessScraper(HtmlNode documentNode) : PageSectionScraperBase(doc
 {
     public override string SectionName => "Business";
     public override string SectionXPath => "//div[@data-gtm-topic='Topics - Business']";
-    public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
+    public override string HeadlinesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
 
-    protected override string? GetContentUnixTimestamp(HtmlNode articleNode)
+    protected override string? FindUnixTimestamp(HtmlNode articleNode)
         => articleNode.GetAttributeValue("data-updated-date-timestamp", "");
 }

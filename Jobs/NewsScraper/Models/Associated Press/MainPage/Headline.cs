@@ -3,18 +3,19 @@ using System.Text.Json;
 
 namespace NewsScraper.Models.AssociatedPress.MainPage;
 
-public class PageSectionContent
+public class Headline
 {
+    public long Id { get; set; }
+    public string? SectionName { get; init; }
     public string? Title { get; set; } // Headline
-    public Uri? TargetUri { get; set; }
+    public Uri TargetUri { get; set; } = default!;
+    public DateTime? PublishedOn { get; set; } // UTC time
     public DateTime? LastUpdatedOn { get; set; } // UTC time
     public bool MostRead { get; set; } = false;
-    public DateTime? PublishedOn { get; set; } // UTC time
-    public string? ScrapeMessage { get; set; } // Error or informational
 
     public override bool Equals(object? obj)
     {
-        return obj is PageSectionContent other && TargetUri?.Equals(other.TargetUri) == true;
+        return obj is Headline other && TargetUri?.Equals(other.TargetUri) == true;
     }
 
     public override int GetHashCode()

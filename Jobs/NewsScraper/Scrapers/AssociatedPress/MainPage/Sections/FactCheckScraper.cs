@@ -6,8 +6,8 @@ public class FactCheckScraper(HtmlNode documentNode) : PageSectionScraperBase(do
 {
     public override string SectionName => "Fact Check";
     public override string SectionXPath => "//div[@data-gtm-topic='Topics - Fact Check']";
-    public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
+    public override string HeadlinesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
 
-    protected override string? GetContentUnixTimestamp(HtmlNode articleNode)
-        => articleNode.GetAttributeValue("data-updated-date-timestamp", "");
+    protected override string? FindUnixTimestamp(HtmlNode headlineNode)
+        => headlineNode.GetAttributeValue("data-updated-date-timestamp", "");
 }

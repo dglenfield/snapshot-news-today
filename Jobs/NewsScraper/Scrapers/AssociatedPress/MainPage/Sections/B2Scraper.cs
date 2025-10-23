@@ -6,8 +6,8 @@ public class B2Scraper(HtmlNode documentNode) : PageSectionScraperBase(documentN
 {
     public override string SectionName => "B2";
     public override string SectionXPath => "//div[normalize-space(@class) = 'PageListRightRailA' and @data-tb-region='B2']";
-    public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
+    public override string HeadlinesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
 
-    protected override string? GetContentUnixTimestamp(HtmlNode articleNode)
+    protected override string? FindUnixTimestamp(HtmlNode articleNode)
         => articleNode.GetAttributeValue("data-updated-date-timestamp", "");
 }

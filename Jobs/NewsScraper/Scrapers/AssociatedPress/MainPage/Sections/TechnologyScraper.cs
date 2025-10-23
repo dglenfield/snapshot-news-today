@@ -7,8 +7,8 @@ public class TechnologyScraper(HtmlNode documentNode) : PageSectionScraperBase(d
     public override string SectionName => "Technology";
     public override string SectionXPath
         => "//div[normalize-space(@class) = 'PageListRightRailA' and .//h2/a[contains(normalize-space(text()), 'Technology')]]";
-    public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
+    public override string HeadlinesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
 
-    protected override string? GetContentUnixTimestamp(HtmlNode articleNode)
-        => articleNode.GetAttributeValue("data-updated-date-timestamp", "");
+    protected override string? FindUnixTimestamp(HtmlNode headlineNode)
+        => headlineNode.GetAttributeValue("data-updated-date-timestamp", "");
 }

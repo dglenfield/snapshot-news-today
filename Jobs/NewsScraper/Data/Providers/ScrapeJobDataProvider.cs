@@ -20,34 +20,60 @@ public class ScrapeJobDataProvider(Logger logger, IOptions<DatabaseOptions> data
             await DeleteAsync(); // Delete existing database if overwrite flag is set
 
         await CreateDatabaseInfoTable();
-        await CreateScrapeJobRunTable();
+        await CreateScrapeJobTable();
+        await CreateAssociatedPressHeadlineTable();
         await CreateNewsArticleTable();
         _logger.Log($"Database '{_fileName}' created successfully at '{_directoryPath}'.", LogLevel.Success);
     }
 
     #region Table Creation Methods
 
-    private async Task CreateScrapeJobRunTable()
+    private async Task CreateScrapeJobTable()
     {
         try
         {
             // Create the scrape_job_run table if it doesn't exist
             string commandText = @"
-                CREATE TABLE IF NOT EXISTS scrape_job_run (
+                CREATE TABLE IF NOT EXISTS scrape_job (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     source_name TEXT NOT NULL,
                     source_uri TEXT NOT NULL,
+                    job_started_on TEXT NOT NULL,
+                    job_finished_on TEXT,
                     sections_scraped INTEGER,
-                    articles_scraped INTEGER,
-                    scrape_start TEXT NOT NULL DEFAULT (datetime('now')),
-                    scrape_end TEXT,
-                    success INTEGER,
-                    error_message TEXT);";
+                    headlines_scraped INTEGER,
+                    scrape_success INTEGER,
+                    error_messages TEXT);";
             await ExecuteNonQueryAsync(commandText);
         }
         catch (DbException)
         {
-            _logger.Log($"Error creating the scrape_job_run table.", LogLevel.Error);
+            _logger.Log($"Error creating the scrape_job table.", LogLevel.Error);
+            throw;
+        }
+    }
+
+    private async Task CreateAssociatedPressHeadlineTable()
+    {
+        try
+        {
+            // Create the associated_press_headline table if it doesn't exist
+            string commandText = @"
+                CREATE TABLE IF NOT EXISTS associated_press_headline (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scrape_job_id INTEGER, -- Foreign key to link to scrape_job table
+                    section_name TEXT,
+                    headline TEXT,
+                    target_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
+                    last_updated_on TEXT,
+                    published_on TEXT,
+                    most_read INTEGER,
+                    FOREIGN KEY(scrape_job_id) REFERENCES scrape_job(id) ON DELETE CASCADE);";
+            await ExecuteNonQueryAsync(commandText);
+        }
+        catch (DbException)
+        {
+            _logger.Log($"Error creating associated_press_headline table.", LogLevel.Error);
             throw;
         }
     }
@@ -60,20 +86,18 @@ public class ScrapeJobDataProvider(Logger logger, IOptions<DatabaseOptions> data
             string commandText = @"
                 CREATE TABLE IF NOT EXISTS news_article (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    job_run_id INTEGER, -- Foreign key to link to scrape_news_job_run table
-                    create_date TEXT NOT NULL DEFAULT (datetime('now')),
-                    source_name TEXT NOT NULL, 
+                    article_headline_id INTEGER, -- Foreign key to link to article_headline table
+                    create_date TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
                     article_uri TEXT NOT NULL UNIQUE, -- article_uri is unique to prevent duplicate articles
                     category TEXT,
                     headline TEXT,
-                    story_headline TEXT,
                     author TEXT,
                     original_publish_date TEXT,
                     last_updated_date TEXT,
                     article_content TEXT,
                     success INTEGER,
                     error_message TEXT,
-                    FOREIGN KEY(job_run_id) REFERENCES scrape_job_run(id) ON DELETE CASCADE);";
+                    FOREIGN KEY(article_headline_id) REFERENCES ap_news_article_headline(id) ON DELETE CASCADE);";
             await ExecuteNonQueryAsync(commandText);
         }
         catch (DbException)

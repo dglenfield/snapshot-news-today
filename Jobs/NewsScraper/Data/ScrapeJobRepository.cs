@@ -6,60 +6,62 @@ using System.Data.Common;
 
 namespace NewsScraper.Data;
 
-/// <summary>
-/// Provides methods for creating and updating scrape job run and news story article records.
-/// </summary>
-/// <param name="dataProvider">The data provider used to execute database commands and manage connections for scrape job run and news story article
-/// records.</param>
-/// <param name="logger">The logger used to record errors and operational events during database operations.</param>
 internal class ScrapeJobRepository(ScrapeJobDataProvider dataProvider, Logger logger)
 {
     public string DatabaseFilePath => dataProvider.DatabaseFilePath;
 
-    public async Task<long> CreateJobRunAsync()
+    public async Task<long> CreateScrapeJobAsync(ScrapeJob job)
     {
-        string commandText = "INSERT INTO scrape_job_run (source_name, source_uri) VALUES (@source_name, @source_uri);";
+        string commandText = @"
+            INSERT INTO scrape_job (source_name, source_uri, job_started_on) 
+            VALUES (@source_name, @source_uri, @scrape_started_on);";
         SqliteParameter[] parameters = [
-            new("@source_name", (object)ScrapeJob.SourceName),
-            new("@source_uri", (object)ScrapeJob.SourceUri.AbsoluteUri)];
+            new("@source_name", (object)job.SourceName),
+            new("@source_uri", (object)job.SourceUri.AbsoluteUri),
+            new("@scrape_started_on", (object?)job.JobStartedOn.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value)];
         try
         {
             long id = await dataProvider.InsertAsync(commandText, parameters);
-            return id > 0 ? id : throw new InvalidOperationException("Insert scrape_job_run failed, no row id returned.");
+            return id > 0 ? id : throw new InvalidOperationException("Insert scrape_job failed, no row id returned.");
         }
         catch (DbException)
         {
-            logger.Log("Error inserting record into scrape_job_run.", LogLevel.Error);
+            logger.Log("Error inserting record into scrape_job.", LogLevel.Error);
             throw;
         }
     }
 
-    public async Task UpdateJobRunAsync()
+    public async Task UpdateScrapeJobAsync(ScrapeJob job)
     {
+        string errorMessages = job.ScrapeException is not null ? $"{job.ScrapeException.Source}: {job.ScrapeException.Message} | " : string.Empty;
+        if (job.PageScrapeResult?.ScrapeExceptions is not null)
+            foreach (var exception in job.PageScrapeResult.ScrapeExceptions) 
+                errorMessages += $"{exception.Source}: {exception.Message} | ";
+
         string commandText = @"
-            UPDATE scrape_job_run
+            UPDATE scrape_job
             SET sections_scraped = @sections_scraped, 
-                articles_scraped = @articles_scraped, 
-                scrape_end = @scrape_end, 
-                success = @success, 
-                error_message = @error_message
+                headlines_scraped = @headlines_scraped,
+                job_finished_on = @job_finished_on, 
+                scrape_success = @scrape_success, 
+                error_messages = @error_messages
             WHERE id = @id;";
         SqliteParameter[] parameters = [
-            new("@id", ScrapeJob.Id),
-            new("@sections_scraped", (object?)ScrapeJob.SectionsScraped ?? DBNull.Value),
-            new("@articles_scraped", (object?)ScrapeJob.ArticlesScraped ?? DBNull.Value),
-            new("@scrape_end", (object?)ScrapeJob.ScrapeEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
-            new("@success", ScrapeJob.Success.HasValue ? (ScrapeJob.Success.Value ? 1 : 0) : (object?)DBNull.Value),
-            new("@error_message", (object?)(ScrapeJob.ErrorMessages != null && ScrapeJob.ErrorMessages.Any() ? string.Join(" | ", ScrapeJob.ErrorMessages) : null) ?? DBNull.Value)];
+            new("@id", job.Id),
+            new("@sections_scraped", (object?)job.PageScrapeResult?.SectionsScraped ?? DBNull.Value),
+            new("@headlines_scraped", (object?)job.PageScrapeResult?.HeadlinesScraped ?? DBNull.Value),
+            new("@job_finished_on", (object?)job.JobFinishedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
+            new("@scrape_success", job.Success.HasValue ? (job.Success.Value ? 1 : 0) : (object?)DBNull.Value),
+            new("@error_messages", !string.IsNullOrWhiteSpace(errorMessages) ? errorMessages : (object?)DBNull.Value)];
         try
         {
             int rowsAffected = await dataProvider.ExecuteNonQueryAsync(commandText, parameters);
             if (rowsAffected == 0)
-                throw new InvalidOperationException($"No record found with id {ScrapeJob.Id} to update in table scrape_job_run.");
+                throw new InvalidOperationException($"No record found with id = {job.Id} to update in the scrape_job table.");
         }
         catch (DbException)
         {
-            logger.Log("Error updating record in scrape_job_run.", LogLevel.Error);
+            logger.Log("Error updating record in scrape_job.", LogLevel.Error);
             throw;
         }
     }

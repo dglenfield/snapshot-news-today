@@ -6,8 +6,8 @@ public class LatestNewsScraper(HtmlNode documentNode) : PageSectionScraperBase(d
 {
     public override string SectionName => "Latest News";
     public override string SectionXPath => "//bsp-list-loadmore[@data-gtm-region='Most Recent']";
-    public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
+    public override string HeadlinesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
 
-    protected override string? GetContentUnixTimestamp(HtmlNode articleNode)
-        => articleNode.GetAttributeValue("data-updated-date-timestamp", "");
+    protected override string? FindUnixTimestamp(HtmlNode headlineNode)
+        => headlineNode.GetAttributeValue("data-updated-date-timestamp", "");
 }

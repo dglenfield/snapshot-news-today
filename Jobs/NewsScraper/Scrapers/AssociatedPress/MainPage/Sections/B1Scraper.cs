@@ -6,5 +6,5 @@ public class B1Scraper(HtmlNode documentNode) : PageSectionScraperBase(documentN
 {
     public override string SectionName => "B1";
     public override string SectionXPath => "//div[normalize-space(@class) = 'PageListStandardE' and @data-tb-region='B1']";
-    public override string ArticlesXPath => ".//bsp-custom-headline";
+    public override string HeadlinesXPath => ".//bsp-custom-headline";
 }

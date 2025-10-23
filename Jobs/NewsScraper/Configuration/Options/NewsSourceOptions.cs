@@ -12,6 +12,8 @@ public class NewsSourceOptions
     public AssociatedPressOptions AssociatedPress { get; set; } = new();
     public class AssociatedPressOptions
     {
+        public const string SectionName = "AssociatedPress";
+
         [Required]
         public Uri BaseUri { get; set; } = default!;
 

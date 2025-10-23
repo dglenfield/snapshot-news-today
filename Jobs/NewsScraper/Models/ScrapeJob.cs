@@ -1,4 +1,5 @@
-﻿using NewsScraper.Serialization;
+﻿using NewsScraper.Models.AssociatedPress.MainPage;
+using NewsScraper.Serialization;
 using System.Text.Json;
 
 namespace NewsScraper.Models;
@@ -6,42 +7,19 @@ namespace NewsScraper.Models;
 /// <summary>
 /// Represents the single execution of a scraping job.
 /// </summary>
-public static class ScrapeJob
+public class ScrapeJob
 {
-    public static List<string>? ErrorMessages { get; set; }
-    public static long Id { get; set; }
-    public static int ArticlesScraped { get; set; }
-    public static int SectionsScraped { get; set; }
-    public static DateTime? ScrapeEnd { get; set; }
-    public static DateTime ScrapeStart { get; set; } = default!;
-    public static string SourceName { get; set; } = default!;
-    public static Uri SourceUri { get; set; } = default!;
-    public static bool? Success { get; set; }
+    public long Id { get; set; }
+    public required string SourceName { get; set; }
+    public required Uri SourceUri { get; set; }
+    public DateTime JobStartedOn { get; } = DateTime.UtcNow;
+    public DateTime? JobFinishedOn { get; set; }
+    public bool? Success { get; set; }
+    public ScrapeException? ScrapeException { get; set; }
+    public PageScrapeResult? PageScrapeResult { get; set; }
+    public bool UseTestFile { get; set; }
+    public string? TestFile { get; set; }
 
-    /// <summary>
-    /// Returns a JSON-formatted string that represents the current state of the object.
-    /// </summary>
-    /// <remarks>The returned JSON string uses default serialization options and omits properties with null
-    /// values for readability. This method is useful for logging, debugging, or exporting the object's state.</remarks>
-    /// <returns>A string containing the JSON representation of the object, formatted with indentation and excluding properties
-    /// with null values.</returns>
-    public static string ToJson()
-    {
-        var state = new
-        {
-            ErrorMessages,
-            Id,
-            ArticlesScraped,
-            SectionsScraped,
-            ScrapeEnd,
-            ScrapeStart,
-            SourceName,
-            SourceUri,
-            Success
-        };
-
-        return JsonConfig.ToJson(state, JsonSerializerOptions.Default,
-            CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented
-        );
-    }
+    public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
+        CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }

@@ -55,23 +55,29 @@ public class Program
             if (configSettings.ApplicationOptions.LogConfigurationSettings)
                 configSettings.WriteToLog();
 
-            ScrapeJob.SourceName = targetSite.ToString();
-            ScrapeJob.SourceUri = targetSite switch
-            {
-                NewsWebsite.AssociatedPress => configSettings.NewsSourceOptions.AssociatedPress.BaseUri,
-                NewsWebsite.CNN => configSettings.NewsSourceOptions.CNN.BaseUri,
-                _ => throw new NotImplementedException($"Scraping not implemented for {targetSite}")
-            };
-
             // Ensure the SQLite database is created
             var scrapeJobDataProvider = host.Services.GetRequiredService<ScrapeJobDataProvider>();
             await scrapeJobDataProvider.CreateDatabaseAsync();
 
+            ScrapeJob job = new()
+            {
+                SourceName = targetSite.ToString(),
+                SourceUri = targetSite switch
+                {
+                    NewsWebsite.AssociatedPress => configSettings.NewsSourceOptions.AssociatedPress.BaseUri,
+                    NewsWebsite.CNN => configSettings.NewsSourceOptions.CNN.BaseUri,
+                    _ => throw new NotImplementedException($"Scraping not implemented for {targetSite}")
+                }
+            };
+
             // Resolve and run the main service
             if (targetSite == NewsWebsite.AssociatedPress)
             {
+                var options = host.Services.GetRequiredService<IOptions<NewsSourceOptions.AssociatedPressOptions>>().Value;
+                job.UseTestFile = options.Scrapers.MainPage.UseTestFile;
+                job.TestFile = job.UseTestFile ? options.Scrapers.MainPage.TestFile : null;
                 var processor = host.Services.GetRequiredService<AssociatePressProcessor>();
-                await processor.Run();
+                await processor.Run(job);
             }
             else if (targetSite == NewsWebsite.CNN)
             {
@@ -113,6 +119,18 @@ public class Program
             services.AddOptions<NewsSourceOptions>()
                 .BindConfiguration(NewsSourceOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
+            if (targetSite == NewsWebsite.AssociatedPress)
+            {
+                services.AddOptions<NewsSourceOptions.AssociatedPressOptions>()
+                    .BindConfiguration($"{NewsSourceOptions.SectionName}:{NewsSourceOptions.AssociatedPressOptions.SectionName}")
+                    .ValidateDataAnnotations().ValidateOnStart();
+            }
+            else if (targetSite == NewsWebsite.CNN)
+            {
+                services.AddOptions<NewsSourceOptions.CnnOptions>()
+                    .BindConfiguration(NewsSourceOptions.SectionName)
+                    .ValidateDataAnnotations().ValidateOnStart();
+            }
 
             // ConfigurationSettings
             services.AddTransient<ConfigurationSettings>();
@@ -129,9 +147,10 @@ public class Program
             services.AddTransient<ScrapeJobRepository>();
             services.AddTransient<NewsArticleRepository>();
 
-            // Processors and other providers
+            // News website specific services
             if (targetSite == NewsWebsite.AssociatedPress)
             {
+                services.AddTransient<AssociatedPressHeadlineRepository>();
                 services.AddTransient<AssociatePressProcessor>();
                 services.AddTransient<MainPageScraper>();
             }

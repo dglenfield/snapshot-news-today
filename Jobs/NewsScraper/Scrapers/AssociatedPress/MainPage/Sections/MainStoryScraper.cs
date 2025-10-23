@@ -7,14 +7,14 @@ public class MainStoryScraper(HtmlNode documentNode, string region) : PageSectio
 {
     public override string SectionName => $"{region} Main Story";
     public override string SectionXPath => $"//div[normalize-space(@class) = 'PageListStandardE' and @data-tb-region='{region}']";
-    public override string ArticlesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
-    protected override string? GetContentUnixTimestamp(HtmlNode articleNode)
+    public override string HeadlinesXPath => ".//div[normalize-space(@class) = 'PagePromo']";
+    protected override string? FindUnixTimestamp(HtmlNode articleNode)
         => articleNode.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
 
-    protected override void PreProcessSection(PageSection section)
+    protected override void PreProcessSection(HashSet<Headline> headlines)
     {
         // Get the main article
         var mainArticleNode = SectionNode.SelectSingleNode(".//div[normalize-space(@class) = 'PageListStandardE-leadPromo-info']");
-        section.Content.Add(GetContent(mainArticleNode));
+        headlines.Add(GetHeadline(mainArticleNode));
     }
 }

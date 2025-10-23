@@ -7,64 +7,70 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
 {
     public abstract string SectionName { get; }
     public abstract string SectionXPath { get; }
-    public abstract string ArticlesXPath { get; }
+    public abstract string HeadlinesXPath { get; }
+
+    protected virtual Uri FindTargetUri(HtmlNode headlineNode)
+        => new(headlineNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", ""));
+    protected virtual string? FindTitle(HtmlNode headlineNode)
+        => headlineNode.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText.Trim();
+    protected virtual string? FindUnixTimestamp(HtmlNode headlineNode)
+        => headlineNode.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
 
     protected virtual HtmlNode SectionNode => documentNode.SelectSingleNode(SectionXPath) 
         ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {SectionXPath}");
-    protected virtual HtmlNodeCollection ArticleNodes => SectionNode.SelectNodes(ArticlesXPath) 
-        ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {ArticlesXPath}");
+    protected virtual HtmlNodeCollection HeadlineNodes => SectionNode.SelectNodes(HeadlinesXPath) 
+        ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {HeadlinesXPath}");
 
-    public PageSection Scrape()
+    public SectionScrapeResult Scrape()
     {
-        PageSection section = new(SectionName) { ScrapeSuccess = true };
+        SectionScrapeResult result = new() { SectionName = SectionName };
+        HashSet<Headline> headlines = [];
 
         try
         {
             // Hook for pre-processing - contains no default processing if not overriden
-            PreProcessSection(section); 
+            PreProcessSection(headlines);
             // Hook for primary processing - contains the default processing if not overridden
-            ProcessSection(section);
+            ProcessSection(headlines);
             // Hook for additional processing - contains no default processing if not overriden
-            PostProcessSection(section); 
+            PostProcessSection(headlines);
         }
         catch (NodeNotFoundException ex)
         {
-            section.ScrapeException = ex;
-            section.ScrapeMessage = $"XPath error. {ex.Message}";
-            section.ScrapeSuccess = false;
+            result.ScrapeException = new ScrapeException() { Source = $"Scraping section {SectionName}", Exception = ex };
+            result.Message = new ScrapeMessage() { Source = $"Scraping section {SectionName}", Message = $"XPath error. {ex.Message}" };
         }
         catch (Exception ex) 
         {
-            section.ScrapeException = ex;
-            section.ScrapeMessage = $"Scrape failed. {ex.Message}";
-            section.ScrapeSuccess = false;
+            result.ScrapeException = new ScrapeException() { Source = $"Scraping section {SectionName}", Exception = ex };
+            result.Message = new ScrapeMessage() { Source = $"Scraping section {SectionName}", Message = $"Scrape failed. {ex.Message}" };
         }
 
-        return section;
+        result.Headlines = headlines;
+        return result;
     }
 
-    protected virtual void PreProcessSection(PageSection section) { }
-    protected virtual void ProcessSection(PageSection section) 
+    // Pre-processing Hook - no default processing
+    protected virtual void PreProcessSection(HashSet<Headline> headlines) { }
+
+    // Primary Processing Hook - contains default processing
+    protected virtual void ProcessSection(HashSet<Headline> headlines) 
     {
-        foreach (var articleNode in ArticleNodes)
-            section.Content.Add(GetContent(articleNode));
+        foreach (var headlineNode in HeadlineNodes)
+            headlines.Add(GetHeadline(headlineNode));
     }
-    protected virtual void PostProcessSection(PageSection section) { }
 
-    protected virtual Uri? GetContentTargetUri(HtmlNode articleNode) 
-        => new(articleNode.SelectSingleNode(".//a[@href]").GetAttributeValue("href", ""));
-    protected virtual string? GetContentTitle(HtmlNode articleNode) 
-        => articleNode.SelectSingleNode(".//span[normalize-space(@class) = 'PagePromoContentIcons-text']").InnerText.Trim();
-    protected virtual string? GetContentUnixTimestamp(HtmlNode articleNode) 
-        => articleNode.SelectSingleNode(".//div[normalize-space(@class) = 'PagePromo']")?.GetAttributeValue("data-updated-date-timestamp", "");
+    // Additional Processing Hook - no default processing
+    protected virtual void PostProcessSection(HashSet<Headline> headlines) { }
 
-    protected virtual PageSectionContent GetContent(HtmlNode contentNode)
+    protected virtual Headline GetHeadline(HtmlNode headlineNode)
     {
-        string? unixTimestamp = GetContentUnixTimestamp(contentNode);
+        string? unixTimestamp = FindUnixTimestamp(headlineNode);
         return new()
         {
-            TargetUri = GetContentTargetUri(contentNode),
-            Title = GetContentTitle(contentNode),
+            SectionName = SectionName,
+            TargetUri = FindTargetUri(headlineNode),
+            Title = FindTitle(headlineNode),
             LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
         };
     }

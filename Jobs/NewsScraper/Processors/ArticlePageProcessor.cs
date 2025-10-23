@@ -60,7 +60,8 @@ internal class ArticlePageProcessor(Logger logger)
         if (bspNode == null)
             return null;
 
-        var timestampStr = bspNode.GetAttributeValue("data-timestamp", null);
+        //var timestampStr = bspNode.GetAttributeValue("data-timestamp", null);
+        var timestampStr = bspNode.GetAttributeValue("data-timestamp", string.Empty);
         if (long.TryParse(timestampStr, out long unixTimestamp))
             return unixTimestamp;
 

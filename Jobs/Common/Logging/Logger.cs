@@ -42,7 +42,7 @@ public class Logger
         Console.WriteLine(message);
         Console.ForegroundColor = originalColor;
                 
-        if (!_logToFile)
+        if (!_logToFile || string.IsNullOrWhiteSpace(_logDirectory))
             return;
         
         // Log to File

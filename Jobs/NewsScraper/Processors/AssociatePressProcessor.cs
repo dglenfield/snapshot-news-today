@@ -1,6 +1,4 @@
 ﻿using Common.Logging;
-using Microsoft.Extensions.Options;
-using NewsScraper.Configuration.Options;
 using NewsScraper.Data;
 using NewsScraper.Models;
 using NewsScraper.Models.AssociatedPress.MainPage;
@@ -8,80 +6,82 @@ using NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 namespace NewsScraper.Processors;
 
-internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, MainPageScraper mainPageScraper, Logger logger, 
-    IOptions<NewsSourceOptions> newsSourceOptions)
+internal class AssociatePressProcessor(ScrapeJobRepository scrapeJobRepository, AssociatedPressHeadlineRepository headlineRepository,
+    MainPageScraper mainPageScraper, Logger logger)
 {
-    private readonly NewsSourceOptions _newsSourceOptions = newsSourceOptions.Value;
-
-    internal async Task Run()
+    internal async Task Run(ScrapeJob job)
     {
         try
         {
             // Insert initial ScrapeJobRun record to track this scraping session
-            ScrapeJob.Id = await scrapeJobRepository.CreateJobRunAsync();
-            ScrapeJob.ScrapeStart = DateTime.UtcNow;
+            job.Id = await scrapeJobRepository.CreateScrapeJobAsync(job);
 
             // Scrape the main page
-            ScrapeResult scrapeResult = await mainPageScraper.Scrape();
+            job.PageScrapeResult = await mainPageScraper.Scrape(job.SourceUri, job.UseTestFile, job.TestFile);
+            foreach (var headline in job.PageScrapeResult.Headlines)
+            {
+                // Save the headlines to the database
+                headline.Id = await headlineRepository.CreateAssociatedPressHeadlineAsync(headline, job.Id);
 
-            ScrapeJob.SectionsScraped = scrapeResult.SectionsScraped;
-            ScrapeJob.ArticlesScraped = scrapeResult.ArticlesScraped;
-            ScrapeJob.Success = true;
+                // Scrape the full article for each headline
+
+            }
 
             // Log the scraping results
-            LogScrapingResults(scrapeResult);
+            LogScrapingResults(job);
+
+            job.Success = true;
         }
         catch (Exception ex)
         {
-            ScrapeJob.Success = false;
-            ScrapeJob.ErrorMessages = [ex.Message];
+            job.Success = false;
+            job.ScrapeException = new ScrapeException() { Source = $"{nameof(Run)}", Exception = ex};
             throw;
         }
         finally
         {
             // Update ScrapeJob record with scrape results
-            ScrapeJob.ScrapeEnd = DateTime.UtcNow;
-            await scrapeJobRepository.UpdateJobRunAsync();
+            job.JobFinishedOn = DateTime.UtcNow;
+            await scrapeJobRepository.UpdateScrapeJobAsync(job);
         }
     }
 
-    private void LogScrapingResults(ScrapeResult result)
+    private void LogScrapingResults(ScrapeJob job)
     {
-        if (_newsSourceOptions.AssociatedPress.Scrapers.MainPage.UseTestFile)
-            logger.Log($"Scraping results from test file: {_newsSourceOptions.AssociatedPress.Scrapers.MainPage.UseTestFile}");
+        if (job.UseTestFile)
+            logger.Log($"Scraping results from test file: {job.TestFile}");
         else
-            logger.Log($"Scraping results from {ScrapeJob.SourceUri.AbsoluteUri}");
+            logger.Log($"Scraping results from {job.SourceUri.AbsoluteUri}");
 
-        logger.Log("\nScraping Exceptions:", logAsRawMessage: true);
-        foreach (var section in result.Sections)
-            if (section.ScrapeException is not null)
-                logger.LogException(section.ScrapeException);
-
-        logger.Log("\nScraping Messages:", logAsRawMessage: true);
-        foreach (var section in result.Sections)
-            if (section.ScrapeMessage is not null)
-                if (section.ScrapeSuccess.HasValue && section.ScrapeSuccess.Value == false)
-                    logger.Log(section.ScrapeMessage, LogLevel.Error, logAsRawMessage: true);
-                else
-                    logger.Log(section.ScrapeMessage, logAsRawMessage: true);
-
-        logger.Log($"\n{result.Sections.Count} page sections found", logAsRawMessage: true);
-        int articleCount = 0;
-        foreach (var section in result.Sections)
+        if (job.PageScrapeResult is null)
         {
-            logger.Log($"{section.Name} Section", logAsRawMessage: true);
-            foreach (var article in section.Content)
-            {
-                articleCount++;
-                if (article.LastUpdatedOn.HasValue)
-                    logger.Log($"{article.LastUpdatedOn}", logAsRawMessage: true);
-                logger.Log($"  {article.Title}", logAsRawMessage: true);
-                logger.Log($"  {article.TargetUri}", logAsRawMessage: true);
-            }
-            logger.Log($"{section.Content.Count} articles found in {section.Name}\n", logAsRawMessage: true);
+            logger.Log("\nThere is no Page Scrape Result!\n", LogLevel.Error);
+            return;
         }
-        logger.Log($"Total articles found: {articleCount}", logAsRawMessage: true);
-        logger.Log($"Sections scraped: {ScrapeJob.SectionsScraped}", logAsRawMessage: true);
-        logger.Log($"Articles scraped: {ScrapeJob.ArticlesScraped}", logAsRawMessage: true);
+
+        logger.Log($"\nScraping Exceptions: {(job.PageScrapeResult.ScrapeExceptions.Count > 0 ? string.Empty : "None")}", logAsRawMessage: true);
+        foreach (var exception in job.PageScrapeResult.ScrapeExceptions)
+            logger.LogException(exception.Exception);
+
+        logger.Log($"\nScraping Messages: {(job.PageScrapeResult.Messages.Count > 0 ? string.Empty : "None")}", logAsRawMessage: true);
+        foreach (var message in job.PageScrapeResult.Messages)
+            logger.Log($"Message from {message.Source}: {message.Message}", logAsRawMessage: true);
+        
+        logger.Log($"\n{job.PageScrapeResult.SectionsScraped} page sections found", logAsRawMessage: true);
+        int headlineCount = 0;
+        foreach (var headlineSection in job.PageScrapeResult.Headlines.DistinctBy(a => a.SectionName))
+        {
+            logger.Log($"{headlineSection.SectionName} Section", logAsRawMessage: true);
+            var headlines = job.PageScrapeResult.Headlines.Where(a => a.SectionName == headlineSection.SectionName);
+            foreach (var headline in headlines)
+            {
+                headlineCount++;
+                logger.Log(headline.ToString(), logAsRawMessage: true);
+            }
+            logger.Log($"{headlines.Count()} headlines found in {headlineSection.SectionName}\n", logAsRawMessage: true);
+        }
+        logger.Log($"Total headlines found: {headlineCount}", logAsRawMessage: true);
+        logger.Log($"Sections scraped: {job.PageScrapeResult.SectionsScraped}", logAsRawMessage: true);
+        logger.Log($"Headlines scraped: {job.PageScrapeResult.HeadlinesScraped}", logAsRawMessage: true);
     }
 }

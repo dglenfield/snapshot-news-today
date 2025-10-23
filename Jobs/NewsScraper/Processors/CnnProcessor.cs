@@ -13,7 +13,7 @@ internal class CnnProcessor(Logger logger, CnnArticleProvider cnnArticleProvider
         List<Models.CNN.Article> newsArticles = await cnnArticleProvider.GetArticles();
 
         // Log retrieved news articles
-        logger.Log($"Total news articles retrieved from {ScrapeJob.SourceName}: {newsArticles.Count}", LogLevel.Debug);
+        //logger.Log($"Total news articles retrieved from {ScrapeJob.SourceName}: {newsArticles.Count}", LogLevel.Debug);
         foreach (Models.CNN.Article article in newsArticles)
         {
             // Save each article to the database
