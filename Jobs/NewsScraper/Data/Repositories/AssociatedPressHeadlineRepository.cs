@@ -13,7 +13,7 @@ internal class AssociatedPressHeadlineRepository(NewsScraperDatabase database)
             VALUES (@job_id, @section_name, @headline, @target_uri, @last_updated_on, @published_on, @most_read);";
         SqliteParameter[] parameters = [
             new("@job_id", jobId),
-            new("@section_name", headline.SectionName),
+            new("@section_name", (object?)headline.SectionName ?? DBNull.Value),
             new("@headline", headline.Title),
             new("@target_uri", (object)headline.TargetUri.AbsoluteUri),
             new("@last_updated_on", (object?)headline.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),

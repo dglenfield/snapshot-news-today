@@ -22,15 +22,8 @@ internal class AssociatePressProcessor(ScrapeAssociatedPressJobRepository scrape
 
             // Scrape the full article for each headline
             foreach (var headline in job.ScrapeMainPageResult.Headlines.Where(h => h.Id > 0))
-            {
-                job.ScrapedArticles.Add(await articleScraper.ScrapeAsync(headline, job.UseArticlePageTestFile, job.ArticlePageTestFile));
-                if (job.UseArticlePageTestFile)
-                    break;
-            }
-
-            // Log the scraping results
-            job.WriteToLog(logger);
-
+                job.ScrapedArticles.Add(await articleScraper.ScrapeAsync(headline, job));
+            
             job.IsSuccess = true;
         }
         catch (Exception ex)
@@ -44,6 +37,9 @@ internal class AssociatePressProcessor(ScrapeAssociatedPressJobRepository scrape
             // Update ScrapeJob record with scrape results
             job.JobFinishedOn = DateTime.UtcNow;
             await scrapeJobRepository.UpdateAsync(job);
+
+            // Log the scraping results
+            job.WriteToLog(logger);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Common.Logging;
 using HtmlAgilityPack;
 using NewsScraper.Data.Repositories;
+using NewsScraper.Models.AssociatedPress;
 using NewsScraper.Models.AssociatedPress.ArticlePage;
 using NewsScraper.Models.AssociatedPress.MainPage;
 
@@ -10,26 +11,27 @@ namespace NewsScraper.Scrapers.AssociatedPress.ArticlePage;
 
 internal class ArticlePageScraper(AssociatedPressArticleRepository articleRepository, Logger logger)
 {
-    public async Task<Article> ScrapeAsync(Headline headline, bool useTestFile = false, string? testFile = null)
+    public async Task<Article> ScrapeAsync(Headline headline, ScrapeJob job)
     {
         Article article = new()
         {
             HeadlineId = headline.Id,
-            ScrapedOn = DateTime.UtcNow
+            ScrapedOn = DateTime.UtcNow,
+            SourceUri = headline.TargetUri,
+            TestFile = job.ArticlePageTestFile
         };
-        if (useTestFile == false)
-            article.SourceUri = headline.TargetUri;
-        else
-            article.TestFile = testFile;
 
+        if (job.SkipArticlePageScrape)
+            return article;
+        
         try
         {
             article.Id = await articleRepository.CreateAsync(article);
 
             // Get the Main Page HTML or the HTML test file
             HtmlDocument htmlDocument = new();
-            if (useTestFile && !string.IsNullOrWhiteSpace(testFile))
-                htmlDocument.Load(testFile);
+            if (job.UseArticlePageTestFile && !string.IsNullOrWhiteSpace(job.ArticlePageTestFile))
+                htmlDocument.Load(job.ArticlePageTestFile);
             else
                 htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(article.SourceUri));
 

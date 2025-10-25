@@ -11,6 +11,9 @@ internal class MainPageScraper(AssociatedPressHeadlineRepository headlineReposit
     public async Task<ScrapeMainPageResult> ScrapeAsync(ScrapeJob job)
     {
         ScrapeMainPageResult scrapeResult = new() { ScrapedOn = DateTime.UtcNow };
+        if (!job.SkipMainPageScrape)
+            return await CreateTestHeadline(job);
+
         try
         {
             // Get the Main Page HTML or the HTML test file
@@ -71,6 +74,15 @@ internal class MainPageScraper(AssociatedPressHeadlineRepository headlineReposit
         }
 
         return scrapeResult;
+    }
+
+    public async Task<ScrapeMainPageResult> CreateTestHeadline(ScrapeJob job)
+    {
+        ScrapeMainPageResult result = new() { ScrapedOn = DateTime.UtcNow };
+        var headline = new Headline() { Title = "Test Headline", TargetUri = new("https://test.com") };
+        headline.Id = await headlineRepository.CreateAsync(headline, job.Id);
+        result.Headlines.Add(headline);
+        return result;
     }
 
     private List<string> GetAllHyperlinks(Uri sourceUri, HtmlNode documentNode)
