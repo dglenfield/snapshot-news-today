@@ -21,9 +21,9 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
     protected virtual HtmlNodeCollection HeadlineNodes => SectionNode.SelectNodes(HeadlinesXPath) 
         ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {HeadlinesXPath}");
 
-    public SectionScrapeResult Scrape()
+    public ScrapeSectionResult Scrape()
     {
-        SectionScrapeResult result = new() { SectionName = SectionName };
+        ScrapeSectionResult result = new() { SectionName = SectionName };
         HashSet<Headline> headlines = [];
 
         try
@@ -37,13 +37,11 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
         }
         catch (NodeNotFoundException ex)
         {
-            result.ScrapeException = new ScrapeException() { Source = $"Scraping section {SectionName}", Exception = ex };
-            result.Message = new ScrapeMessage() { Source = $"Scraping section {SectionName}", Message = $"XPath error. {ex.Message}" };
+            result.ScrapeException = new ScrapeException() { Source = $"Scraping section {SectionName} XPath error", Exception = ex };
         }
         catch (Exception ex) 
         {
             result.ScrapeException = new ScrapeException() { Source = $"Scraping section {SectionName}", Exception = ex };
-            result.Message = new ScrapeMessage() { Source = $"Scraping section {SectionName}", Message = $"Scrape failed. {ex.Message}" };
         }
 
         result.Headlines = headlines;

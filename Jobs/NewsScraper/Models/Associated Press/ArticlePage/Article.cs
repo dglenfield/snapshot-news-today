@@ -1,21 +1,26 @@
-﻿using NewsScraper.Serialization;
+﻿using NewsScraper.Models.AssociatedPress.MainPage;
+using NewsScraper.Serialization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NewsScraper.Models.AssociatedPress;
+namespace NewsScraper.Models.AssociatedPress.ArticlePage;
 
 public class Article
 {
+    public long Id { get; set; }
+    public required long HeadlineId { get; set; }
+    public DateTime? ScrapedOn { get; set; }
+    public string? Headline { get; set; }
+    public Uri SourceUri { get; set; } = default!;
+    public string? TestFile { get; set; }
+    public DateTime? PublishedOn { get; set; } // UTC time
+    public DateTime? LastUpdatedOn { get; set; } // UTC time
     public string? Author { get; set; }
     public List<string>? ContentParagraphs { get; set; }
-    public string? Headline { get; set; }
-    public DateTime? LastUpdatedOn { get; set; } // UTC time
-    public DateTime? PublishedOn { get; set; } // UTC time
-    public List<string>? ScrapeMessages { get; set; } // Error or informational
-    public bool? ScrapeSuccess { get; set; }
-    public DateTime? ScrapedOn { get; set; }
-    public Uri SourceUri { get; set; } = default!;
+    public ScrapeException? ScrapeException { get; set; }
+
+    public bool IsSuccess => ScrapeException is null;
 
     [JsonIgnore]
     public string Content => string.Join("\n\n", ContentParagraphs!);

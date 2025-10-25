@@ -1,11 +1,11 @@
 ﻿using Common.Logging;
-using NewsScraper.Data;
+using NewsScraper.Data.Repositories;
 using NewsScraper.Models;
 using NewsScraper.Providers;
 
 namespace NewsScraper.Processors;
 
-internal class CnnProcessor(Logger logger, CnnArticleProvider cnnArticleProvider, NewsArticleRepository articleRepository)
+internal class CnnProcessor(Logger logger, CnnArticleProvider cnnArticleProvider, AssociatedPressArticleRepository articleRepository)
 {
     internal async Task Run()
     {
@@ -17,7 +17,7 @@ internal class CnnProcessor(Logger logger, CnnArticleProvider cnnArticleProvider
         foreach (Models.CNN.Article article in newsArticles)
         {
             // Save each article to the database
-            article.Id = await articleRepository.CreateNewsArticleAsync(article);
+            //article.Id = await articleRepository.CreateAsync(article);
             logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
         }
 
@@ -31,10 +31,10 @@ internal class CnnProcessor(Logger logger, CnnArticleProvider cnnArticleProvider
 
             // Scrape and save the full article content
             await cnnArticleProvider.GetArticle(article);
-            if (!await articleRepository.UpdateNewsArticleAsync(article))
-                logger.Log($"Failed to update article content for story ID {article.Id}", LogLevel.Warning);
-            else
-                logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
+            //if (!await articleRepository.UpdateArticleAsync(article))
+            //    logger.Log($"Failed to update article content for story ID {article.Id}", LogLevel.Warning);
+            //else
+            //    logger.Log(article.ToString(), LogLevel.Debug, logAsRawMessage: true);
             break; // TEMPORARY: Process only the first article for testing
         }
     }

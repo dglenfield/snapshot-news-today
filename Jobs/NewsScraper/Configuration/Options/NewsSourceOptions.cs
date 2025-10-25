@@ -21,9 +21,25 @@ public class NewsSourceOptions
         public ScraperOptions Scrapers { get; set; } = new();
         public class ScraperOptions
         {
+            public ArticlePageOptions ArticlePage { get; set; } = new();
+            public class ArticlePageOptions
+            {
+                [Required]
+                public bool Skip { get; set; }
+
+                [Required]
+                public string TestFile { get; set; } = default!;
+
+                [Required]
+                public bool UseTestFile { get; set; }
+            }
+
             public MainPageOptions MainPage { get; set; } = new();
             public class MainPageOptions
             {
+                [Required]
+                public bool Skip { get; set; }
+
                 [Required]
                 public string TestFile { get; set; } = default!;
 

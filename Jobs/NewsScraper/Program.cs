@@ -5,10 +5,11 @@ using Microsoft.Extensions.Options;
 using NewsScraper.Configuration;
 using NewsScraper.Configuration.Options;
 using NewsScraper.Data;
-using NewsScraper.Data.Providers;
-using NewsScraper.Models;
+using NewsScraper.Data.Repositories;
+using NewsScraper.Models.AssociatedPress;
 using NewsScraper.Processors;
 using NewsScraper.Providers;
+using NewsScraper.Scrapers.AssociatedPress.ArticlePage;
 using NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 namespace NewsScraper;
@@ -20,15 +21,6 @@ namespace NewsScraper;
 /// and starts the news scraping process. The exit code returned by the main method indicates success (0) or failure (1).</remarks>
 public class Program
 {
-    /// <summary>
-    /// Initializes and runs the News Scraper application using the specified command-line arguments.
-    /// </summary>
-    /// <remarks>This method serves as the application's entry point and is typically called by the runtime. 
-    /// The exit code can be used by external processes to determine whether the application ran successfully.</remarks>
-    /// <param name="args">An array of command-line arguments supplied to the application. These may be used to configure application
-    /// behavior.</param>
-    /// <returns>An integer exit code indicating the result of the application's execution. Returns 0 if the application
-    /// completes successfully; otherwise, returns 1 if an unhandled exception occurs.</returns>
     public static async Task<int> Main(string[] args)
     {
         NewsWebsite targetSite = NewsWebsite.AssociatedPress;
@@ -55,33 +47,36 @@ public class Program
                 configSettings.WriteToLog();
 
             // Ensure the SQLite database is created
-            var scrapeJobDataProvider = host.Services.GetRequiredService<ScrapeJobDataProvider>();
-            await scrapeJobDataProvider.CreateDatabaseAsync();
-
-            ScrapeJob job = new()
-            {
-                SourceName = targetSite.ToString(),
-                SourceUri = targetSite switch
-                {
-                    NewsWebsite.AssociatedPress => configSettings.NewsSourceOptions.AssociatedPress.BaseUri,
-                    NewsWebsite.CNN => configSettings.NewsSourceOptions.CNN.BaseUri,
-                    _ => throw new NotImplementedException($"Scraping not implemented for {targetSite}")
-                }
-            };
+            var database = host.Services.GetRequiredService<NewsScraperDatabase>();
+            bool databaseCreated = await database.CreateAsync();
+            logger.Log($"Database {(databaseCreated ? "created" : "already exists")} at '{database.DatabaseFilePath}'.", LogLevel.Success);
 
             // Resolve and run the main service
-            if (targetSite == NewsWebsite.AssociatedPress)
+            switch (targetSite)
             {
-                var options = host.Services.GetRequiredService<IOptions<NewsSourceOptions.AssociatedPressOptions>>().Value;
-                job.UseTestFile = options.Scrapers.MainPage.UseTestFile;
-                job.TestFile = job.UseTestFile ? options.Scrapers.MainPage.TestFile : null;
-                var processor = host.Services.GetRequiredService<AssociatePressProcessor>();
-                await processor.Run(job);
-            }
-            else if (targetSite == NewsWebsite.CNN)
-            {
-                var processor = host.Services.GetRequiredService<CnnProcessor>();
-                await processor.Run();
+                case NewsWebsite.AssociatedPress:
+                    var articlePageConfig = configSettings.NewsSourceOptions.AssociatedPress.Scrapers.ArticlePage;
+                    var mainPageConfig = configSettings.NewsSourceOptions.AssociatedPress.Scrapers.MainPage;
+                    ScrapeJob job = new()
+                    {
+                        SourceName = targetSite.ToString(),
+                        SourceUri = configSettings.NewsSourceOptions.AssociatedPress.BaseUri,
+                        SkipArticlePageScrape = articlePageConfig.Skip,
+                        SkipMainPageScrape = mainPageConfig.Skip,
+                        UseArticlePageTestFile = configSettings.ApplicationOptions.UseProductionSettings ? false : articlePageConfig.UseTestFile,
+                        UseMainPageTestFile = configSettings.ApplicationOptions.UseProductionSettings ? false : mainPageConfig.UseTestFile
+                    };
+                    job.ArticlePageTestFile = job.UseArticlePageTestFile ? articlePageConfig.TestFile : null;
+                    job.MainPageTestFile = job.UseMainPageTestFile ? mainPageConfig.TestFile : null;
+                    var apProcessor = host.Services.GetRequiredService<AssociatePressProcessor>();
+                    await apProcessor.Run(job);
+                    break;
+                case NewsWebsite.CNN:
+                    var cnnProcessor = host.Services.GetRequiredService<CnnProcessor>();
+                    await cnnProcessor.Run();
+                    break;
+                default: 
+                    throw new NotImplementedException($"Scraping not implemented for {targetSite}");
             }
         }
         catch (Exception ex)
@@ -118,44 +113,41 @@ public class Program
             services.AddOptions<NewsSourceOptions>()
                 .BindConfiguration(NewsSourceOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
-            if (targetSite == NewsWebsite.AssociatedPress)
-            {
-                services.AddOptions<NewsSourceOptions.AssociatedPressOptions>()
-                    .BindConfiguration($"{NewsSourceOptions.SectionName}:{NewsSourceOptions.AssociatedPressOptions.SectionName}")
-                    .ValidateDataAnnotations().ValidateOnStart();
-            }
-            else if (targetSite == NewsWebsite.CNN)
-            {
-                services.AddOptions<NewsSourceOptions.CnnOptions>()
-                    .BindConfiguration(NewsSourceOptions.SectionName)
-                    .ValidateDataAnnotations().ValidateOnStart();
-            }
 
             // ConfigurationSettings
             services.AddTransient<ConfigurationSettings>();
 
             // Logging
-            services.AddSingleton<Logger>(provider => new Logger(
+            services.AddSingleton(provider => new Logger(
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogLevel,
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogToFile,
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogDirectory,
                 logName));
 
-            // Data providers and repositories
-            services.AddTransient<ScrapeJobDataProvider>();
-            services.AddTransient<ScrapeJobRepository>();
-            services.AddTransient<NewsArticleRepository>();
+            // Database and repositories
+            services.AddTransient(provider => new NewsScraperDatabase(
+                provider.GetRequiredService<IOptions<DatabaseOptions>>()));
+            services.AddTransient<ScrapeAssociatedPressJobRepository>();
+            services.AddTransient<AssociatedPressHeadlineRepository>();
+            services.AddTransient<AssociatedPressArticleRepository>();
 
             // News website specific services
-            if (targetSite == NewsWebsite.AssociatedPress)
+            switch (targetSite)
             {
-                services.AddTransient<AssociatedPressHeadlineRepository>();
-                services.AddTransient<AssociatePressProcessor>();
-                services.AddTransient<MainPageScraper>();
-            }
-            else if (targetSite == NewsWebsite.CNN)
-            {
-                services.AddTransient<CnnArticleProvider>();
+                case NewsWebsite.AssociatedPress:
+                    services.AddOptions<NewsSourceOptions.AssociatedPressOptions>()
+                        .BindConfiguration($"{NewsSourceOptions.SectionName}:{NewsSourceOptions.AssociatedPressOptions.SectionName}")
+                        .ValidateDataAnnotations().ValidateOnStart();
+                    services.AddTransient<AssociatePressProcessor>();
+                    services.AddTransient<MainPageScraper>();
+                    services.AddTransient<ArticlePageScraper>();
+                    break;
+                case NewsWebsite.CNN:
+                    services.AddOptions<NewsSourceOptions.CnnOptions>()
+                        .BindConfiguration(NewsSourceOptions.SectionName)
+                        .ValidateDataAnnotations().ValidateOnStart();
+                    services.AddTransient<CnnArticleProvider>();
+                    break;
             }
         });
     }

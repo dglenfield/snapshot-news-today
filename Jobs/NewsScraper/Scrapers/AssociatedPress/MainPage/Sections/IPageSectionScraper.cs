@@ -5,5 +5,5 @@ namespace NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
 public interface IPageSectionScraper
 {
     string SectionName { get; }
-    SectionScrapeResult Scrape();
+    ScrapeSectionResult Scrape();
 }

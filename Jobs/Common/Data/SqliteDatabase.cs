@@ -3,25 +3,22 @@ using System.Data;
 
 namespace Common.Data;
 
-public abstract class SqliteDataProvider
+public class SqliteDatabase
 {
     public string DatabaseFilePath => _databaseFilePath;
 
-    protected readonly string _connectionString;
-    protected readonly string _databaseFilePath;
-    protected readonly string _directoryPath;
-    protected readonly string _fileName;
+    private readonly string _connectionString;
+    private readonly string _databaseFilePath;
 
-    public SqliteDataProvider(string databaseFilePath)
+    public SqliteDatabase(string databaseFilePath)
     {
         _databaseFilePath = string.IsNullOrWhiteSpace(databaseFilePath) ? throw new ArgumentNullException(nameof(databaseFilePath)) : databaseFilePath;
-        _directoryPath = Path.GetDirectoryName(databaseFilePath) ?? throw new DirectoryNotFoundException("Directory path missing or invalid.");
-        _fileName = Path.GetFileName(databaseFilePath) ?? throw new DirectoryNotFoundException("File name missing or invalid.");
         _connectionString = $"Data Source={databaseFilePath};Pooling=False";
-        
+
         // Ensure the directory exists or create it
-        if (!Directory.Exists(_directoryPath))
-            Directory.CreateDirectory(_directoryPath);
+        var directoryPath = Path.GetDirectoryName(databaseFilePath) ?? throw new DirectoryNotFoundException("Directory path missing or invalid.");
+        if (!Directory.Exists(directoryPath))
+            Directory.CreateDirectory(directoryPath);
     }
 
     /// <summary>
@@ -88,7 +85,7 @@ public abstract class SqliteDataProvider
     /// </summary>
     /// <returns>A task that represents the asynchronous delete operation. The task completes when the file has been deleted or
     /// if the file does not exist.</returns>
-    protected async Task DeleteAsync()
+    public async Task DeleteAsync()
     {
         if (!File.Exists(_databaseFilePath))
             return;
