@@ -6,7 +6,7 @@ using NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
 
 namespace NewsScraper.Scrapers.AssociatedPress.MainPage;
 
-internal class MainPageScraper(AssociatedPressHeadlineRepository headlineRepository)
+internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
 {
     public async Task<ScrapeMainPageResult> ScrapeAsync(ScrapeJob job)
     {

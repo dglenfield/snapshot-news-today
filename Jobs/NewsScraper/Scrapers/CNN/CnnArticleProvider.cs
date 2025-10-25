@@ -2,13 +2,12 @@
 using HtmlAgilityPack;
 using Microsoft.Extensions.Options;
 using NewsScraper.Configuration.Options;
-using NewsScraper.Models;
 using NewsScraper.Models.CNN;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace NewsScraper.Providers;
+namespace NewsScraper.Scrapers.CNN;
 
 internal class CnnArticleProvider(Logger logger, IOptions<PythonOptions> pythonOptions)
 {
@@ -30,7 +29,7 @@ internal class CnnArticleProvider(Logger logger, IOptions<PythonOptions> pythonO
         if (useTestLandingPageFile && !string.IsNullOrEmpty(testLandingPageFile) && File.Exists(testLandingPageFile))
             scriptPath += $" --test-landing-page-file \"{testLandingPageFile}\"";
 
-        List<Models.CNN.Article> articles = [];
+        List<Article> articles = [];
         var distinctArticles = new HashSet<Article>();
 
         // Run the Python script and parse its JSON output
@@ -56,7 +55,7 @@ internal class CnnArticleProvider(Logger logger, IOptions<PythonOptions> pythonO
 
         // Group news articles by category and assign category to each article
         foreach (var grouped in GroupNewsArticlesByCategory([.. distinctArticles]))
-            foreach (Models.CNN.Article newsArticle in grouped.Value)
+            foreach (Article newsArticle in grouped.Value)
                 newsArticle.Category = grouped.Key;
 
         return [.. distinctArticles.OrderBy(a => a.Category).ThenByDescending(a => a.PublishDate)];
@@ -128,10 +127,10 @@ internal class CnnArticleProvider(Logger logger, IOptions<PythonOptions> pythonO
         }
     }
 
-    private Dictionary<string, List<Models.CNN.Article>> GroupNewsArticlesByCategory(List<Models.CNN.Article> articles)
+    private Dictionary<string, List<Article>> GroupNewsArticlesByCategory(List<Article> articles)
     {
-        var groupedArticles = new Dictionary<string, List<Models.CNN.Article>>();
-        foreach (Models.CNN.Article article in articles)
+        var groupedArticles = new Dictionary<string, List<Article>>();
+        foreach (Article article in articles)
         {
             if (article.ArticleUri is null)
                 continue; // Skip if Article or ArticleUri is null

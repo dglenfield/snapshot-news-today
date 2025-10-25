@@ -3,39 +3,41 @@ using NewsScraper.Models.AssociatedPress.MainPage;
 
 namespace NewsScraper.Data.Repositories;
 
-internal class AssociatedPressHeadlineRepository(NewsScraperDatabase database)
+internal class APNewsHeadlineRepository(NewsScraperDatabase database)
 {
     public async Task<long> CreateAsync(Headline headline, long jobId)
     {
         string commandText = @"
-            INSERT INTO associated_press_headline (
+            INSERT INTO ap_news_headline (
                 job_id, section_name, headline, target_uri, last_updated_on, published_on, most_read) 
             VALUES (@job_id, @section_name, @headline, @target_uri, @last_updated_on, @published_on, @most_read);";
+
         SqliteParameter[] parameters = [
             new("@job_id", jobId),
             new("@section_name", (object?)headline.SectionName ?? DBNull.Value),
             new("@headline", headline.Title),
-            new("@target_uri", (object)headline.TargetUri.AbsoluteUri),
+            new("@target_uri", headline.TargetUri.AbsoluteUri),
             new("@last_updated_on", (object?)headline.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@published_on", (object?)headline.PublishedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@most_read", headline.MostRead ? 1 : 0)
         ];
 
         long id = await database.InsertAsync(commandText, parameters);
-        return id > 0 ? id : throw new InvalidOperationException("Insert associated_press_headline failed, no row id returned.");
+        return id > 0 ? id : throw new InvalidOperationException("Insert into ap_news_headline failed, no row id returned.");
     }
 
     public async Task<long> CreateWithRetryAsync(Headline headline, long scrapeJobId)
     {
         string commandText = @"
-            INSERT INTO associated_press_headline (
+            INSERT INTO ap_news_headline (
                 scrape_job_id, section_name, headline, target_uri, last_updated_on, published_on, most_read) 
             VALUES (@scrape_job_id, @section_name, @headline, @target_uri, @last_updated_on, @published_on, @most_read);";
+
         SqliteParameter[] parameters = [
             new("@scrape_job_id", scrapeJobId),
             new("@section_name", headline.SectionName),
             new("@headline", headline.Title),
-            new("@target_uri", (object)headline.TargetUri.AbsoluteUri),
+            new("@target_uri", headline.TargetUri.AbsoluteUri),
             new("@last_updated_on", (object?)headline.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@published_on", (object?)headline.PublishedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@most_read", headline.MostRead ? 1 : 0)

@@ -3,23 +3,24 @@ using NewsScraper.Models.AssociatedPress.ArticlePage;
 
 namespace NewsScraper.Data.Repositories;
 
-internal class AssociatedPressArticleRepository(NewsScraperDatabase database)
+internal class APNewsArticleRepository(NewsScraperDatabase database)
 {
     public async Task<long> CreateAsync(Article article)
     {
         string source = article.TestFile is null ? article.SourceUri.AbsoluteUri : article.TestFile;
 
         string commandText = @"
-            INSERT INTO associated_press_article (
+            INSERT INTO ap_news_article (
                 headline_id, source)
             VALUES (
                 @headline_id, @source);";
+
         SqliteParameter[] parameters = [
             new("@headline_id", article.HeadlineId),
             new("@source", source)];
 
         long id = await database.InsertAsync(commandText, parameters);
-        return id > 0 ? id : throw new InvalidOperationException("Insert associated_press_article failed, no row id returned.");
+        return id > 0 ? id : throw new InvalidOperationException("Insert into ap_news_article failed, no row id returned.");
     }
 
     public async Task UpdateAsync(Article article)
@@ -28,7 +29,7 @@ internal class AssociatedPressArticleRepository(NewsScraperDatabase database)
             throw new ArgumentException("Article must have a valid Id to update.", nameof(article));
 
         string commandText = @"
-            UPDATE associated_press_article
+            UPDATE ap_news_article
             SET headline = @headline, 
                 author = @author,
                 last_updated_on = @last_updated_on,
@@ -49,6 +50,6 @@ internal class AssociatedPressArticleRepository(NewsScraperDatabase database)
 
         int rowsAffected = await database.ExecuteNonQueryAsync(commandText, parameters);
         if (rowsAffected == 0)
-            throw new InvalidOperationException($"No record found with id {article.Id} to update in table news_article.");
+            throw new InvalidOperationException($"No record found with id {article.Id} to update in table ap_news_article.");
     }
 }

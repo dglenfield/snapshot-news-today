@@ -17,9 +17,9 @@ public class NewsScraperDatabase(IOptions<DatabaseOptions> options) : SqliteData
             await DeleteAsync(); // Delete existing database if overwrite flag is set
 
         await CreateDatabaseInfoTableAsync();
-        await CreateScrapeAssociatedPressJobTableAsync();
-        await CreateAssociatedPressHeadlineTableAsync();
-        await CreateAssociatedPressArticleTableAsync();
+        await CreateAPNewsScrapeJobTableAsync();
+        await CreateAPNewsHeadlineTableAsync();
+        await CreateAPNewsArticleTableAsync();
 
         return true;
     }
@@ -50,17 +50,18 @@ public class NewsScraperDatabase(IOptions<DatabaseOptions> options) : SqliteData
             throw new InvalidOperationException("Insert database_info failed, no rows affected.");
     }
 
-    #region Associated Press Table Creation Methods
+    #region AP News Table Creation Methods
 
-    private async Task CreateScrapeAssociatedPressJobTableAsync()
+    private async Task CreateAPNewsScrapeJobTableAsync()
     {
         string commandText = @"
-                CREATE TABLE IF NOT EXISTS scrape_associated_press_job (
+                CREATE TABLE IF NOT EXISTS ap_news_scrape_job (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     source_name TEXT NOT NULL,
                     source TEXT NOT NULL,
                     job_started_on TEXT NOT NULL,
                     job_finished_on TEXT,
+                    run_time_in_seconds INTEGER,
                     sections_scraped INTEGER,
                     headlines_scraped INTEGER,
                     articles_scraped INTEGER,
@@ -71,28 +72,28 @@ public class NewsScraperDatabase(IOptions<DatabaseOptions> options) : SqliteData
         await ExecuteNonQueryAsync(commandText);
     }
 
-    private async Task CreateAssociatedPressHeadlineTableAsync()
+    private async Task CreateAPNewsHeadlineTableAsync()
     {
         string commandText = @"
-                CREATE TABLE IF NOT EXISTS associated_press_headline (
+                CREATE TABLE IF NOT EXISTS ap_news_headline (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    job_id INTEGER, -- Foreign key to link to scrape_job table
+                    job_id INTEGER, -- Foreign key to link to ap_news_scrape_job table
                     section_name TEXT,
                     headline TEXT,
                     target_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
                     last_updated_on TEXT,
                     published_on TEXT,
                     most_read INTEGER,
-                    FOREIGN KEY(job_id) REFERENCES scrape_associated_press_job(id) ON DELETE CASCADE);";
+                    FOREIGN KEY(job_id) REFERENCES ap_news_scrape_job(id) ON DELETE CASCADE);";
         await ExecuteNonQueryAsync(commandText);
     }
 
-    private async Task CreateAssociatedPressArticleTableAsync()
+    private async Task CreateAPNewsArticleTableAsync()
     {
         string commandText = @"
-                CREATE TABLE IF NOT EXISTS associated_press_article (
+                CREATE TABLE IF NOT EXISTS ap_news_article (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    headline_id INTEGER, -- Foreign key to link to associated_press_headline table
+                    headline_id INTEGER, -- Foreign key to link to ap_news_headline table
                     scraped_on TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
                     is_success INTEGER,
                     source TEXT NOT NULL,
@@ -101,7 +102,7 @@ public class NewsScraperDatabase(IOptions<DatabaseOptions> options) : SqliteData
                     last_updated_on TEXT,
                     article_content TEXT,
                     error_message TEXT,
-                    FOREIGN KEY(headline_id) REFERENCES associated_press_headline(id) ON DELETE CASCADE);";
+                    FOREIGN KEY(headline_id) REFERENCES ap_news_headline(id) ON DELETE CASCADE);";
         await ExecuteNonQueryAsync(commandText);
     }
 

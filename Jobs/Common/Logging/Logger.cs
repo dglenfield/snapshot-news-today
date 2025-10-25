@@ -20,7 +20,7 @@ public class Logger
             Directory.CreateDirectory(_logDirectory);
     }
 
-    public void Log(string message, LogLevel messageLogLevel = LogLevel.Info, bool logAsRawMessage = false,
+    public void Log(string message, LogLevel messageLogLevel = LogLevel.Info, bool logAsRawMessage = false, ConsoleColor? consoleColor = null,
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string sourceFilePath = "",
         [CallerLineNumber] int sourceLineNumber = 0)
@@ -39,6 +39,8 @@ public class Logger
             LogLevel.Error => ConsoleColor.Red,
             _ => originalColor
         };
+        if (consoleColor.HasValue)
+            Console.ForegroundColor = consoleColor.Value;
         Console.WriteLine(message);
         Console.ForegroundColor = originalColor;
                 

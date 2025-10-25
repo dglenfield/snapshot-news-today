@@ -8,9 +8,9 @@ using NewsScraper.Data;
 using NewsScraper.Data.Repositories;
 using NewsScraper.Models.AssociatedPress;
 using NewsScraper.Processors;
-using NewsScraper.Providers;
 using NewsScraper.Scrapers.AssociatedPress.ArticlePage;
 using NewsScraper.Scrapers.AssociatedPress.MainPage;
+using NewsScraper.Scrapers.CNN;
 
 namespace NewsScraper;
 
@@ -68,8 +68,8 @@ public class Program
                     };
                     job.ArticlePageTestFile = job.UseArticlePageTestFile ? articlePageConfig.TestFile : null;
                     job.MainPageTestFile = job.UseMainPageTestFile ? mainPageConfig.TestFile : null;
-                    var apProcessor = host.Services.GetRequiredService<AssociatePressProcessor>();
-                    await apProcessor.Run(job);
+                    var apNewsProcessor = host.Services.GetRequiredService<APNewsProcessor>();
+                    await apNewsProcessor.Run(job);
                     break;
                 case NewsWebsite.CNN:
                     var cnnProcessor = host.Services.GetRequiredService<CnnProcessor>();
@@ -127,9 +127,9 @@ public class Program
             // Database and repositories
             services.AddTransient(provider => new NewsScraperDatabase(
                 provider.GetRequiredService<IOptions<DatabaseOptions>>()));
-            services.AddTransient<ScrapeAssociatedPressJobRepository>();
-            services.AddTransient<AssociatedPressHeadlineRepository>();
-            services.AddTransient<AssociatedPressArticleRepository>();
+            services.AddTransient<APNewsScrapeJobRepository>();
+            services.AddTransient<APNewsHeadlineRepository>();
+            services.AddTransient<APNewsArticleRepository>();
 
             // News website specific services
             switch (targetSite)
@@ -138,7 +138,7 @@ public class Program
                     services.AddOptions<NewsSourceOptions.AssociatedPressOptions>()
                         .BindConfiguration($"{NewsSourceOptions.SectionName}:{NewsSourceOptions.AssociatedPressOptions.SectionName}")
                         .ValidateDataAnnotations().ValidateOnStart();
-                    services.AddTransient<AssociatePressProcessor>();
+                    services.AddTransient<APNewsProcessor>();
                     services.AddTransient<MainPageScraper>();
                     services.AddTransient<ArticlePageScraper>();
                     break;

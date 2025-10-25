@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace NewsScraper.Scrapers.AssociatedPress.ArticlePage;
 
-internal class ArticlePageScraper(AssociatedPressArticleRepository articleRepository, Logger logger)
+internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Logger logger)
 {
     public async Task<Article> ScrapeAsync(Headline headline, ScrapeJob job)
     {

@@ -1,11 +1,11 @@
 ﻿using Common.Logging;
 using NewsScraper.Data.Repositories;
 using NewsScraper.Models;
-using NewsScraper.Providers;
+using NewsScraper.Scrapers.CNN;
 
 namespace NewsScraper.Processors;
 
-internal class CnnProcessor(Logger logger, CnnArticleProvider cnnArticleProvider, AssociatedPressArticleRepository articleRepository)
+internal class CnnProcessor(Logger logger, CnnArticleProvider cnnArticleProvider, APNewsArticleRepository articleRepository)
 {
     internal async Task Run()
     {

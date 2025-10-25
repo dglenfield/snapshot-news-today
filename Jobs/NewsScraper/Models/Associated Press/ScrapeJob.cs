@@ -2,6 +2,7 @@
 using NewsScraper.Models.AssociatedPress.ArticlePage;
 using NewsScraper.Models.AssociatedPress.MainPage;
 using NewsScraper.Serialization;
+using System;
 using System.Text.Json;
 
 namespace NewsScraper.Models.AssociatedPress;
@@ -30,12 +31,14 @@ public class ScrapeJob
     public string? ArticlePageTestFile { get; set; }
     public string? MainPageTestFile { get; set; }
 
+    public decimal? RunTimeInSeconds => JobFinishedOn.HasValue ? (decimal)((long)(JobFinishedOn.Value - JobStartedOn).TotalMilliseconds) / 1000 : null;
+
     public void WriteToLog(Logger logger)
     {
         if (UseMainPageTestFile)
-            logger.Log($"Scraping results from test file: {MainPageTestFile}");
+            logger.Log($"\nScraping results from test file: {MainPageTestFile}", consoleColor: ConsoleColor.Yellow);
         else
-            logger.Log($"Scraping results from {SourceUri.AbsoluteUri}");
+            logger.Log($"\nScraping results from {SourceUri.AbsoluteUri}", consoleColor: ConsoleColor.Blue);
 
         if (ScrapeMainPageResult is null)
         {
@@ -43,9 +46,17 @@ public class ScrapeJob
             return;
         }
 
+        // Scrape Job Exception
+        if (ScrapeJobException is not null)
+        {
+            logger.Log($"ScrapeJobException from {ScrapeJobException.Source}", LogLevel.Error, logAsRawMessage: true, ConsoleColor.DarkRed);
+            logger.LogException(ScrapeJobException.Exception);
+        }
+
         // Main Page Scrape Exceptions
         var mainPageExceptionCount = ScrapeMainPageResult.ScrapeExceptions.Count;
-        logger.Log($"\nExceptions scraping the Main Page: {(mainPageExceptionCount > 0 ? mainPageExceptionCount : "None")}", logAsRawMessage: true);
+        logger.Log($"\nExceptions scraping the Main Page: {(mainPageExceptionCount > 0 ? mainPageExceptionCount : "None")}", 
+            logAsRawMessage: true, consoleColor: (mainPageExceptionCount > 0 ? ConsoleColor.DarkRed : ConsoleColor.DarkGreen));
         int exceptionCount = 0;
         foreach (var exception in ScrapeMainPageResult.ScrapeExceptions)
         {
@@ -55,7 +66,8 @@ public class ScrapeJob
 
         // Article Page Scrape Exceptions
         var articlesWithException = ScrapedArticles.Where(a => a.ScrapeException is not null);
-        logger.Log($"\nExceptions scraping Article Pages: {(articlesWithException.Any() ? articlesWithException.Count() : "None")}", logAsRawMessage: true);
+        logger.Log($"\nExceptions scraping Article Pages: {(articlesWithException.Any() ? articlesWithException.Count() : "None")}", 
+            logAsRawMessage: true, consoleColor: (articlesWithException.Any() ? ConsoleColor.DarkRed : ConsoleColor.DarkGreen));
         int articleExceptionsCount = 0;
         foreach (var article in articlesWithException)
         {
@@ -64,27 +76,59 @@ public class ScrapeJob
         }
 
         // Page Sections and Headlines
-        logger.Log($"\n{ScrapeMainPageResult.SectionsScraped} page sections found", logAsRawMessage: true);
+        logger.Log($"\n{ScrapeMainPageResult.SectionsScraped} page sections found", logAsRawMessage: true, 
+            consoleColor: (ScrapeMainPageResult.SectionsScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
         int headlineCount = 0;
         foreach (var headlineSection in ScrapeMainPageResult.Headlines.DistinctBy(a => a.SectionName))
         {
-            logger.Log($"{headlineSection.SectionName} Section", logAsRawMessage: true);
+            string sectionName = $"{(string.IsNullOrWhiteSpace(headlineSection.SectionName) ? "No" : headlineSection.SectionName)} Section";
+            logger.Log($"Section Name: {sectionName}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkCyan);
             var headlines = ScrapeMainPageResult.Headlines.Where(a => a.SectionName == headlineSection.SectionName);
             foreach (var headline in headlines)
-                logger.Log($"{++headlineCount}: {headline}", logAsRawMessage: true);
-            logger.Log($"{headlines.Count()} headlines found in {headlineSection.SectionName}\n", logAsRawMessage: true);
+            {
+                logger.Log($"Headline {++headlineCount}:", logAsRawMessage: true, consoleColor: ConsoleColor.DarkYellow);
+                logger.Log(headline.ToString(), logAsRawMessage: true, consoleColor: ConsoleColor.Cyan);
+            }
+            logger.Log($"{headlines.Count()} headlines found in {sectionName}\n", logAsRawMessage: true,
+                consoleColor: (ScrapeMainPageResult.SectionsScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
         }
 
         // Articles
-        logger.Log($"\n{ArticlesScraped} articles found", logAsRawMessage: true);
+        logger.Log($"{ArticlesScraped} articles found", logAsRawMessage: true, 
+            consoleColor: (ArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
         int articleCount = 0;
         foreach (var article in ScrapedArticles)
-            logger.Log($"{++articleCount}: {article}", logAsRawMessage: true);
+        {
+            logger.Log($"Article {++articleCount}:", logAsRawMessage: true, consoleColor: ConsoleColor.DarkYellow);
+            logger.Log(article.ToString(), logAsRawMessage: true, consoleColor: ConsoleColor.Cyan);
+        }
+        
+        logger.Log($"\nTotal headlines found: {headlineCount}", logAsRawMessage: true,
+            consoleColor: (headlineCount > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
+        logger.Log($"Sections scraped: {ScrapeMainPageResult.SectionsScraped}", logAsRawMessage: true,
+            consoleColor: (ScrapeMainPageResult.SectionsScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
+        logger.Log($"Headlines scraped: {ScrapeMainPageResult.HeadlinesScraped}", logAsRawMessage: true,
+            consoleColor: (ScrapeMainPageResult.HeadlinesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
+        logger.Log($"Articles scraped: {ArticlesScraped}", logAsRawMessage: true,
+            consoleColor: (ArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
 
-        logger.Log($"\nTotal headlines found: {headlineCount}", logAsRawMessage: true);
-        logger.Log($"Sections scraped: {ScrapeMainPageResult.SectionsScraped}", logAsRawMessage: true);
-        logger.Log($"Headlines scraped: {ScrapeMainPageResult.HeadlinesScraped}", logAsRawMessage: true);
-        logger.Log($"Articles scraped: {ArticlesScraped}", logAsRawMessage: true);
+        if (JobFinishedOn.HasValue)
+            logger.Log($"Job took {RunTimeInSeconds} seconds", logAsRawMessage: true, consoleColor: ConsoleColor.Yellow);
+
+        //logger.Log($"\n{ConsoleColor.Blue}", logAsRawMessage: true, consoleColor: ConsoleColor.Blue);
+        //logger.Log($"{ConsoleColor.DarkBlue}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkBlue);
+        //logger.Log($"{ConsoleColor.Cyan}", logAsRawMessage: true, consoleColor: ConsoleColor.Cyan);
+        //logger.Log($"{ConsoleColor.DarkCyan}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkCyan);
+        //logger.Log($"{ConsoleColor.Gray}", logAsRawMessage: true, consoleColor: ConsoleColor.Gray);
+        //logger.Log($"{ConsoleColor.DarkGray}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkGray);
+        //logger.Log($"{ConsoleColor.Green}", logAsRawMessage: true, consoleColor: ConsoleColor.Green);
+        //logger.Log($"{ConsoleColor.DarkGreen}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkGreen);
+        //logger.Log($"{ConsoleColor.Magenta}", logAsRawMessage: true, consoleColor: ConsoleColor.Magenta);
+        //logger.Log($"{ConsoleColor.DarkMagenta}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkMagenta);
+        //logger.Log($"{ConsoleColor.Red}", logAsRawMessage: true, consoleColor: ConsoleColor.Red);
+        //logger.Log($"{ConsoleColor.DarkRed}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkRed);
+        //logger.Log($"{ConsoleColor.Yellow}", logAsRawMessage: true, consoleColor: ConsoleColor.Yellow);
+        //logger.Log($"{ConsoleColor.DarkYellow}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkYellow);
     }
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,

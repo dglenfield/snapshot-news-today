@@ -3,7 +3,7 @@ using System.Data;
 
 namespace Common.Data;
 
-public class SqliteDatabase
+public abstract class SqliteDatabase
 {
     public string DatabaseFilePath => _databaseFilePath;
 

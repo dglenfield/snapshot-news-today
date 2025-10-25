@@ -7,7 +7,7 @@ using NewsScraper.Scrapers.AssociatedPress.MainPage;
 
 namespace NewsScraper.Processors;
 
-internal class AssociatePressProcessor(ScrapeAssociatedPressJobRepository scrapeJobRepository, 
+internal class APNewsProcessor(APNewsScrapeJobRepository scrapeJobRepository, 
     MainPageScraper mainPageScraper, ArticlePageScraper articleScraper, Logger logger)
 {
     internal async Task Run(ScrapeJob job)
@@ -23,7 +23,7 @@ internal class AssociatePressProcessor(ScrapeAssociatedPressJobRepository scrape
             // Scrape the full article for each headline
             foreach (var headline in job.ScrapeMainPageResult.Headlines.Where(h => h.Id > 0))
                 job.ScrapedArticles.Add(await articleScraper.ScrapeAsync(headline, job));
-            
+
             job.IsSuccess = true;
         }
         catch (Exception ex)
