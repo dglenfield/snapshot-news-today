@@ -14,7 +14,6 @@ public class Article
     public string? Headline { get; set; }
     public Uri SourceUri { get; set; } = default!;
     public string? TestFile { get; set; }
-    public DateTime? PublishedOn { get; set; } // UTC time
     public DateTime? LastUpdatedOn { get; set; } // UTC time
     public string? Author { get; set; }
     public List<string>? ContentParagraphs { get; set; }

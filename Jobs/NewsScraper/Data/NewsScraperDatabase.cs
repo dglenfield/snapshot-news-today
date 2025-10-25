@@ -98,7 +98,6 @@ public class NewsScraperDatabase(IOptions<DatabaseOptions> options) : SqliteData
                     source TEXT NOT NULL,
                     headline TEXT,
                     author TEXT,
-                    published_on TEXT,
                     last_updated_on TEXT,
                     article_content TEXT,
                     error_message TEXT,

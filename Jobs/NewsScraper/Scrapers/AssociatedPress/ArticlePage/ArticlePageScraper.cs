@@ -26,6 +26,7 @@ internal class ArticlePageScraper(AssociatedPressArticleRepository articleReposi
         
         try
         {
+            // Create the stub article record in the database
             article.Id = await articleRepository.CreateAsync(article);
 
             // Get the Main Page HTML or the HTML test file
@@ -35,36 +36,46 @@ internal class ArticlePageScraper(AssociatedPressArticleRepository articleReposi
             else
                 htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(article.SourceUri));
 
-            var headlineNode = htmlDocument.DocumentNode.SelectSingleNode("//h1");
-            var authorNode = htmlDocument.DocumentNode.SelectSingleNode("//span[contains(@class, 'Component-headlineBylineAuthor')]");
-            var publishDateNode = htmlDocument.DocumentNode.SelectSingleNode("//span[contains(@class, 'Component-headlineBylineDate')]");
-            var contentNodes = htmlDocument.DocumentNode.SelectNodes("//p");
-            string articleHeadline = headlineNode?.InnerText.Trim() ?? "N/A";
-            string author = authorNode?.InnerText.Trim() ?? "N/A";
-            string publishDate = publishDateNode?.InnerText.Trim() ?? "N/A";
-            List<string> contentParagraphs = contentNodes?.Select(p => p.InnerText.Trim()).ToList() ?? new List<string>();
-            logger.Log($"Headline: {articleHeadline}", LogLevel.Info);
-            logger.Log($"Author: {author}", LogLevel.Info);
-            logger.Log($"Publish Date: {publishDate}", LogLevel.Info);
-            logger.Log("Content Paragraphs:", LogLevel.Info);
-            foreach (var paragraph in contentParagraphs)
-                logger.Log(paragraph, LogLevel.Info);
+            // Headline is optional, continue processing if not found
+            HtmlNode? headlineNode = htmlDocument.DocumentNode.SelectSingleNode("//h1[normalize-space(@class) = 'Page-headline']");
+            string articleHeadline = TrimInnerHtmlWhitespace(headlineNode.InnerText.Trim() ?? string.Empty);
+            article.Headline = !string.IsNullOrWhiteSpace(articleHeadline) ? articleHeadline : null;
 
-            var modifiedDate = ExtractUnixTimestamp(htmlDocument);
-            if (modifiedDate.HasValue)
+            // Author is optional, continue processing if not found
+            HtmlNode? authorNode = htmlDocument.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'Page-authors']");
+            string author = TrimInnerHtmlWhitespace(authorNode.InnerText.Replace("By", "").Replace("&nbsp;", "").Trim() ?? string.Empty);
+            article.Author = string.IsNullOrWhiteSpace(author) ? null : author;
+
+            // Last Updated On is optional, continue processing if not found
+            HtmlNode? modifiedDateNode = htmlDocument.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'Page-dateModified']");
+            string? unixTimestamp = modifiedDateNode.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
+            DateTime? lastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp);
+            article.LastUpdatedOn = lastUpdatedOn;
+
+            // Article Content is required, throw an exception if not found
+            HtmlNode contentNode = htmlDocument.DocumentNode.SelectSingleNode("//div[contains(@class, 'RichTextStoryBody')]") 
+                ?? throw new NodeNotFoundException("Article content node not found.");
+            List<string> paragraphs = [];
+            foreach (var paragraphNode in contentNode.SelectNodes(".//p"))
             {
-                DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(modifiedDate.Value);
-                DateTime localDateTime = dateTimeOffset.LocalDateTime;
-                logger.Log($"Modified Date (Local): {localDateTime}", LogLevel.Info);
+                string paragraph = TrimInnerHtmlWhitespace(paragraphNode.InnerText.Trim());
+                if (!string.IsNullOrWhiteSpace(paragraph))
+                    paragraphs.Add(paragraph);
             }
-            else
-                logger.Log($"Modified Date: {modifiedDate}", LogLevel.Info);
+            article.ContentParagraphs = paragraphs.Count > 0 ? paragraphs : throw new Exception("Article content not found.");
+        }
+        catch (NodeNotFoundException ex)
+        {
+            article.ScrapeException = new ScrapeException() { Source = $"XPath error in {nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
+        }
+        catch (Exception ex)
+        {
+            article.ScrapeException = new ScrapeException() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
+        }
 
-            article.Headline = articleHeadline;
-            article.PublishedOn = DateTime.TryParse(publishDate, out var pubDate) ? pubDate : null;
-            article.Author = author;
-            article.ContentParagraphs = contentParagraphs;
-
+        try
+        {
+            // Update the article in the database
             await articleRepository.UpdateAsync(article);
         }
         catch (Exception ex)
@@ -75,22 +86,17 @@ internal class ArticlePageScraper(AssociatedPressArticleRepository articleReposi
         return article;
     }
 
-    private long? ExtractUnixTimestamp(HtmlDocument htmlDocument)
+    private DateTime? ConvertUnixTimestamp(string unixTimestamp)
     {
-        var bspNode = htmlDocument.DocumentNode.SelectSingleNode("//bsp-timestamp[@data-timestamp]");
-        if (bspNode == null)
-            return null;
-
-        //var timestampStr = bspNode.GetAttributeValue("data-timestamp", null);
-        var timestampStr = bspNode.GetAttributeValue("data-timestamp", string.Empty);
-        if (long.TryParse(timestampStr, out long unixTimestamp))
-            return unixTimestamp;
-
-        logger.Log($"Failed to parse Unix timestamp from: {timestampStr}", LogLevel.Warning);
+        if (long.TryParse(unixTimestamp, out long timestamp))
+        {
+            DateTimeOffset dateTimeOffset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+            return dateTimeOffset.UtcDateTime;
+        }
         return null;
     }
 
-    private static string TrimInnerHtmlWhitespace(string html)
+    private string TrimInnerHtmlWhitespace(string html)
     {
         // Replace multiple whitespace (including newlines/tabs) with a single space
         return Regex.Replace(html, @"\s+", " ").Trim();

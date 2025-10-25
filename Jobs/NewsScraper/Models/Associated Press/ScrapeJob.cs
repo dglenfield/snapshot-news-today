@@ -20,7 +20,9 @@ public class ScrapeJob
     public ScrapeException? ScrapeJobException { get; set; }
     public ScrapeMainPageResult? ScrapeMainPageResult { get; set; }
     public List<Article> ScrapedArticles { get; set; } = [];
-    
+
+    public int ArticlesScraped => ScrapedArticles.Count;
+
     public bool SkipArticlePageScrape { get; set; }
     public bool SkipMainPageScrape { get; set; }
     public bool UseArticlePageTestFile { get; set; }
@@ -54,10 +56,10 @@ public class ScrapeJob
         // Article Page Scrape Exceptions
         var articlesWithException = ScrapedArticles.Where(a => a.ScrapeException is not null);
         logger.Log($"\nExceptions scraping Article Pages: {(articlesWithException.Any() ? articlesWithException.Count() : "None")}", logAsRawMessage: true);
-        int articeCount = 0;
+        int articleExceptionsCount = 0;
         foreach (var article in articlesWithException)
         {
-            logger.Log($"{++articeCount}: Exception in {article.ScrapeException?.Source}", LogLevel.Error, logAsRawMessage: true);
+            logger.Log($"{++articleExceptionsCount}: Exception in {article.ScrapeException?.Source}", LogLevel.Error, logAsRawMessage: true);
             logger.LogException(article.ScrapeException!.Exception);
         }
 
@@ -69,16 +71,20 @@ public class ScrapeJob
             logger.Log($"{headlineSection.SectionName} Section", logAsRawMessage: true);
             var headlines = ScrapeMainPageResult.Headlines.Where(a => a.SectionName == headlineSection.SectionName);
             foreach (var headline in headlines)
-            {
-                headlineCount++;
-                logger.Log(headline.ToString(), logAsRawMessage: true);
-            }
+                logger.Log($"{++headlineCount}: {headline}", logAsRawMessage: true);
             logger.Log($"{headlines.Count()} headlines found in {headlineSection.SectionName}\n", logAsRawMessage: true);
         }
 
-        logger.Log($"Total headlines found: {headlineCount}", logAsRawMessage: true);
+        // Articles
+        logger.Log($"\n{ArticlesScraped} articles found", logAsRawMessage: true);
+        int articleCount = 0;
+        foreach (var article in ScrapedArticles)
+            logger.Log($"{++articleCount}: {article}", logAsRawMessage: true);
+
+        logger.Log($"\nTotal headlines found: {headlineCount}", logAsRawMessage: true);
         logger.Log($"Sections scraped: {ScrapeMainPageResult.SectionsScraped}", logAsRawMessage: true);
         logger.Log($"Headlines scraped: {ScrapeMainPageResult.HeadlinesScraped}", logAsRawMessage: true);
+        logger.Log($"Articles scraped: {ArticlesScraped}", logAsRawMessage: true);
     }
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
