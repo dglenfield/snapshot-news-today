@@ -70,7 +70,7 @@ internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
         }
         catch (Exception ex)
         {
-            scrapeResult.ScrapeExceptions.Add(new() { Source = $"{nameof(ScrapeAsync)}", Exception = ex });
+            scrapeResult.ScrapeExceptions.Add(new() { Source = $"{nameof(MainPageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
         }
 
         return scrapeResult;
