@@ -21,8 +21,15 @@ internal class APNewsProcessor(APNewsScrapeJobRepository scrapeJobRepository,
             job.ScrapeMainPageResult = await mainPageScraper.ScrapeAsync(job);
 
             // Scrape the full article for each headline
-            foreach (var headline in job.ScrapeMainPageResult.Headlines.Where(h => h.Id > 0))
-                job.ScrapedArticles.Add(await articleScraper.ScrapeAsync(headline, job));
+            int count = 0;
+            if (!job.SkipArticlePageScrape)
+                foreach (var headline in job.ScrapeMainPageResult.Headlines.Where(h => h.Id > 0))
+                {
+                    Console.CursorLeft = 0;
+                    Console.Write($"Scraping article {++count} of {job.ScrapeMainPageResult.Headlines.Count(h => h.Id > 0)} ");
+                    job.ScrapedArticles.Add(await articleScraper.ScrapeAsync(headline, job));
+                    await Task.Delay(1000); // Throttle requests to the server
+                }
 
             job.IsSuccess = true;
         }

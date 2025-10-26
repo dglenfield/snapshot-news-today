@@ -11,7 +11,7 @@ internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
     public async Task<ScrapeMainPageResult> ScrapeAsync(ScrapeJob job)
     {
         ScrapeMainPageResult scrapeResult = new() { ScrapedOn = DateTime.UtcNow };
-        if (!job.SkipMainPageScrape)
+        if (job.SkipMainPageScrape)
             return await CreateTestHeadline(job);
 
         try

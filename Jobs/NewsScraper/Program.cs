@@ -61,8 +61,8 @@ public class Program
                     {
                         SourceName = targetSite.ToString(),
                         SourceUri = configSettings.NewsSourceOptions.AssociatedPress.BaseUri,
-                        SkipArticlePageScrape = articlePageConfig.Skip,
-                        SkipMainPageScrape = mainPageConfig.Skip,
+                        SkipArticlePageScrape = configSettings.ApplicationOptions.UseProductionSettings ? false : articlePageConfig.Skip,
+                        SkipMainPageScrape = configSettings.ApplicationOptions.UseProductionSettings ? false : mainPageConfig.Skip,
                         UseArticlePageTestFile = configSettings.ApplicationOptions.UseProductionSettings ? false : articlePageConfig.UseTestFile,
                         UseMainPageTestFile = configSettings.ApplicationOptions.UseProductionSettings ? false : mainPageConfig.UseTestFile
                     };

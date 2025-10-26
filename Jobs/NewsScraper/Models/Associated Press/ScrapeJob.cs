@@ -22,8 +22,6 @@ public class ScrapeJob
     public ScrapeMainPageResult? ScrapeMainPageResult { get; set; }
     public List<Article> ScrapedArticles { get; set; } = [];
 
-    public int ArticlesScraped => ScrapedArticles.Count;
-
     public bool SkipArticlePageScrape { get; set; }
     public bool SkipMainPageScrape { get; set; }
     public bool UseArticlePageTestFile { get; set; }
@@ -31,6 +29,7 @@ public class ScrapeJob
     public string? ArticlePageTestFile { get; set; }
     public string? MainPageTestFile { get; set; }
 
+    public int ArticlesScraped => ScrapedArticles.Count(a => a.Id > 0);
     public decimal? RunTimeInSeconds => JobFinishedOn.HasValue ? (decimal)((long)(JobFinishedOn.Value - JobStartedOn).TotalMilliseconds) / 1000 : null;
 
     public void WriteToLog(Logger logger)
@@ -60,7 +59,7 @@ public class ScrapeJob
         int exceptionCount = 0;
         foreach (var exception in ScrapeMainPageResult.ScrapeExceptions)
         {
-            logger.Log($"{++exceptionCount}: Exception in {exception.Source}", LogLevel.Error, logAsRawMessage: true);
+            logger.Log($"\n{++exceptionCount}: Exception in {exception.Source}", LogLevel.Error, logAsRawMessage: true);
             logger.LogException(exception.Exception);
         }
 
@@ -69,10 +68,10 @@ public class ScrapeJob
         logger.Log($"\nExceptions scraping Article Pages: {(articlesWithException.Any() ? articlesWithException.Count() : "None")}", 
             logAsRawMessage: true, consoleColor: (articlesWithException.Any() ? ConsoleColor.DarkRed : ConsoleColor.DarkGreen));
         int articleExceptionsCount = 0;
-        foreach (var article in articlesWithException)
+        foreach (var articleEx in articlesWithException)
         {
-            logger.Log($"{++articleExceptionsCount}: Exception in {article.ScrapeException?.Source}", LogLevel.Error, logAsRawMessage: true);
-            logger.LogException(article.ScrapeException!.Exception);
+            logger.Log($"\n{++articleExceptionsCount}: Exception in {articleEx.ScrapeException?.Source}", LogLevel.Error, logAsRawMessage: true);
+            logger.LogException(articleEx.ScrapeException!.Exception);
         }
 
         // Page Sections and Headlines
@@ -100,7 +99,7 @@ public class ScrapeJob
         foreach (var article in ScrapedArticles)
         {
             logger.Log($"Article {++articleCount}:", logAsRawMessage: true, consoleColor: ConsoleColor.DarkYellow);
-            logger.Log(article.ToString(), logAsRawMessage: true, consoleColor: ConsoleColor.Cyan);
+            logger.Log(article.ToString(), logAsRawMessage: true, consoleColor: (article.IsSuccess ? ConsoleColor.Cyan : ConsoleColor.DarkRed));
         }
         
         logger.Log($"\nTotal headlines found: {headlineCount}", logAsRawMessage: true,

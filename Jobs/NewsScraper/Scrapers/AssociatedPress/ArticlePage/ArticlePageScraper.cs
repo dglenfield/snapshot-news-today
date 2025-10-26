@@ -20,9 +20,6 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
             SourceUri = headline.TargetUri,
             TestFile = job.ArticlePageTestFile
         };
-
-        if (job.SkipArticlePageScrape)
-            return article;
         
         try
         {
@@ -43,7 +40,7 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
 
             // Author is optional, continue processing if not found
             HtmlNode? authorNode = htmlDocument.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'Page-authors']");
-            string author = TrimInnerHtmlWhitespace(authorNode.InnerText.Replace("By", "").Replace("&nbsp;", "").Trim() ?? string.Empty);
+            string author = TrimInnerHtmlWhitespace(authorNode?.InnerText.Replace("By", "").Replace("&nbsp;", "").Trim() ?? string.Empty);
             article.Author = string.IsNullOrWhiteSpace(author) ? null : author;
 
             // Last Updated On is optional, continue processing if not found
@@ -76,11 +73,13 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
         try
         {
             // Update the article in the database
+            article.IsSuccess = true;
             await articleRepository.UpdateAsync(article);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            article.ScrapeException = new ScrapeException() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
+            article.IsSuccess = false;
+            logger.Log("Updating the article in the database failed!", LogLevel.Error);
         }
 
         return article;

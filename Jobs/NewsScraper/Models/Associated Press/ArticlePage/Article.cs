@@ -9,17 +9,27 @@ namespace NewsScraper.Models.AssociatedPress.ArticlePage;
 public class Article
 {
     public long Id { get; set; }
-    public required long HeadlineId { get; set; }
-    public DateTime? ScrapedOn { get; set; }
-    public string? Headline { get; set; }
-    public Uri SourceUri { get; set; } = default!;
-    public string? TestFile { get; set; }
-    public DateTime? LastUpdatedOn { get; set; } // UTC time
-    public string? Author { get; set; }
-    public List<string>? ContentParagraphs { get; set; }
-    public ScrapeException? ScrapeException { get; set; }
 
-    public bool IsSuccess => ScrapeException is null;
+    public required long HeadlineId { get; set; }
+
+    public DateTime? ScrapedOn { get; set; }
+
+    public string? Headline { get; set; }
+    
+    public Uri SourceUri { get; set; } = default!;
+
+    public string? TestFile { get; set; }
+
+    public DateTime? LastUpdatedOn { get; set; } // UTC time
+
+    public string? Author { get; set; }
+
+    public List<string>? ContentParagraphs { get; set; }
+
+    public bool IsSuccess { get; set; } = false;
+
+    [JsonIgnore]
+    public ScrapeException? ScrapeException { get; set; }
 
     [JsonIgnore]
     public string Content => string.Join("\n\n", ContentParagraphs!);

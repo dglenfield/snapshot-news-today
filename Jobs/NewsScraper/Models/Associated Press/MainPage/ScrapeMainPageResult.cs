@@ -7,7 +7,7 @@ public class ScrapeMainPageResult
 {
     public DateTime? ScrapedOn { get; set; }
     public int SectionsScraped => Headlines.DistinctBy(a => a.SectionName).Count();
-    public int HeadlinesScraped => Headlines.Count;
+    public int HeadlinesScraped => Headlines.Count(h => h.Id > 0);
     public HashSet<Headline> Headlines { get; set; } = [];
     public List<ScrapeException> ScrapeExceptions { get; set; } = [];
 
