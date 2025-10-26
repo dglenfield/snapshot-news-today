@@ -82,7 +82,6 @@ public class NewsScraperDatabase(IOptions<DatabaseOptions> options) : SqliteData
                     headline TEXT,
                     target_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
                     last_updated_on TEXT,
-                    published_on TEXT,
                     most_read INTEGER,
                     FOREIGN KEY(job_id) REFERENCES ap_news_scrape_job(id) ON DELETE CASCADE);";
         await ExecuteNonQueryAsync(commandText);

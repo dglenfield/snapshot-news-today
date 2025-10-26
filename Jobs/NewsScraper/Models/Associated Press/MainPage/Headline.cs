@@ -9,7 +9,6 @@ public class Headline
     public string? SectionName { get; init; }
     public string? Title { get; set; } // Headline
     public Uri TargetUri { get; set; } = default!;
-    public DateTime? PublishedOn { get; set; } // UTC time
     public DateTime? LastUpdatedOn { get; set; } // UTC time
     public bool MostRead { get; set; } = false;
 

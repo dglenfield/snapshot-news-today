@@ -46,10 +46,13 @@ public class Program
             if (configSettings.ApplicationOptions.LogConfigurationSettings)
                 configSettings.WriteToLog();
 
-            // Ensure the SQLite database is created
-            var database = host.Services.GetRequiredService<NewsScraperDatabase>();
-            bool databaseCreated = await database.CreateAsync();
-            logger.Log($"Database {(databaseCreated ? "created" : "already exists")} at '{database.DatabaseFilePath}'.", LogLevel.Success);
+            // Create the database if enabled in appsettings
+            if (configSettings.DatabaseOptions.CreateDatabase)
+            {
+                var database = host.Services.GetRequiredService<NewsScraperDatabase>();
+                bool databaseCreated = await database.CreateAsync();
+                logger.Log($"Database {(databaseCreated ? "created" : "already exists")} at '{database.DatabaseFilePath}'.", LogLevel.Success);
+            }
 
             // Resolve and run the main service
             switch (targetSite)

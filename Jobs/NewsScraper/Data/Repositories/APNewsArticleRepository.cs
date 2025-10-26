@@ -38,7 +38,9 @@ internal class APNewsArticleRepository(NewsScraperDatabase database)
             is_success = @is_success,
             error_message = @error_message
             WHERE id = @id;";
-        
+
+        string? errorMessage = article.ScrapeException is not null ? $"{article.ScrapeException?.Source}: {article.ScrapeException?.Message}" : null;
+
         SqliteParameter[] parameters = [
             new("@id", article.Id),
             new("@headline", (object?)article.Headline ?? DBNull.Value),
@@ -46,7 +48,7 @@ internal class APNewsArticleRepository(NewsScraperDatabase database)
             new("@last_updated_on", (object?)article.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@article_content", (object?)(article.Content?.Length > 0 ? article.Content : DBNull.Value)),
             new("@is_success", article.IsSuccess is bool s ? (s ? 1 : 0) : (object?)DBNull.Value),
-            new("@error_message", (object?)$"{article.ScrapeException?.Source}: {article.ScrapeException?.Message}" ?? DBNull.Value)
+            new("@error_message", (object?)errorMessage ?? DBNull.Value)
         ];
 
         int rowsAffected = await database.ExecuteNonQueryAsync(commandText, parameters);

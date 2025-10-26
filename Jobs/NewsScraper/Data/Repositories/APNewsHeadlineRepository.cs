@@ -9,8 +9,8 @@ internal class APNewsHeadlineRepository(NewsScraperDatabase database)
     {
         string commandText = @"
             INSERT INTO ap_news_headline (
-                job_id, section_name, headline, target_uri, last_updated_on, published_on, most_read) 
-            VALUES (@job_id, @section_name, @headline, @target_uri, @last_updated_on, @published_on, @most_read);";
+                job_id, section_name, headline, target_uri, last_updated_on, most_read) 
+            VALUES (@job_id, @section_name, @headline, @target_uri, @last_updated_on, @most_read);";
 
         SqliteParameter[] parameters = [
             new("@job_id", jobId),
@@ -18,7 +18,6 @@ internal class APNewsHeadlineRepository(NewsScraperDatabase database)
             new("@headline", headline.Title),
             new("@target_uri", headline.TargetUri.AbsoluteUri),
             new("@last_updated_on", (object?)headline.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
-            new("@published_on", (object?)headline.PublishedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@most_read", headline.MostRead ? 1 : 0)
         ];
 
@@ -39,7 +38,6 @@ internal class APNewsHeadlineRepository(NewsScraperDatabase database)
             new("@headline", headline.Title),
             new("@target_uri", headline.TargetUri.AbsoluteUri),
             new("@last_updated_on", (object?)headline.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
-            new("@published_on", (object?)headline.PublishedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@most_read", headline.MostRead ? 1 : 0)
         ];
         try
