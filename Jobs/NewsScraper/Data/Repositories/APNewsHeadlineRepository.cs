@@ -25,43 +25,12 @@ internal class APNewsHeadlineRepository(NewsScraperDatabase database)
         return id > 0 ? id : throw new InvalidOperationException("Insert into ap_news_headline failed, no row id returned.");
     }
 
-    public async Task<long> CreateWithRetryAsync(Headline headline, long scrapeJobId)
+    public async Task<bool> ExistsAsync(Uri targetUri)
     {
-        string commandText = @"
-            INSERT INTO ap_news_headline (
-                scrape_job_id, section_name, headline, target_uri, last_updated_on, published_on, most_read) 
-            VALUES (@scrape_job_id, @section_name, @headline, @target_uri, @last_updated_on, @published_on, @most_read);";
+        string commandText = @"SELECT id FROM ap_news_headline WHERE id > 0 AND target_uri = @target_uri LIMIT 1;";
+        SqliteParameter[] parameters = [new("@target_uri", targetUri.AbsoluteUri)];
 
-        SqliteParameter[] parameters = [
-            new("@scrape_job_id", scrapeJobId),
-            new("@section_name", headline.SectionName),
-            new("@headline", headline.Title),
-            new("@target_uri", headline.TargetUri.AbsoluteUri),
-            new("@last_updated_on", (object?)headline.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
-            new("@most_read", headline.MostRead ? 1 : 0)
-        ];
-        try
-        {
-            long id = await RetryAsync(() => database.InsertAsync(commandText, parameters), maxRetries: 3);
-            return id > 0 ? id : throw new InvalidOperationException("Insert associated_press_headline failed, no row id returned.");
-        }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 8)
-        {
-            //logger.Log($"Database write failed after retries: {ex.Message}", LogLevel.Error);
-            throw;
-        }
-    }
-
-    private async Task<T> RetryAsync<T>(Func<Task<T>> operation, int maxRetries)
-    {
-        for (int i = 0; i < maxRetries; i++)
-        {
-            try { return await operation(); }
-            catch (SqliteException ex) when (ex.SqliteErrorCode == 8 && i < maxRetries - 1)
-            {
-                await Task.Delay(100 * (i + 1)); // 100ms, 200ms, 300ms
-            }
-        }
-        return await operation(); // Final attempt
+        var result = await database.ExecuteScalarAsync(commandText, parameters);
+        return !string.IsNullOrWhiteSpace(result?.ToString());
     }
 }

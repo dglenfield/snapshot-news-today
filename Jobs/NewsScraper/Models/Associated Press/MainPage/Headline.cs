@@ -11,6 +11,7 @@ public class Headline
     public Uri TargetUri { get; set; } = default!;
     public DateTime? LastUpdatedOn { get; set; } // UTC time
     public bool MostRead { get; set; } = false;
+    public bool AlreadyInDatabase { get; set; } = false;
 
     public override bool Equals(object? obj)
     {

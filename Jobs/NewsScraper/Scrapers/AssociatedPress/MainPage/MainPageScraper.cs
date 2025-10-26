@@ -60,6 +60,14 @@ internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
             {
                 try
                 {
+                    // Check if the TargetUri already exists in the table
+                    if (await headlineRepository.ExistsAsync(headline.TargetUri))
+                    {
+                        headline.AlreadyInDatabase = true;
+                        continue;
+                    }
+
+                    // Save the headline
                     headline.Id = await headlineRepository.CreateAsync(headline, job.Id);
                 }
                 catch (Exception ex)
