@@ -29,7 +29,8 @@ public class ScrapeJob
     public string? ArticlePageTestFile { get; set; }
     public string? MainPageTestFile { get; set; }
 
-    public int ArticlesScraped => ScrapedArticles.Count(a => a.Id > 0);
+    public int TotalArticlesScraped => ScrapedArticles.Count(a => a.Id > 0);
+    public int ArticlesSuccessfullyScraped => ScrapedArticles.Count(a => a.Id > 0 && a.IsSuccess);
     public decimal? RunTimeInSeconds => JobFinishedOn.HasValue ? (decimal)((long)(JobFinishedOn.Value - JobStartedOn).TotalMilliseconds) / 1000 : null;
 
     public void WriteToLog(Logger logger)
@@ -93,8 +94,8 @@ public class ScrapeJob
         }
 
         // Articles
-        logger.Log($"{ArticlesScraped} articles found", logAsRawMessage: true, 
-            consoleColor: (ArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
+        logger.Log($"{TotalArticlesScraped} articles found", logAsRawMessage: true, 
+            consoleColor: (TotalArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
         int articleCount = 0;
         foreach (var article in ScrapedArticles)
         {
@@ -108,8 +109,10 @@ public class ScrapeJob
             consoleColor: (ScrapeMainPageResult.SectionsScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
         logger.Log($"Headlines scraped: {ScrapeMainPageResult.HeadlinesScraped}", logAsRawMessage: true,
             consoleColor: (ScrapeMainPageResult.HeadlinesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
-        logger.Log($"Articles scraped: {ArticlesScraped}", logAsRawMessage: true,
-            consoleColor: (ArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
+        logger.Log($"Total Articles scraped: {TotalArticlesScraped}", logAsRawMessage: true,
+            consoleColor: (TotalArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
+        logger.Log($"Articles successfully scraped: {ArticlesSuccessfullyScraped}", logAsRawMessage: true,
+            consoleColor: (ArticlesSuccessfullyScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed));
 
         if (JobFinishedOn.HasValue)
             logger.Log($"Job took {RunTimeInSeconds} seconds", logAsRawMessage: true, consoleColor: ConsoleColor.Yellow);

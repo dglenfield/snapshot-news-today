@@ -32,7 +32,7 @@ public class Article
     public ScrapeException? ScrapeException { get; set; }
 
     [JsonIgnore]
-    public string Content => string.Join("\n\n", ContentParagraphs!);
+    public string? Content => ContentParagraphs?.Count > 0 ? string.Join("\n\n", ContentParagraphs) : null;
 
     public string GetContentParagraphs(int maxParagraphs)
     {

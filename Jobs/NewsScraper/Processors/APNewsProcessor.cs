@@ -47,7 +47,7 @@ internal class APNewsProcessor(APNewsScrapeJobRepository scrapeJobRepository,
 
             // Log the scraping results
             job.WriteToLog(logger);
-            logger.Log($"AP News scraping job finished {(job.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
+            logger.Log($"\nAP News scraping job finished {(job.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
                 messageLogLevel: (job.IsSuccess!.Value ? LogLevel.Success : LogLevel.Error));
         }
     }

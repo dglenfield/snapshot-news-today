@@ -35,7 +35,7 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
 
             // Headline is optional, continue processing if not found
             HtmlNode? headlineNode = htmlDocument.DocumentNode.SelectSingleNode("//h1[normalize-space(@class) = 'Page-headline']");
-            string articleHeadline = TrimInnerHtmlWhitespace(headlineNode.InnerText.Trim() ?? string.Empty);
+            string articleHeadline = TrimInnerHtmlWhitespace(headlineNode?.InnerText.Trim() ?? string.Empty);
             article.Headline = !string.IsNullOrWhiteSpace(articleHeadline) ? articleHeadline : null;
 
             // Author is optional, continue processing if not found
@@ -45,7 +45,7 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
 
             // Last Updated On is optional, continue processing if not found
             HtmlNode? modifiedDateNode = htmlDocument.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'Page-dateModified']");
-            string? unixTimestamp = modifiedDateNode.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
+            string? unixTimestamp = modifiedDateNode?.SelectSingleNode(".//bsp-timestamp[@data-timestamp]")?.GetAttributeValue("data-timestamp", "");
             DateTime? lastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp);
             article.LastUpdatedOn = lastUpdatedOn;
 
@@ -73,13 +73,17 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
         try
         {
             // Update the article in the database
-            article.IsSuccess = true;
+            if (article.ScrapeException is null) 
+                article.IsSuccess = true;
+            else
+                article.IsSuccess = false;
             await articleRepository.UpdateAsync(article);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             article.IsSuccess = false;
             logger.Log("Updating the article in the database failed!", LogLevel.Error);
+            logger.LogException(ex);
         }
 
         return article;

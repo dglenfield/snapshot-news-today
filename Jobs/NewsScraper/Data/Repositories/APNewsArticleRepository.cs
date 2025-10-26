@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using NewsScraper.Models.AssociatedPress.ArticlePage;
+using NewsScraper.Models.AssociatedPress.MainPage;
 
 namespace NewsScraper.Data.Repositories;
 
@@ -30,22 +31,22 @@ internal class APNewsArticleRepository(NewsScraperDatabase database)
 
         string commandText = @"
             UPDATE ap_news_article
-            SET headline = @headline, 
-                author = @author,
-                last_updated_on = @last_updated_on,
-                article_content = @article_content, 
-                is_success = @is_success, 
-                error_message = @error_message
+            SET headline = @headline,
+            author = @author,
+            last_updated_on = @last_updated_on,
+            article_content = @article_content, 
+            is_success = @is_success,
+            error_message = @error_message
             WHERE id = @id;";
-
+        
         SqliteParameter[] parameters = [
             new("@id", article.Id),
             new("@headline", (object?)article.Headline ?? DBNull.Value),
             new("@author", (object?)article.Author ?? DBNull.Value),
-            new("@last_updated_on", (object?)article.LastUpdatedOn ?? DBNull.Value),
-            new("@article_content", (object?)article.Content ?? DBNull.Value),
+            new("@last_updated_on", (object?)article.LastUpdatedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
+            new("@article_content", (object?)(article.Content?.Length > 0 ? article.Content : DBNull.Value)),
             new("@is_success", article.IsSuccess is bool s ? (s ? 1 : 0) : (object?)DBNull.Value),
-            new("@error_message", (object?)article.ScrapeException?.Message ?? DBNull.Value)
+            new("@error_message", (object?)$"{article.ScrapeException?.Source}: {article.ScrapeException?.Message}" ?? DBNull.Value)
         ];
 
         int rowsAffected = await database.ExecuteNonQueryAsync(commandText, parameters);
