@@ -40,7 +40,7 @@ public class Program
             logger = new Logger(configSettings.CustomLoggingOptions.LogLevel, 
                 configSettings.CustomLoggingOptions.LogToFile, 
                 configSettings.CustomLoggingOptions.LogDirectory, logName);
-            logger.Log("**Host initialized**");
+            logger.Log("**Host initialized**", LogLevel.Debug);
 
             // Log Configuration Settings
             if (configSettings.ApplicationOptions.LogConfigurationSettings)
