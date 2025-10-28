@@ -1,7 +1,7 @@
 ﻿using Common.Logging;
+using Common.Serialization;
 using NewsScraper.Models.AssociatedPress.ArticlePage;
 using NewsScraper.Models.AssociatedPress.MainPage;
-using NewsScraper.Serialization;
 using System;
 using System.Text.Json;
 

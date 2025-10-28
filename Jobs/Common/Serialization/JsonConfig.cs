@@ -1,9 +1,9 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NewsScraper.Serialization;
+namespace Common.Serialization;
 
-internal static class JsonConfig
+public static class JsonConfig
 {
     public static string ToJson(object value, JsonSerializerOptions options, CustomJsonSerializerOptions customOptions) =>
         JsonSerializer.Serialize(value, Customize(options, customOptions));

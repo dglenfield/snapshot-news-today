@@ -4,6 +4,8 @@ namespace Common.Logging;
 
 public class Logger
 {
+    public string? LogName { get => _logName; }
+
     private readonly string? _logDirectory;
     private readonly LogLevel _logLevel;
     private readonly string? _logName;
@@ -51,14 +53,14 @@ public class Logger
         string logEntry = message;
         if (!logAsRawMessage)
         {
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ssK");
             string className = Path.GetFileNameWithoutExtension(sourceFilePath);
             logEntry = $"{timestamp} [{messageLogLevel.ToString().ToUpper()}] \t{message}\t <{className}.{memberName}> (Line {sourceLineNumber})";
         }            
         
         try
         {
-            string logFileName = string.IsNullOrWhiteSpace(_logName) ? $"log_{DateTime.Now:yyyy-MM-dd}.txt" : $"{_logName}.txt";
+            string logFileName = string.IsNullOrWhiteSpace(_logName) ? $"log_{DateTime.UtcNow:yyyy-MM-dd}.txt" : $"{_logName}.txt";
             // TODO: For thread safety, use StreamWriter with lock if logging from multiple threads.
             File.AppendAllText(Path.Combine(_logDirectory, logFileName), $"{logEntry}\n");
         }

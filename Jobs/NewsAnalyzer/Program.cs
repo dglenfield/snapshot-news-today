@@ -1,6 +1,9 @@
-﻿using Common.Logging;
+﻿using Common.Configuration;
+using Common.Configuration.Options;
+using Common.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using NewsAnalyzer.Processors;
 using NewsAnalyzer.Providers;
 
@@ -8,45 +11,72 @@ namespace NewsAnalyzer;
 
 public class Program
 {
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        Console.Title = "News Scraper";
-        var logger = new Logger(Configuration.Logging.LogLevel, Configuration.Logging.LogDirectory, Configuration.Logging.LogToFile);
         int returnCode = 0;
-
+        Logger logger = null!;
+        
         try
         {
-            logger.Log("********** Application started **********");
+            // Configure dependency injection and initialize the host
+            var host = CreateBuilder(DateTime.UtcNow).Build();
 
-            var host = Host.CreateDefaultBuilder()
-                .ConfigureServices((context, services) =>
-                {
-                    services.AddSingleton<Logger>(provider =>
-                        new Logger(
-                            Configuration.Logging.LogLevel,
-                            Configuration.Logging.LogDirectory,
-                            Configuration.Logging.LogToFile
-                        ));
-                    services.AddHttpClient("Perplexity", client =>
-                    {
-                        client.BaseAddress = new Uri(Configuration.PerplexityApiUrl);
-                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Configuration.PerplexityApiKey}");
-                    });
-                    services.AddTransient<NewsAnalyzerProcessor>();
-                    services.AddTransient<PerplexityApiProvider>();
-                }).Build();
+            var configSettings = host.Services.GetRequiredService<ConfigurationSettings>();
+            Console.Title = configSettings.ApplicationOptions.Name;
 
-            // Resolve and run your main service
+            logger = host.Services.GetRequiredService<Logger>();
+            logger.Log("**Host initialized**", LogLevel.Debug);
+
+            // Resolve and run the main service
             var processor = host.Services.GetRequiredService<NewsAnalyzerProcessor>();
-            processor.Run();
+            await processor.Run();
         }
         catch (Exception ex)
         {
-            logger.LogException(ex);
+            if (logger is null)
+                Console.WriteLine(ex.ToString());
+            else
+                logger.LogException(ex);
+
             returnCode = 1;
         }
 
-        logger.Log("********** Exiting application **********");
         return returnCode;
+    }
+
+    private static IHostBuilder CreateBuilder(DateTime logTimestamp)
+    {
+        return Host.CreateDefaultBuilder().ConfigureServices((context, services) => 
+        {
+            // Register each options class
+            services.AddOptions<ApplicationOptions>()
+                .BindConfiguration(ApplicationOptions.SectionName)
+                .ValidateDataAnnotations().ValidateOnStart();
+            services.AddOptions<CustomLoggingOptions>()
+                .BindConfiguration(CustomLoggingOptions.SectionName)
+                .ValidateDataAnnotations().ValidateOnStart();
+            services.AddOptions<DatabaseOptions>()
+                .BindConfiguration(DatabaseOptions.SectionName)
+                .ValidateDataAnnotations().ValidateOnStart();
+
+            // ConfigurationSettings
+            services.AddTransient<ConfigurationSettings>();
+
+            // Logging
+            services.AddSingleton(provider => new Logger(
+                provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogLevel,
+                provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogToFile,
+                provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogDirectory,
+                $"{provider.GetRequiredService<IOptions<ApplicationOptions>>().Value.Name.Replace(" ", "")}_{logTimestamp:yyyy-MM-ddTHHmm.ssZ}"));
+
+            services.AddHttpClient("Perplexity", client =>
+            {
+                client.BaseAddress = new Uri(Configuration.PerplexityApiUrl);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Configuration.PerplexityApiKey}");
+            });
+
+            services.AddSingleton<NewsAnalyzerProcessor>();
+            services.AddTransient<PerplexityApiProvider>();
+        });
     }
 }

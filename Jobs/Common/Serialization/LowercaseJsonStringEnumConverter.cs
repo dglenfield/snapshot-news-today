@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NewsScraper.Serialization;
+namespace Common.Serialization;
 
 public class LowercaseJsonStringEnumConverter : JsonConverterFactory
 {

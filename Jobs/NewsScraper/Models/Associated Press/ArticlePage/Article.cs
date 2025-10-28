@@ -1,5 +1,5 @@
-﻿using NewsScraper.Models.AssociatedPress.MainPage;
-using NewsScraper.Serialization;
+﻿using Common.Serialization;
+using NewsScraper.Models.AssociatedPress.MainPage;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
