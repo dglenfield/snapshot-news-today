@@ -20,8 +20,8 @@ public class PerplexityApiProvider(IHttpClientFactory httpClientFactory, Logger 
     {
         // Get only the URIs of articles published within the past 2 days
         DateTime twoDaysAgo = DateTime.UtcNow.AddDays(-2);
-        if (Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
-            twoDaysAgo = DateTime.MinValue; // Include all articles if using test data
+        //if (Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
+        //    twoDaysAgo = DateTime.MinValue; // Include all articles if using test data
         List<Uri> recentArticleUris = [ .. articles
                 .Where(a => a.SourcePublishDate.HasValue && a.SourcePublishDate.Value >= twoDaysAgo)
                 .Select(a => a.SourceUri)
@@ -57,26 +57,26 @@ public class PerplexityApiProvider(IHttpClientFactory httpClientFactory, Logger 
         
         // FOR TESTING: Read from test response file instead of calling API
         string testResponseString = string.Empty;
-        bool useTestResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile;
-        string testResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile;
-        if (useTestResponseFile && !string.IsNullOrEmpty(testResponseFile) && File.Exists(testResponseFile))
-            testResponseString = await File.ReadAllTextAsync(testResponseFile);
+        //bool useTestResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile;
+        //string testResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile;
+        //if (useTestResponseFile && !string.IsNullOrEmpty(testResponseFile) && File.Exists(testResponseFile))
+        //    testResponseString = await File.ReadAllTextAsync(testResponseFile);
 
         string responseString = string.Empty;
-        if (useTestResponseFile) 
-            responseString = testResponseString;
-        else
-        {
+        //if (useTestResponseFile) 
+        //    responseString = testResponseString;
+        //else
+        //{
             // Call Perplexity API
             var response = await _httpClientFactory.CreateClient("Perplexity").PostAsync("", jsonContent);
             responseString = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
                 throw new HttpRequestException($"Perplexity API request failed with status code {response.StatusCode}: {responseString}");
-        }
+        //}
 
         // Log response JSON (if not using test data)
-        if (!Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
-            _logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
+        //if (!Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
+        //    _logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
         
         // Deserialize the outer response
         var perplexityResponse = JsonSerializer.Deserialize<Response>(responseString);

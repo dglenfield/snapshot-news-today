@@ -3,15 +3,22 @@ using NewsAnalyzer.Providers;
 
 namespace NewsAnalyzer.Processors;
 
-public class NewsAnalyzerProcessor(Logger logger, PerplexityApiProvider perplexityApiProvider)
+public class NewsAnalyzerProcessor(PerplexityApiProvider perplexityApiProvider, Logger logger)
 {
-    private readonly Logger _logger = logger;
-    private readonly PerplexityApiProvider _perplexityApiProvider = perplexityApiProvider;
-
-    public async Task Run()
+    internal async Task Run()
     {
-        // Use _perplexityApiProvider as needed
+		try
+		{
 
-        return;
+		}
+		catch (Exception ex)
+		{
+
+			throw;
+		}
+		finally 
+		{
+			
+		}
     }
 }
