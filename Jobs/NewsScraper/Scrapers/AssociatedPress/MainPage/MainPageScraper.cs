@@ -87,7 +87,7 @@ internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
     public async Task<ScrapeMainPageResult> CreateTestHeadline(ScrapeJob job)
     {
         ScrapeMainPageResult result = new() { ScrapedOn = DateTime.UtcNow };
-        var headline = new Headline() { Title = "Test Headline", TargetUri = new("https://test.com/") };
+        var headline = new Headline() { Title = "Test Headline", TargetUri = new($"https://test.com/{DateTime.UtcNow.Ticks}") };
         headline.Id = await headlineRepository.CreateAsync(headline, job.Id);
         result.Headlines.Add(headline);
         return result;
