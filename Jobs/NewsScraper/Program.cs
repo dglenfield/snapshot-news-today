@@ -1,4 +1,5 @@
-﻿using Common.Logging;
+﻿using Common.Configuration.Options;
+using Common.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -27,19 +28,16 @@ public class Program
 
         int returnCode = 0;
         Logger logger = null!;
-        string logName = $"{targetSite}_{DateTime.Now:yyyy-MM-dd.HHmm.ss}";
-
+        
         try
         {
-            Console.Title = "News Scraper";
-
             // Configure dependency injection and initialize the host
-            var host = CreateBuilder(logName, targetSite).Build();
+            var host = CreateBuilder(targetSite, DateTime.UtcNow).Build();
 
             var configSettings = host.Services.GetRequiredService<ConfigurationSettings>();
-            logger = new Logger(configSettings.CustomLoggingOptions.LogLevel, 
-                configSettings.CustomLoggingOptions.LogToFile, 
-                configSettings.CustomLoggingOptions.LogDirectory, logName);
+            Console.Title = configSettings.ApplicationOptions.Name;
+
+            logger = host.Services.GetRequiredService<Logger>();
             logger.Log("**Host initialized**", LogLevel.Debug);
 
             // Log Configuration Settings
@@ -95,7 +93,7 @@ public class Program
         return returnCode;
     }
 
-    private static IHostBuilder CreateBuilder(string logName, NewsWebsite targetSite)
+    private static IHostBuilder CreateBuilder(NewsWebsite targetSite, DateTime logTimestamp)
     {
         // Set up dependency injection
         return Host.CreateDefaultBuilder().ConfigureServices((context, services) => 
@@ -125,7 +123,7 @@ public class Program
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogLevel,
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogToFile,
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogDirectory,
-                logName));
+                $"{targetSite}_{logTimestamp:yyyy-MM-ddTHHmm.ssZ}"));
 
             // Database and repositories
             services.AddTransient(provider => new NewsScraperDatabase(

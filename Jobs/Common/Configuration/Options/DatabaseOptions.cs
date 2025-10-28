@@ -1,8 +1,8 @@
-﻿using NewsScraper.Serialization;
+﻿using Common.Serialization;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
-namespace NewsScraper.Configuration.Options;
+namespace Common.Configuration.Options;
 
 public class DatabaseOptions
 {

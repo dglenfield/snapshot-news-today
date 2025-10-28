@@ -8,8 +8,10 @@ public class NewsAnalyzerProcessor(Logger logger, PerplexityApiProvider perplexi
     private readonly Logger _logger = logger;
     private readonly PerplexityApiProvider _perplexityApiProvider = perplexityApiProvider;
 
-    public void Run()
+    public async Task Run()
     {
         // Use _perplexityApiProvider as needed
+
+        return;
     }
 }

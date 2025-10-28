@@ -1,4 +1,4 @@
-﻿namespace NewsScraper.Serialization;
+﻿namespace Common.Serialization;
 
 [Flags]
 public enum CustomJsonSerializerOptions

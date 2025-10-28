@@ -2,23 +2,28 @@
 using Common.Logging;
 using Common.Serialization;
 using Microsoft.Extensions.Options;
-using NewsScraper.Configuration.Options;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NewsScraper.Configuration;
+namespace Common.Configuration;
 
 public class ConfigurationSettings(IOptions<ApplicationOptions> applicationOptions,
     IOptions<CustomLoggingOptions> customLoggingOptions,
     IOptions<DatabaseOptions> databaseOptions,
-    IOptions<NewsSourceOptions> newsSourceOptions,
-    IOptions<PythonOptions> pythonOptions,
-    Logger logger) : Common.Configuration.ConfigurationSettings(applicationOptions, customLoggingOptions, databaseOptions, logger)
+    Logger logger)
 {
-    [JsonPropertyOrder(10)]
-    public NewsSourceOptions NewsSourceOptions => newsSourceOptions.Value;
-    [JsonPropertyOrder(11)]
-    public PythonOptions PythonOptions => pythonOptions.Value;
+    [JsonPropertyOrder(0)]
+    public ApplicationOptions ApplicationOptions => applicationOptions.Value;
+    [JsonPropertyOrder(1)]
+    public CustomLoggingOptions CustomLoggingOptions => customLoggingOptions.Value;
+    [JsonPropertyOrder(2)]
+    public DatabaseOptions DatabaseOptions => databaseOptions.Value;
+
+    public void WriteToLog()
+    {
+        logger.Log("Configuration Settings:", logAsRawMessage: true);
+        logger.Log(this.ToString(), logAsRawMessage: true);
+    }
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);

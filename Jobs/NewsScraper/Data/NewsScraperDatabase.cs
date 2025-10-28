@@ -1,7 +1,7 @@
-﻿using Common.Data;
+﻿using Common.Configuration.Options;
+using Common.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
-using NewsScraper.Configuration.Options;
 
 namespace NewsScraper.Data;
 

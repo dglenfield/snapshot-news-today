@@ -1,4 +1,4 @@
-﻿using NewsScraper.Serialization;
+﻿using Common.Serialization;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
