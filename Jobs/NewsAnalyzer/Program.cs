@@ -1,9 +1,11 @@
-﻿using Common.Configuration;
-using Common.Configuration.Options;
+﻿using Common.Configuration.Options;
 using Common.Logging;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using NewsAnalyzer.Configuration;
+using NewsAnalyzer.Configuration.Options;
 using NewsAnalyzer.Processors;
 using NewsAnalyzer.Providers;
 
@@ -27,6 +29,10 @@ public class Program
             logger = host.Services.GetRequiredService<Logger>();
             logger.Log("**Host initialized**", LogLevel.Debug);
 
+            // Log Configuration Settings
+            if (configSettings.ApplicationOptions.LogConfigurationSettings)
+                configSettings.WriteToLog();
+
             // Resolve and run the main service
             var processor = host.Services.GetRequiredService<NewsAnalyzerProcessor>();
             await processor.Run();
@@ -46,7 +52,11 @@ public class Program
 
     private static IHostBuilder CreateBuilder(DateTime logTimestamp)
     {
-        return Host.CreateDefaultBuilder().ConfigureServices((context, services) => 
+        return Host.CreateDefaultBuilder().ConfigureAppConfiguration((context, config) =>
+        {
+            // Explicitly add User Secrets
+            config.AddUserSecrets("8f1e9ee3-cac2-4a91-b839-8b3d4bb5c46f");
+        }).ConfigureServices((context, services) => 
         {
             // Register each options class
             services.AddOptions<ApplicationOptions>()
@@ -57,6 +67,9 @@ public class Program
                 .ValidateDataAnnotations().ValidateOnStart();
             services.AddOptions<DatabaseOptions>()
                 .BindConfiguration(DatabaseOptions.SectionName)
+                .ValidateDataAnnotations().ValidateOnStart();
+            services.AddOptions<PerplexityOptions>()
+                .BindConfiguration(PerplexityOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
 
             // ConfigurationSettings
@@ -69,10 +82,12 @@ public class Program
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogDirectory,
                 $"{provider.GetRequiredService<IOptions<ApplicationOptions>>().Value.Name.Replace(" ", "")}_{logTimestamp:yyyy-MM-ddTHHmm.ssZ}"));
 
-            services.AddHttpClient("Perplexity", client =>
+            services.AddHttpClient("Perplexity", (serviceProvider, client) =>
             {
-                client.BaseAddress = new Uri(Configuration.PerplexityApiUrl);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {Configuration.PerplexityApiKey}");
+                var perplexityOptions = serviceProvider.GetRequiredService<IOptions<PerplexityOptions>>().Value;
+                
+                client.BaseAddress = perplexityOptions.ApiUri;
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {perplexityOptions.ApiKey}");
             });
 
             services.AddSingleton<NewsAnalyzerProcessor>();
