@@ -1,4 +1,4 @@
-﻿using NewsAnalyzer.Serialization;
+﻿using Common.Serialization;
 using System.Text.Json.Serialization;
 
 namespace NewsAnalyzer.Models.PerplexityApi.Common.Request;

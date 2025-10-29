@@ -1,5 +1,5 @@
-﻿using NewsAnalyzer.Models.PerplexityApi.Common.Response;
-using NewsAnalyzer.Serialization;
+﻿using Common.Serialization;
+using NewsAnalyzer.Models.PerplexityApi.Common.Response;
 using System.Text.Json;
 
 namespace NewsAnalyzer.Models;
