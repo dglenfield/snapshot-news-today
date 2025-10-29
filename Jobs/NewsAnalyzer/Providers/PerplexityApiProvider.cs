@@ -1,10 +1,10 @@
 ﻿using Common.Logging;
+using Common.Serialization;
 using NewsAnalyzer.Models;
 using NewsAnalyzer.Models.PerplexityApi.Common.Request;
 using NewsAnalyzer.Models.PerplexityApi.Common.Response;
 using NewsAnalyzer.Models.PerplexityApi.CurateArticles.Request;
 using NewsAnalyzer.Models.PerplexityApi.CurateArticles.Response;
-using NewsAnalyzer.Serialization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;

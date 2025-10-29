@@ -56,7 +56,8 @@ internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
             var allLinks = GetAllHyperlinks(job.SourceUri, htmlDocument.DocumentNode); // TODO: Compare articles found with all links
 
             // Save the headlines to the database
-            foreach (var headline in scrapeResult.Headlines)
+            foreach (var headline in scrapeResult.Headlines.Where(h =>
+                h.TargetUri.AbsoluteUri.StartsWith($"{job.SourceUri}/article/", StringComparison.OrdinalIgnoreCase)))
             {
                 try
                 {
@@ -80,10 +81,10 @@ internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
         {
             scrapeResult.ScrapeExceptions.Add(new() { Source = $"{nameof(MainPageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
         }
-
+        
         return scrapeResult;
     }
-
+   
     public async Task<ScrapeMainPageResult> CreateTestHeadline(ScrapeJob job)
     {
         ScrapeMainPageResult result = new() { ScrapedOn = DateTime.UtcNow };

@@ -2,7 +2,6 @@
 using Common.Serialization;
 using NewsScraper.Models.AssociatedPress.ArticlePage;
 using NewsScraper.Models.AssociatedPress.MainPage;
-using System;
 using System.Text.Json;
 
 namespace NewsScraper.Models.AssociatedPress;
@@ -31,7 +30,8 @@ public class ScrapeJob
 
     public int TotalArticlesScraped => ScrapedArticles.Count(a => a.Id > 0);
     public int ArticlesSuccessfullyScraped => ScrapedArticles.Count(a => a.Id > 0 && a.IsSuccess);
-    public decimal? RunTimeInSeconds => JobFinishedOn.HasValue ? (decimal)((long)(JobFinishedOn.Value - JobStartedOn).TotalMilliseconds) / 1000 : null;
+    public decimal? RunTimeInSeconds => 
+        JobFinishedOn.HasValue ? (decimal)((long)(JobFinishedOn.Value - JobStartedOn).TotalMilliseconds) / 1000 : null;
 
     public void WriteToLog(Logger logger)
     {

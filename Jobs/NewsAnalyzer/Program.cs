@@ -34,7 +34,7 @@ public class Program
                 configSettings.WriteToLog();
 
             // Resolve and run the main service
-            var processor = host.Services.GetRequiredService<NewsAnalyzerProcessor>();
+            var processor = host.Services.GetRequiredService<NewsProcessor>();
             await processor.Run();
         }
         catch (Exception ex)
@@ -76,11 +76,12 @@ public class Program
             services.AddTransient<ConfigurationSettings>();
 
             // Logging
+            string timestamp = $"{logTimestamp:yyyy-MM-ddTHHmm.ssZ}";
             services.AddSingleton(provider => new Logger(
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogLevel,
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogToFile,
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogDirectory,
-                $"{provider.GetRequiredService<IOptions<ApplicationOptions>>().Value.Name.Replace(" ", "")}_{logTimestamp:yyyy-MM-ddTHHmm.ssZ}"));
+                $"{provider.GetRequiredService<IOptions<ApplicationOptions>>().Value.Name.Replace(" ", "")}_{timestamp}"));
 
             services.AddHttpClient("Perplexity", (serviceProvider, client) =>
             {
@@ -90,7 +91,7 @@ public class Program
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {perplexityOptions.ApiKey}");
             });
 
-            services.AddSingleton<NewsAnalyzerProcessor>();
+            services.AddSingleton<NewsProcessor>();
             services.AddTransient<PerplexityApiProvider>();
         });
     }
