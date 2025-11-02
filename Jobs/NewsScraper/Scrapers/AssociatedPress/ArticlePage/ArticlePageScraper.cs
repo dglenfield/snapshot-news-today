@@ -1,4 +1,5 @@
 ﻿using Common.Logging;
+using Common.Models;
 using HtmlAgilityPack;
 using NewsScraper.Data.Repositories;
 using NewsScraper.Models.AssociatedPress;
@@ -63,11 +64,11 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
         }
         catch (NodeNotFoundException ex)
         {
-            article.ScrapeException = new ScrapeException() { Source = $"XPath error in {nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
+            article.ScrapeException = new JobException() { Source = $"XPath error in {nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
         }
         catch (Exception ex)
         {
-            article.ScrapeException = new ScrapeException() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
+            article.ScrapeException = new JobException() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
         }
 
         try

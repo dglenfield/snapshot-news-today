@@ -1,4 +1,5 @@
-﻿using Common.Serialization;
+﻿using Common.Models;
+using Common.Serialization;
 using NewsScraper.Models.AssociatedPress.MainPage;
 using System.Text;
 using System.Text.Json;
@@ -29,7 +30,7 @@ public class Article
     public bool IsSuccess { get; set; } = false;
 
     [JsonIgnore]
-    public ScrapeException? ScrapeException { get; set; }
+    public JobException? ScrapeException { get; set; }
 
     [JsonIgnore]
     public string? Content => ContentParagraphs?.Count > 0 ? string.Join("\n\n", ContentParagraphs) : null;

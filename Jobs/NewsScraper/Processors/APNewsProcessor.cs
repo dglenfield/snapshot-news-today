@@ -1,4 +1,5 @@
 ﻿using Common.Logging;
+using Common.Models;
 using NewsScraper.Data.Repositories;
 using NewsScraper.Models.AssociatedPress;
 using NewsScraper.Models.AssociatedPress.MainPage;
@@ -36,7 +37,7 @@ internal class APNewsProcessor(APNewsScrapeJobRepository scrapeJobRepository,
         catch (Exception ex)
         {
             job.IsSuccess = false;
-            job.ScrapeJobException = new ScrapeException() { Source = $"{nameof(APNewsProcessor)}.{nameof(Run)}", Exception = ex};
+            job.ScrapeJobException = new JobException() { Source = $"{nameof(APNewsProcessor)}.{nameof(Run)}", Exception = ex};
             throw;
         }
         finally

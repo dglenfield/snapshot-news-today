@@ -1,4 +1,5 @@
 ﻿using Common.Logging;
+using Common.Models;
 using Common.Serialization;
 using NewsScraper.Models.AssociatedPress.ArticlePage;
 using NewsScraper.Models.AssociatedPress.MainPage;
@@ -17,7 +18,7 @@ public class ScrapeJob
     public DateTime JobStartedOn { get; } = DateTime.UtcNow;
     public DateTime? JobFinishedOn { get; set; }
     public bool? IsSuccess { get; set; }
-    public ScrapeException? ScrapeJobException { get; set; }
+    public JobException? ScrapeJobException { get; set; }
     public ScrapeMainPageResult? ScrapeMainPageResult { get; set; }
     public List<Article> ScrapedArticles { get; set; } = [];
 
