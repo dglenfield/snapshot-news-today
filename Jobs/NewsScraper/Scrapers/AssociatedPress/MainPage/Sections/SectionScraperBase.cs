@@ -1,4 +1,5 @@
-﻿using HtmlAgilityPack;
+﻿using Common.Models;
+using HtmlAgilityPack;
 using NewsScraper.Models.AssociatedPress.MainPage;
 
 namespace NewsScraper.Scrapers.AssociatedPress.MainPage.Sections;
@@ -37,11 +38,11 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
         }
         catch (NodeNotFoundException ex)
         {
-            result.ScrapeException = new ScrapeException() { Source = $"Scraping section {SectionName} XPath error", Exception = ex };
+            result.ScrapeException = new JobException() { Source = $"Scraping section {SectionName} XPath error", Exception = ex };
         }
         catch (Exception ex) 
         {
-            result.ScrapeException = new ScrapeException() { Source = $"Scraping section {SectionName}", Exception = ex };
+            result.ScrapeException = new JobException() { Source = $"Scraping section {SectionName}", Exception = ex };
         }
 
         result.Headlines = headlines;

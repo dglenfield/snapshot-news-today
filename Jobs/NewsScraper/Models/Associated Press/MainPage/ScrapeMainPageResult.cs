@@ -1,4 +1,5 @@
-﻿using Common.Serialization;
+﻿using Common.Models;
+using Common.Serialization;
 using System.Text.Json;
 
 namespace NewsScraper.Models.AssociatedPress.MainPage;
@@ -9,7 +10,7 @@ public class ScrapeMainPageResult
     public int SectionsScraped => Headlines.DistinctBy(a => a.SectionName).Count();
     public int HeadlinesScraped => Headlines.Count(h => h.Id > 0);
     public HashSet<Headline> Headlines { get; set; } = [];
-    public List<ScrapeException> ScrapeExceptions { get; set; } = [];
+    public List<JobException> ScrapeExceptions { get; set; } = [];
 
     public void AddScrapeSectionResult(ScrapeSectionResult result)
     {

@@ -15,6 +15,8 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        long scrapeJobId = 1;
+
         int returnCode = 0;
         Logger logger = null!;
         
