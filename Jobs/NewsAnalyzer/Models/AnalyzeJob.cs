@@ -7,7 +7,6 @@ namespace NewsAnalyzer.Models;
 public class AnalyzeJob
 {
     public long Id { get; set; }
-    public long ScrapeJobId { get; set; }
     public DateTime JobStartedOn { get; } = DateTime.UtcNow;
     public DateTime? JobFinishedOn { get; set; }
     public bool? IsSuccess { get; set; }
