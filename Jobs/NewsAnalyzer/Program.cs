@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NewsAnalyzer.Configuration;
 using NewsAnalyzer.Configuration.Options;
+using NewsAnalyzer.Data;
 using NewsAnalyzer.Processors;
 using NewsAnalyzer.Providers;
 
@@ -15,8 +16,6 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        long scrapeJobId = 1;
-
         int returnCode = 0;
         Logger logger = null!;
         
@@ -34,6 +33,14 @@ public class Program
             // Log Configuration Settings
             if (configSettings.ApplicationOptions.LogConfigurationSettings)
                 configSettings.WriteToLog();
+
+            // Create the database if enabled in appsettings
+            if (configSettings.DatabaseOptions.CreateDatabase)
+            {
+                var database = host.Services.GetRequiredService<NewsAnalyzerDatabase>();
+                bool databaseCreated = await database.CreateAsync();
+                logger.Log($"Database {(databaseCreated ? "created" : "already exists")} at '{database.DatabaseFilePath}'.", LogLevel.Success);
+            }
 
             // Resolve and run the main service
             var processor = host.Services.GetRequiredService<NewsProcessor>();
@@ -84,6 +91,10 @@ public class Program
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogToFile,
                 provider.GetRequiredService<IOptions<CustomLoggingOptions>>().Value.LogDirectory,
                 $"{provider.GetRequiredService<IOptions<ApplicationOptions>>().Value.Name.Replace(" ", "")}_{timestamp}"));
+
+            // Database and repositories
+            services.AddTransient(provider => new NewsAnalyzerDatabase(
+                provider.GetRequiredService<IOptions<DatabaseOptions>>()));
 
             services.AddHttpClient("Perplexity", (serviceProvider, client) =>
             {
