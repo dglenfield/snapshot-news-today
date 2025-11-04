@@ -71,7 +71,7 @@ public abstract class SqliteDatabase
     public async Task<SqliteDataReader> ExecuteReaderAsync(string commandText, SqliteParameter[]? sqliteParameters = null)
     {
         SqliteConnection connection = new(_connectionString);
-        await using var command = connection.CreateCommand();
+        var command = connection.CreateCommand();
         command.CommandText = commandText;
         if (sqliteParameters is not null)
             command.Parameters.AddRange(sqliteParameters);
