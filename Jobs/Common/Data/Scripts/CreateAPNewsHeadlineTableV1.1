@@ -1,0 +1,12 @@
+﻿CREATE TABLE IF NOT EXISTS ap_news_headline (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ap_news_scrape_id INTEGER, -- Foreign key to link to ap_news_scrape table
+    section_name TEXT,
+    headline TEXT,
+    target_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
+    last_updated_on TEXT,
+    most_read INTEGER,
+    FOREIGN KEY(ap_news_scrape_id) REFERENCES ap_news_scrape(id) ON DELETE CASCADE);
+
+INSERT INTO database_info (entity, version) 
+    VALUES ('ap_news_headline', '1.1');

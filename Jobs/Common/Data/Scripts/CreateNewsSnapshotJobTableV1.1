@@ -1,0 +1,10 @@
+﻿CREATE TABLE IF NOT EXISTS news_snapshot_job (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_on TEXT NOT NULL,
+    finished_on TEXT,
+    run_time_in_seconds INTEGER,
+    is_success INTEGER,
+    error_message TEXT);
+
+INSERT INTO database_info (entity, version) 
+    VALUES ('news_snapshot_job', '1.1');

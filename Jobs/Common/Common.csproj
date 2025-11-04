@@ -11,4 +11,29 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Data\Scripts\CreateAPNewsArticleTableV1.1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Data\Scripts\CreateAPNewsHeadlineTableV1.1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Data\Scripts\CreateNewsAnalysisTableV1.1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Data\Scripts\CreateAPNewsScrapeTableV1.1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Data\Scripts\CreateNewsSnapshotJobTableV1.1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Data\Scripts\CreateDatabaseInfoTableV1.1">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Models\Scraping\" />
+	</ItemGroup>
+
 </Project>

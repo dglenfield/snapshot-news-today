@@ -9,10 +9,7 @@ public class DatabaseOptions
     public const string SectionName = "Database";
 
     [Required]
-    public bool CreateDatabase { get; set; }
-
-    [Required]
-    public string DatabaseVersion { get; set; } = default!;
+    public bool DeleteExistingDatabase { get; set; }
 
     [Required]
     public string DirectoryPath { get; set; } = default!;
