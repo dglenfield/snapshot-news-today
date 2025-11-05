@@ -23,19 +23,15 @@ public class NewsSnapshotDatabase(IOptions<DatabaseOptions> options, Logger logg
             await databaseInfo.CreateTableAsync();
 
             // Create snapshot_news_job table
-            NewsSnapshotJobRepository newsSnapshot = new(this);
+            SnapshotJobRepository newsSnapshot = new(this);
             await newsSnapshot.CreateTableAsync();
 
-            // Create ap_news_scrape table
-            APNewsScrapeRepository apNewsScrape = new(this);
-            await apNewsScrape.CreateTableAsync();
+            // Create scraped_headline table
+            ScrapedHeadlineRepository headlineScrapeRepository = new(this);
+            await headlineScrapeRepository.CreateTableAsync();
 
-            // Create ap_news_headline table
-            APNewsHeadlineRepository apNewsHeadline = new(this);
-            await apNewsHeadline.CreateTableAsync();
-
-            // Create ap_news_article table
-            APNewsArticleRepository apNewsArticle = new(this);
+            // Create scraped_article table
+            ScrapedArticleRepository apNewsArticle = new(this);
             await apNewsArticle.CreateTableAsync();
 
             // Create news_analysis table

@@ -11,20 +11,16 @@ namespace NewsSnapshot.Configuration;
 public class ConfigurationSettings(IOptions<ApplicationOptions> applicationOptions,
     IOptions<CustomLoggingOptions> customLoggingOptions,
     IOptions<DatabaseOptions> databaseOptions,
-    IOptions<NewsSourceOptions> newsSourceOptions,
+    IOptions<ScrapingOptions> scrapingOptions,
     IOptions<PerplexityOptions> perplexityOptions,
-    IOptions<PythonOptions> pythonOptions,
     Logger logger) : Common.Configuration.ConfigurationSettings(applicationOptions, customLoggingOptions, databaseOptions, logger)
 {
 
     [JsonPropertyOrder(10)]
-    public NewsSourceOptions NewsSourceOptions => newsSourceOptions.Value;
+    public ScrapingOptions ScrapingOptions => scrapingOptions.Value;
 
     [JsonPropertyOrder(11)]
     public PerplexityOptions PerplexityOptions => perplexityOptions.Value;
-
-    [JsonPropertyOrder(12)]
-    public PythonOptions PythonOptions => pythonOptions.Value;
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);

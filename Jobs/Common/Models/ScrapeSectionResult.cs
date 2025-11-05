@@ -1,13 +1,13 @@
 ﻿using Common.Serialization;
 using System.Text.Json;
 
-namespace Common.Models.AssociatedPress.MainPage;
+namespace Common.Models;
 
 public class ScrapeSectionResult
 {
     public required string SectionName { get; set; }
     public int HeadlinesScraped => Headlines.Count;
-    public HashSet<APNewsHeadline> Headlines { get; set; } = [];
+    public HashSet<ScrapedHeadline> Headlines { get; set; } = [];
     public JobException? ScrapeException { get; set; }
 
     public bool IsSuccess => ScrapeException is null;

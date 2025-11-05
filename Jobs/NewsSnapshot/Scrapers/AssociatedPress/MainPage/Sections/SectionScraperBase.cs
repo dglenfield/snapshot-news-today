@@ -1,5 +1,4 @@
 ﻿using Common.Models;
-using Common.Models.AssociatedPress.MainPage;
 using HtmlAgilityPack;
 
 namespace NewsSnapshot.Scrapers.AssociatedPress.MainPage.Sections;
@@ -25,7 +24,7 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
     public ScrapeSectionResult Scrape()
     {
         ScrapeSectionResult result = new() { SectionName = SectionName };
-        HashSet<APNewsHeadline> headlines = [];
+        HashSet<ScrapedHeadline> headlines = [];
 
         try
         {
@@ -50,26 +49,26 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
     }
 
     // Pre-processing Hook - no default processing
-    protected virtual void PreProcessSection(HashSet<APNewsHeadline> headlines) { }
+    protected virtual void PreProcessSection(HashSet<ScrapedHeadline> headlines) { }
 
     // Primary Processing Hook - contains default processing
-    protected virtual void ProcessSection(HashSet<APNewsHeadline> headlines) 
+    protected virtual void ProcessSection(HashSet<ScrapedHeadline> headlines) 
     {
         foreach (var headlineNode in HeadlineNodes)
             headlines.Add(GetHeadline(headlineNode));
     }
 
     // Additional Processing Hook - no default processing
-    protected virtual void PostProcessSection(HashSet<APNewsHeadline> headlines) { }
+    protected virtual void PostProcessSection(HashSet<ScrapedHeadline> headlines) { }
 
-    protected virtual APNewsHeadline GetHeadline(HtmlNode headlineNode)
+    protected virtual ScrapedHeadline GetHeadline(HtmlNode headlineNode)
     {
         string? unixTimestamp = FindUnixTimestamp(headlineNode);
         return new()
         {
             SectionName = SectionName,
             TargetUri = FindTargetUri(headlineNode),
-            Title = FindTitle(headlineNode),
+            Headline = FindTitle(headlineNode),
             LastUpdatedOn = string.IsNullOrWhiteSpace(unixTimestamp) ? null : ConvertUnixTimestamp(unixTimestamp)
         };
     }

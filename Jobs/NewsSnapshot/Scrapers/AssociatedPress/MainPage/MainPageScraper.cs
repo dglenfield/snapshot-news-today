@@ -1,29 +1,39 @@
 ﻿using Common.Data.Repositories;
-using Common.Models.AssociatedPress;
-using Common.Models.AssociatedPress.MainPage;
+using Common.Models;
 using HtmlAgilityPack;
+using Microsoft.Extensions.Options;
+using NewsSnapshot.Configuration.Options;
 using NewsSnapshot.Scrapers.AssociatedPress.MainPage.Sections;
 
 namespace NewsSnapshot.Scrapers.AssociatedPress.MainPage;
 
-internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
+internal class MainPageScraper(ScrapedHeadlineRepository headlineRepository, IOptions<ScrapingOptions> options)
 {
-    public async Task<ScrapeMainPageResult> ScrapeAsync(APNewsScrape job)
-    {
-        ScrapeMainPageResult scrapeResult = new() { ScrapedOn = DateTime.UtcNow };
-        if (job.SkipMainPageScrape)
-            return await CreateTestHeadline(job);
+    private readonly Uri _sourceUri = options.Value.BaseUri;
+    private readonly bool _skipScrape = options.Value.SkipMainPageScrape;
+    private readonly string _testFile = options.Value.MainPageTestFile;
+    private readonly bool _useTestFile = options.Value.UseMainPageTestFile;
 
+    public async Task<ScrapeHeadlinesResult> ScrapeAsync(long jobId)
+    {
+        ScrapeHeadlinesResult scrapeResult = new() 
+        { 
+            Source = _useTestFile ? _testFile : _sourceUri.AbsoluteUri, 
+            StartedOn = DateTime.UtcNow 
+        };
+        if (_skipScrape)
+            return await CreateTestHeadline(jobId);
+        
         try
         {
             // Get the Main Page HTML or the HTML test file
             HtmlDocument htmlDocument = new();
-            if (job.UseMainPageTestFile && !string.IsNullOrWhiteSpace(job.MainPageTestFile))
-                htmlDocument.Load(job.MainPageTestFile);
+            if (_useTestFile && !string.IsNullOrWhiteSpace(_testFile))
+                htmlDocument.Load(_testFile);
             else
-                htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(job.SourceUri));
+                htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(_sourceUri));
 
-            // Scrape the HTML document sections for Headlines
+            // Scrape the HTML document sections for Headlinesokli
             var documentNode = htmlDocument.DocumentNode;
             scrapeResult.AddScrapeSectionResult(new MainStoryScraper(documentNode, "A1").Scrape());
             scrapeResult.AddScrapeSectionResult(new MainStoryScraper(documentNode, "A2").Scrape());
@@ -48,49 +58,58 @@ internal class MainPageScraper(APNewsHeadlineRepository headlineRepository)
 
             // Mark any headlines as "Most Read" that were found in the Most Read section
             var mostReadSection = new MostReadScraper(documentNode).Scrape();
-            foreach (var headline in scrapeResult.Headlines)
-                if (mostReadSection.Headlines.Contains(headline))
-                    headline.MostRead = true;
+            if (scrapeResult.ScrapedHeadlines is not null)
+                foreach (var headline in scrapeResult.ScrapedHeadlines)
+                    if (mostReadSection.Headlines.Contains(headline))
+                        headline.MostRead = true;
 
             // Get all "article" and "live" hyperlinks on the page
-            var allLinks = GetAllHyperlinks(job.SourceUri, htmlDocument.DocumentNode); // TODO: Compare articles found with all links
+            var allLinks = GetAllHyperlinks(_sourceUri, htmlDocument.DocumentNode); // TODO: Compare articles found with all links
 
             // Save the headlines to the database
-            foreach (var headline in scrapeResult.Headlines.Where(h =>
-                h.TargetUri.AbsoluteUri.StartsWith($"{job.SourceUri}/article/", StringComparison.OrdinalIgnoreCase)))
-            {
-                try
+            if (scrapeResult.ScrapedHeadlines is not null)
+                foreach (var headline in scrapeResult.ScrapedHeadlines.Where(h =>
+                    h.TargetUri.AbsoluteUri.StartsWith($"{_sourceUri}article/", StringComparison.OrdinalIgnoreCase)))
                 {
-                    // Check if the TargetUri already exists in the table
-                    if (await headlineRepository.ExistsAsync(headline.TargetUri))
+                    try
                     {
-                        headline.AlreadyInDatabase = true;
-                        continue;
-                    }
+                        // Check if the TargetUri already exists in the table
+                        if (await headlineRepository.ExistsAsync(headline.TargetUri))
+                        {
+                            headline.AlreadyInDatabase = true;
+                            continue;
+                        }
 
-                    // Save the headline
-                    headline.Id = await headlineRepository.CreateAsync(headline, job.Id);
+                        // Save the headline
+                        headline.Id = await headlineRepository.CreateAsync(headline, jobId);
+                    }
+                    catch (Exception ex)
+                    {
+                        scrapeResult.ScrapeExceptions ??= [];
+                        scrapeResult.ScrapeExceptions.Add(new() { Source = $"Saving headline with TargetUri of {headline.TargetUri}", Exception = ex });
+                    }
                 }
-                catch (Exception ex)
-                {
-                    scrapeResult.ScrapeExceptions.Add(new() { Source = $"Saving headline with TargetUri of {headline.TargetUri}", Exception = ex });
-                }
-            }
         }
         catch (Exception ex)
         {
+            scrapeResult.ScrapeExceptions ??= [];
             scrapeResult.ScrapeExceptions.Add(new() { Source = $"{nameof(MainPageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
         }
         
         return scrapeResult;
     }
    
-    public async Task<ScrapeMainPageResult> CreateTestHeadline(APNewsScrape job)
+    public async Task<ScrapeHeadlinesResult> CreateTestHeadline(long jobId)
     {
-        ScrapeMainPageResult result = new() { ScrapedOn = DateTime.UtcNow };
-        var headline = new APNewsHeadline() { Title = "Test Headline", TargetUri = new($"https://test.com/{DateTime.UtcNow.Ticks}") };
-        headline.Id = await headlineRepository.CreateAsync(headline, job.Id);
-        result.Headlines.Add(headline);
+        ScrapeHeadlinesResult result = new() 
+        {
+            Source = _useTestFile ? _testFile : _sourceUri.AbsoluteUri,
+            StartedOn = DateTime.UtcNow 
+        };
+        ScrapedHeadline headline = new() { Headline = "Test Headline", TargetUri = new($"https://test.com/{DateTime.UtcNow.Ticks}") };
+        headline.Id = await headlineRepository.CreateAsync(headline, jobId);
+        result.ScrapedHeadlines ??= [];
+        result.ScrapedHeadlines.Add(headline);
         return result;
     }
 

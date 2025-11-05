@@ -1,7 +1,6 @@
-﻿CREATE TABLE IF NOT EXISTS ap_news_scrape (
+﻿CREATE TABLE IF NOT EXISTS scrape_job (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    news_snapshot_job_id INTEGER NOT NULL,
-    source_name TEXT NOT NULL,
+    snapshot_job_id INTEGER NOT NULL,
     source TEXT NOT NULL,
     started_on TEXT NOT NULL,
     finished_on TEXT,
@@ -13,7 +12,7 @@
     error_message TEXT,
     main_page_errors TEXT,
     articles_errors TEXT,
-    FOREIGN KEY(news_snapshot_job_id) REFERENCES news_snapshot_job(id) ON DELETE CASCADE);
+    FOREIGN KEY(snapshot_job_id) REFERENCES snapshot_job(id) ON DELETE CASCADE);
 
 INSERT INTO database_info (entity, version) 
-    VALUES ('ap_news_scrape', '1.1');
+    VALUES ('scrape_job', '1.1');
