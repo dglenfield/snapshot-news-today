@@ -1,24 +1,26 @@
 ﻿using Common.Data.Repositories;
 using Common.Logging;
 using Common.Models;
-using Common.Models.AssociatedPress;
-using Common.Models.AssociatedPress.ArticlePage;
-using Common.Models.AssociatedPress.MainPage;
 using HtmlAgilityPack;
+using Microsoft.Extensions.Options;
+using NewsSnapshot.Configuration.Options;
 using System.Text.RegularExpressions;
 
 namespace NewsSnapshot.Scrapers.AssociatedPress.ArticlePage;
 
-internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Logger logger)
+internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IOptions<ScrapingOptions> options)
 {
-    public async Task<APNewsArticle> ScrapeAsync(APNewsHeadline headline, APNewsScrape job)
+    private readonly string _testFile = options.Value.ArticleTestFile;
+    private readonly bool _useTestFile = options.Value.UseArticleTestFile;
+
+    public async Task<ScrapedArticle> ScrapeAsync(ScrapedHeadline headline)
     {
-        APNewsArticle article = new()
+        ScrapedArticle article = new()
         {
-            HeadlineId = headline.Id,
+            ScrapedHeadlineId = headline.Id,
             ScrapedOn = DateTime.UtcNow,
             SourceUri = headline.TargetUri,
-            TestFile = job.ArticlePageTestFile
+            TestFile = _useTestFile ? _testFile : null
         };
         
         try
@@ -28,8 +30,8 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
 
             // Get the Main Page HTML or the HTML test file
             HtmlDocument htmlDocument = new();
-            if (job.UseArticlePageTestFile && !string.IsNullOrWhiteSpace(job.ArticlePageTestFile))
-                htmlDocument.Load(job.ArticlePageTestFile);
+            if (_useTestFile && !string.IsNullOrWhiteSpace(_testFile))
+                htmlDocument.Load(_testFile);
             else
                 htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(article.SourceUri));
 
@@ -63,17 +65,19 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
         }
         catch (NodeNotFoundException ex)
         {
-            article.ScrapeException = new JobException() { Source = $"XPath error in {nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
+            article.ScrapeExceptions ??= [];
+            article.ScrapeExceptions.Add(new() { Source = $"XPath error in {nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
         }
         catch (Exception ex)
         {
-            article.ScrapeException = new JobException() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex };
+            article.ScrapeExceptions ??= [];
+            article.ScrapeExceptions.Add(new() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
         }
 
         try
         {
             // Update the article in the database
-            if (article.ScrapeException is null) 
+            if (article.ScrapeExceptions is null) 
                 article.IsSuccess = true;
             else
                 article.IsSuccess = false;
@@ -82,8 +86,8 @@ internal class ArticlePageScraper(APNewsArticleRepository articleRepository, Log
         catch (Exception ex)
         {
             article.IsSuccess = false;
-            logger.Log("Updating the article in the database failed!", LogLevel.Error);
-            logger.LogException(ex);
+            article.ScrapeExceptions ??= [];
+            article.ScrapeExceptions.Add(new() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
         }
 
         return article;

@@ -4,7 +4,6 @@ using Common.Data;
 using Common.Data.Repositories;
 using Common.Logging;
 using Common.Models;
-using Common.Models.AssociatedPress;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -20,15 +19,13 @@ public class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        NewsWebsite targetSite = NewsWebsite.AssociatedPress;
-
         int returnCode = 0;
         Logger logger = null!;
 
         try
         {
             // Configure dependency injection and initialize the host
-            var host = CreateBuilder(targetSite, DateTime.UtcNow).Build();
+            var host = CreateBuilder(DateTime.UtcNow).Build();
 
             var configSettings = host.Services.GetRequiredService<ConfigurationSettings>();
             Console.Title = configSettings.ApplicationOptions.Name;
@@ -44,18 +41,9 @@ public class Program
             var database = host.Services.GetRequiredService<NewsSnapshotDatabase>();
             await database.InitializeAsync();
 
-            // Resolve and run the main service            
-            APNewsScrape apNewsScrape = new() 
-            { 
-                SourceName = targetSite.ToString(), 
-                SourceUri = configSettings.NewsSourceOptions.AssociatedPress.BaseUri
-            };
-            NewsSnapshotJob job = new() 
-            {
-                APNewsScrape = apNewsScrape
-            };
-            var newsSnapshotProcessor = host.Services.GetRequiredService<NewsSnapshotProcessor>();
-            await newsSnapshotProcessor.Run(job);
+            // Resolve and run the main service
+            var snapshotProcessor = host.Services.GetRequiredService<SnapshotProcessor>();
+            await snapshotProcessor.Run();
 
             //switch (targetSite)
             //{
@@ -76,13 +64,6 @@ public class Program
             //        var apNewsProcessor = host.Services.GetRequiredService<APNewsProcessor>();
             //        await apNewsProcessor.Run(job);
             //        break;
-            //    case NewsWebsite.CNN:
-            //        var cnnProcessor = host.Services.GetRequiredService<CnnProcessor>();
-            //        await cnnProcessor.Run();
-            //        break;
-            //    default:
-            //        throw new NotImplementedException($"Scraping not implemented for {targetSite}");
-            //}
 
         }
         catch (Exception ex)
@@ -98,7 +79,7 @@ public class Program
         return returnCode;
     }
 
-    private static IHostBuilder CreateBuilder(NewsWebsite targetSite, DateTime logTimestamp)
+    private static IHostBuilder CreateBuilder(DateTime logTimestamp)
     {
         // Set up dependency injection
         return Host.CreateDefaultBuilder().ConfigureServices((context, services) =>
@@ -113,14 +94,11 @@ public class Program
             services.AddOptions<DatabaseOptions>()
                 .BindConfiguration(DatabaseOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
-            services.AddOptions<NewsSourceOptions>()
-                .BindConfiguration(NewsSourceOptions.SectionName)
-                .ValidateDataAnnotations().ValidateOnStart();
             services.AddOptions<PerplexityOptions>()
                 .BindConfiguration(PerplexityOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
-            services.AddOptions<PythonOptions>()
-                .BindConfiguration(PythonOptions.SectionName)
+            services.AddOptions<ScrapingOptions>()
+                .BindConfiguration(ScrapingOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
 
             // ConfigurationSettings
@@ -135,14 +113,17 @@ public class Program
 
             // Database and repositories
             services.AddTransient<NewsSnapshotDatabase>();
-            services.AddTransient<NewsSnapshotJobRepository>();
-            services.AddTransient<APNewsScrapeRepository>();
-            services.AddTransient<APNewsHeadlineRepository>();
-            services.AddTransient<APNewsArticleRepository>();
+            services.AddTransient<SnapshotJobRepository>();
+            services.AddTransient<ScrapedHeadlineRepository>();
+            services.AddTransient<ScrapedArticleRepository>();
 
             // Processors
-            services.AddTransient<NewsSnapshotProcessor>();
-            services.AddTransient<APNewsProcessor>();
+            services.AddTransient<SnapshotProcessor>();
+            services.AddTransient<ScrapeProcessor>();
+
+            // Scrapers
+            services.AddTransient<MainPageScraper>();
+            services.AddTransient<ArticlePageScraper>();
 
             services.AddHttpClient("Perplexity", (serviceProvider, client) =>
             {
@@ -151,25 +132,6 @@ public class Program
                 client.BaseAddress = perplexityOptions.ApiUri;
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {perplexityOptions.ApiKey}");
             });
-
-            // News website specific services
-            switch (targetSite)
-            {
-                case NewsWebsite.AssociatedPress:
-                    services.AddOptions<NewsSourceOptions.AssociatedPressOptions>()
-                        .BindConfiguration($"{NewsSourceOptions.SectionName}:{NewsSourceOptions.AssociatedPressOptions.SectionName}")
-                        .ValidateDataAnnotations().ValidateOnStart();
-                    //services.AddTransient<APNewsProcessor>();
-                    services.AddTransient<MainPageScraper>();
-                    services.AddTransient<ArticlePageScraper>();
-                    break;
-                case NewsWebsite.CNN:
-                    services.AddOptions<NewsSourceOptions.CnnOptions>()
-                        .BindConfiguration(NewsSourceOptions.SectionName)
-                        .ValidateDataAnnotations().ValidateOnStart();
-                    //services.AddTransient<CnnArticleProvider>();
-                    break;
-            }
         });
     }
 }

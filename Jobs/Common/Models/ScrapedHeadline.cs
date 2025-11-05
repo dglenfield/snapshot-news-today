@@ -1,13 +1,13 @@
 ﻿using Common.Serialization;
 using System.Text.Json;
 
-namespace Common.Models.AssociatedPress.MainPage;
+namespace Common.Models;
 
-public class APNewsHeadline
+public class ScrapedHeadline
 {
     public long Id { get; set; }
     public string? SectionName { get; init; }
-    public string? Title { get; set; } // Headline
+    public string? Headline { get; set; }
     public Uri TargetUri { get; set; } = default!;
     public DateTime? LastUpdatedOn { get; set; } // UTC time
     public bool MostRead { get; set; } = false;
@@ -15,7 +15,7 @@ public class APNewsHeadline
 
     public override bool Equals(object? obj)
     {
-        return obj is APNewsHeadline other && TargetUri?.Equals(other.TargetUri) == true;
+        return obj is ScrapedHeadline other && TargetUri?.Equals(other.TargetUri) == true;
     }
 
     public override int GetHashCode()

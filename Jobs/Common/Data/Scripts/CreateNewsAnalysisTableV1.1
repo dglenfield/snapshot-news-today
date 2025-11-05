@@ -1,12 +1,12 @@
 ﻿CREATE TABLE IF NOT EXISTS news_analysis (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    news_snapshot_job_id INTEGER NOT NULL,
+    snapshot_job_id INTEGER NOT NULL,
     job_started_on TEXT NOT NULL,
     job_finished_on TEXT,
     run_time_in_seconds INTEGER,
     is_success INTEGER,
     error_message TEXT,
-    FOREIGN KEY(news_snapshot_job_id) REFERENCES news_snapshot_job(id) ON DELETE CASCADE);
+    FOREIGN KEY(snapshot_job_id) REFERENCES snapshot_job(id) ON DELETE CASCADE);
 
 INSERT INTO database_info (entity, version) 
     VALUES ('news_analysis', '1.1');

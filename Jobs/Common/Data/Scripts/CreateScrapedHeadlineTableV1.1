@@ -1,12 +1,12 @@
-﻿CREATE TABLE IF NOT EXISTS ap_news_headline (
+﻿CREATE TABLE IF NOT EXISTS scraped_headline (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ap_news_scrape_id INTEGER, -- Foreign key to link to ap_news_scrape table
+    snapshot_job_id INTEGER, -- Foreign key to link to snapshot_job table
     section_name TEXT,
     headline TEXT,
     target_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
     last_updated_on TEXT,
     most_read INTEGER,
-    FOREIGN KEY(ap_news_scrape_id) REFERENCES ap_news_scrape(id) ON DELETE CASCADE);
+    FOREIGN KEY(snapshot_job_id) REFERENCES snapshot_job(id) ON DELETE CASCADE);
 
 INSERT INTO database_info (entity, version) 
-    VALUES ('ap_news_headline', '1.1');
+    VALUES ('scraped_headline', '1.1');

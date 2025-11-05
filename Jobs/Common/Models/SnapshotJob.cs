@@ -1,21 +1,21 @@
 ﻿using Common.Logging;
-using Common.Models.AssociatedPress;
 using Common.Serialization;
 using System.Text.Json;
 
 namespace Common.Models;
 
-public class NewsSnapshotJob
+public class SnapshotJob
 {
     public long Id { get; set; }
-    public DateTime StartedOn { get; } = DateTime.UtcNow;
+    public DateTime? StartedOn { get; set; }
     public DateTime? FinishedOn { get; set; }
     public bool? IsSuccess { get; set; }
     public JobException? JobException { get; set; }
-    public APNewsScrape APNewsScrape { get; set; } = default!;
+    public ScrapeArticlesResult? ScrapeArticlesResult { get; set; }
+    public ScrapeHeadlinesResult? ScrapeHeadlinesResult { get; set; }
 
-    public decimal? RunTimeInSeconds =>
-        FinishedOn.HasValue ? (decimal)((long)(FinishedOn.Value - StartedOn).TotalMilliseconds) / 1000 : null;
+    public decimal? RunTimeInSeconds => StartedOn.HasValue && FinishedOn.HasValue ? 
+        (decimal)((long)(FinishedOn.Value - StartedOn.Value).TotalMilliseconds) / 1000 : null;
 
     public void WriteToLog(Logger logger)
     {
@@ -29,4 +29,6 @@ public class NewsSnapshotJob
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
+
+
 }
