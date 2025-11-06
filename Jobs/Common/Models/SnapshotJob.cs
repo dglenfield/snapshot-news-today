@@ -1,4 +1,5 @@
 ﻿using Common.Logging;
+using Common.Models.Scraping.Results;
 using Common.Serialization;
 using System.Text.Json;
 

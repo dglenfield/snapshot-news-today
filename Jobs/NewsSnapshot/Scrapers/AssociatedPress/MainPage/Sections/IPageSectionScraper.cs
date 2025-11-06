@@ -1,4 +1,4 @@
-﻿using Common.Models;
+﻿using Common.Models.Scraping.Results;
 
 namespace NewsSnapshot.Scrapers.AssociatedPress.MainPage.Sections;
 
