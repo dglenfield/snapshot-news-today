@@ -1,7 +1,7 @@
-﻿using Common.Models.Scraping;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
+using SnapshotJob.Data.Models;
 
-namespace Common.Data.Repositories;
+namespace SnapshotJob.Data.Repositories;
 
 public class ScrapedHeadlineRepository(SnapshotJobDatabase database)
 {

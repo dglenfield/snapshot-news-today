@@ -3,7 +3,7 @@ using Common.Serialization;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
-namespace Common.Configuration.Options;
+namespace SnapshotJob.Configuration.Options;
 
 public class CustomLoggingOptions
 {

@@ -1,5 +1,5 @@
-﻿using Common.Models.Scraping;
-using Common.Models.Scraping.Results;
+﻿using SnapshotJob.Data.Models;
+using SnapshotJob.Models;
 using SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
 using SnapshotJob.Scrapers.AssociatedPress.MainPage;
 
@@ -26,10 +26,9 @@ internal class ScrapeProcessor(MainPageScraper mainPageScraper, ArticlePageScrap
 
             result.IsSuccess = true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             result.IsSuccess = false;
-            result.ScrapeException = new() { Source = $"{nameof(ScrapeProcessor)}.{nameof(ScrapeArticles)}", Exception = ex };
         }
 
         return result;

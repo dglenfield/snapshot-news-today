@@ -1,8 +1,9 @@
 ﻿using Common.Serialization;
+using SnapshotJob.Data.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Common.Models.Scraping.Results;
+namespace SnapshotJob.Models;
 
 public class ScrapeHeadlinesResult
 {
@@ -10,10 +11,7 @@ public class ScrapeHeadlinesResult
     public DateTime? StartedOn { get; set; }
     public DateTime? FinishedOn { get; set; }
     public bool? IsSuccess { get; set; }
-
-    [JsonIgnore]
-    public List<JobException>? ScrapeExceptions { get; set; }
-
+    public List<Exception>? Exceptions { get; set; }
     public HashSet<ScrapedHeadline>? ScrapedHeadlines { get; set; }
 
     public int HeadlinesScraped => 
@@ -32,10 +30,10 @@ public class ScrapeHeadlinesResult
             ScrapedHeadlines.Add(headline);
         }
 
-        if (result.ScrapeException is not null)
+        if (result.Exception is not null)
         {
-            ScrapeExceptions ??= [];
-            ScrapeExceptions.Add(result.ScrapeException);
+            Exceptions ??= [];
+            Exceptions.Add(result.Exception);
         }
             
     }

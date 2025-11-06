@@ -1,5 +1,5 @@
-﻿using Common.Models.Scraping;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
+using SnapshotJob.Data.Models;
 
 namespace SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
 

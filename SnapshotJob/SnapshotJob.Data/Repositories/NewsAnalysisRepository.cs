@@ -1,4 +1,4 @@
-﻿namespace Common.Data.Repositories;
+﻿namespace SnapshotJob.Data.Repositories;
 
 public class NewsAnalysisRepository(SnapshotJobDatabase database)
 {

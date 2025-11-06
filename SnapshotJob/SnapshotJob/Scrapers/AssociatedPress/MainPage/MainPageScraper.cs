@@ -1,9 +1,9 @@
-﻿using Common.Data.Repositories;
-using Common.Models.Scraping;
-using Common.Models.Scraping.Results;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
 using Microsoft.Extensions.Options;
 using SnapshotJob.Configuration.Options;
+using SnapshotJob.Data.Models;
+using SnapshotJob.Data.Repositories;
+using SnapshotJob.Models;
 using SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
 
 namespace SnapshotJob.Scrapers.AssociatedPress.MainPage;
@@ -86,15 +86,15 @@ internal class MainPageScraper(ScrapedHeadlineRepository headlineRepository, IOp
                     }
                     catch (Exception ex)
                     {
-                        scrapeResult.ScrapeExceptions ??= [];
-                        scrapeResult.ScrapeExceptions.Add(new() { Source = $"Saving headline with TargetUri of {headline.TargetUri}", Exception = ex });
+                        scrapeResult.Exceptions ??= [];
+                        scrapeResult.Exceptions.Add(ex);
                     }
                 }
         }
         catch (Exception ex)
         {
-            scrapeResult.ScrapeExceptions ??= [];
-            scrapeResult.ScrapeExceptions.Add(new() { Source = $"{nameof(MainPageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
+            scrapeResult.Exceptions ??= [];
+            scrapeResult.Exceptions.Add(ex);
         }
         
         return scrapeResult;

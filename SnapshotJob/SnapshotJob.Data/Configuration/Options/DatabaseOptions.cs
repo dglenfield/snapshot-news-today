@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
-namespace Common.Configuration.Options;
+namespace SnapshotJob.Data.Configuration.Options;
 
 public class DatabaseOptions
 {

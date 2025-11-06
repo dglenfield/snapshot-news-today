@@ -1,8 +1,8 @@
-﻿using Common.Data.Repositories;
-using Common.Models.Scraping;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
 using Microsoft.Extensions.Options;
 using SnapshotJob.Configuration.Options;
+using SnapshotJob.Data.Models;
+using SnapshotJob.Data.Repositories;
 using System.Text.RegularExpressions;
 
 namespace SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
@@ -64,19 +64,19 @@ internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IO
         }
         catch (NodeNotFoundException ex)
         {
-            article.ScrapeExceptions ??= [];
-            article.ScrapeExceptions.Add(new() { Source = $"XPath error in {nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
+            article.Exceptions ??= [];
+            article.Exceptions.Add(ex);
         }
         catch (Exception ex)
         {
-            article.ScrapeExceptions ??= [];
-            article.ScrapeExceptions.Add(new() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
+            article.Exceptions ??= [];
+            article.Exceptions.Add(ex);
         }
 
         try
         {
             // Update the article in the database
-            if (article.ScrapeExceptions is null) 
+            if (article.Exceptions is null) 
                 article.IsSuccess = true;
             else
                 article.IsSuccess = false;
@@ -85,8 +85,8 @@ internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IO
         catch (Exception ex)
         {
             article.IsSuccess = false;
-            article.ScrapeExceptions ??= [];
-            article.ScrapeExceptions.Add(new() { Source = $"{nameof(ArticlePageScraper)}.{nameof(ScrapeAsync)}", Exception = ex });
+            article.Exceptions ??= [];
+            article.Exceptions.Add(ex);
         }
 
         return article;
