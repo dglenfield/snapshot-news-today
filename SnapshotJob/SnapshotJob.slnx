@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Common/Common.csproj" Id="f1055be7-9e7f-45a0-8dc0-9a1710f14bb5" />
+  <Project Path="SnapshotJob/SnapshotJob.csproj" Id="fd0f0faf-a532-4ba7-93ab-b789834cdbeb" />
+</Solution>
