@@ -1,5 +1,6 @@
 ﻿using Common.Logging;
-using Common.Models;
+using Common.Models.Scraping;
+using Common.Models.Scraping.Results;
 using NewsSnapshot.Scrapers.AssociatedPress.ArticlePage;
 using NewsSnapshot.Scrapers.AssociatedPress.MainPage;
 

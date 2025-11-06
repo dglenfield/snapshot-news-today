@@ -1,7 +1,7 @@
 ﻿using Common.Serialization;
 using System.Text.Json;
 
-namespace Common.Models;
+namespace Common.Models.Scraping.Results;
 
 public class ScrapeArticlesResult
 {

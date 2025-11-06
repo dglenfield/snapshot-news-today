@@ -1,5 +1,6 @@
 ﻿using Common.Data.Repositories;
-using Common.Models;
+using Common.Models.Scraping;
+using Common.Models.Scraping.Results;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Options;
 using NewsSnapshot.Configuration.Options;

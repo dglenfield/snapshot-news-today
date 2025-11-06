@@ -21,9 +21,6 @@
 	  <None Update="Data\Scripts\CreateNewsAnalysisTableV1.1">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
-	  <None Update="Data\Scripts\CreateScrapeJobTableV1.1">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
 	  <None Update="Data\Scripts\CreateSnapshotJobTableV1.1">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>

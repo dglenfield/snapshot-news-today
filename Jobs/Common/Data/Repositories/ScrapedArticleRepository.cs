@@ -1,4 +1,4 @@
-﻿using Common.Models;
+﻿using Common.Models.Scraping;
 using Microsoft.Data.Sqlite;
 
 namespace Common.Data.Repositories;
