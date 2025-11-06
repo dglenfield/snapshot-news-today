@@ -1,4 +1,4 @@
-﻿using Common.Models.Scraping.Results;
+﻿using SnapshotJob.Models;
 
 namespace SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
 

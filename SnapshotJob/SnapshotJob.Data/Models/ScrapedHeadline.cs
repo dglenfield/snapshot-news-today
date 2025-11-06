@@ -1,7 +1,7 @@
 ﻿using Common.Serialization;
 using System.Text.Json;
 
-namespace Common.Models.Scraping;
+namespace SnapshotJob.Data.Models;
 
 public class ScrapedHeadline
 {

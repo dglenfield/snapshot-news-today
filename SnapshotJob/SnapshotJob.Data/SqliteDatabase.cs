@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using System.Data;
 
-namespace Common.Data;
+namespace SnapshotJob.Data;
 
 public abstract class SqliteDatabase
 {

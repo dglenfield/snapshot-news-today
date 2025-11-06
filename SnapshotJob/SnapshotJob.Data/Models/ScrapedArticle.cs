@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Common.Models.Scraping;
+namespace SnapshotJob.Data.Models;
 
 public class ScrapedArticle
 {
@@ -27,8 +27,7 @@ public class ScrapedArticle
 
     public bool IsSuccess { get; set; } = false;
 
-    [JsonIgnore]
-    public List<JobException>? ScrapeExceptions { get; set; }
+    public List<Exception>? Exceptions { get; set; }
 
     [JsonIgnore]
     public string? Content => ContentParagraphs?.Count > 0 ? string.Join("\n\n", ContentParagraphs) : null;

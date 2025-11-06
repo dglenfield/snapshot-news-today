@@ -1,8 +1,8 @@
-﻿using Common.Configuration.Options;
-using Common.Logging;
+﻿using Common.Logging;
 using Common.Serialization;
 using Microsoft.Extensions.Options;
 using SnapshotJob.Configuration.Options;
+using SnapshotJob.Data.Configuration.Options;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -13,14 +13,28 @@ public class ConfigurationSettings(IOptions<ApplicationOptions> applicationOptio
     IOptions<DatabaseOptions> databaseOptions,
     IOptions<ScrapingOptions> scrapingOptions,
     IOptions<PerplexityOptions> perplexityOptions,
-    Logger logger) : Common.Configuration.ConfigurationSettings(applicationOptions, customLoggingOptions, databaseOptions, logger)
+    Logger logger)
 {
+    [JsonPropertyOrder(0)]
+    public ApplicationOptions ApplicationOptions => applicationOptions.Value;
+
+    [JsonPropertyOrder(1)]
+    public CustomLoggingOptions CustomLoggingOptions => customLoggingOptions.Value;
+
+    [JsonPropertyOrder(2)]
+    public DatabaseOptions DatabaseOptions => databaseOptions.Value;
 
     [JsonPropertyOrder(10)]
-    public ScrapingOptions ScrapingOptions => scrapingOptions.Value;
+    public PerplexityOptions PerplexityOptions => perplexityOptions.Value;
 
     [JsonPropertyOrder(11)]
-    public PerplexityOptions PerplexityOptions => perplexityOptions.Value;
+    public ScrapingOptions ScrapingOptions => scrapingOptions.Value;
+
+    public void WriteToLog()
+    {
+        logger.Log("Configuration Settings:", logAsRawMessage: true);
+        logger.Log(this.ToString(), logAsRawMessage: true);
+    }
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);

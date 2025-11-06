@@ -1,9 +1,9 @@
-﻿using Common.Configuration.Options;
-using Common.Data.Repositories;
-using Common.Logging;
+﻿using Common.Logging;
 using Microsoft.Extensions.Options;
+using SnapshotJob.Data.Configuration.Options;
+using SnapshotJob.Data.Repositories;
 
-namespace Common.Data;
+namespace SnapshotJob.Data;
 
 public class SnapshotJobDatabase(IOptions<DatabaseOptions> options, Logger logger) 
     : SqliteDatabase(options.Value.DatabaseFilePath)

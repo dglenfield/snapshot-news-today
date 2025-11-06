@@ -1,7 +1,7 @@
 ﻿using Common.Models;
-using Common.Models.Scraping;
-using Common.Models.Scraping.Results;
 using HtmlAgilityPack;
+using SnapshotJob.Data.Models;
+using SnapshotJob.Models;
 
 namespace SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
 
@@ -39,11 +39,11 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
         }
         catch (NodeNotFoundException ex)
         {
-            result.ScrapeException = new JobException() { Source = $"Scraping section {SectionName} XPath error", Exception = ex };
+            result.Exception = ex;
         }
         catch (Exception ex) 
         {
-            result.ScrapeException = new JobException() { Source = $"Scraping section {SectionName}", Exception = ex };
+            result.Exception = ex;
         }
 
         result.Headlines = headlines;

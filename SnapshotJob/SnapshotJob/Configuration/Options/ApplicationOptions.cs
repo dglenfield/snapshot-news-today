@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Common.Configuration.Options;
+namespace SnapshotJob.Configuration.Options;
 
 // Root-level settings
 public class ApplicationOptions

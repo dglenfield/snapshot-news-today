@@ -1,7 +1,7 @@
-﻿using Common.Models.Scraping;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
+using SnapshotJob.Data.Models;
 
-namespace Common.Data.Repositories;
+namespace SnapshotJob.Data.Repositories;
 
 public class ScrapedArticleRepository(SnapshotJobDatabase database)
 {
@@ -61,8 +61,8 @@ public class ScrapedArticleRepository(SnapshotJobDatabase database)
             WHERE id = @id;";
 
         string errors = string.Empty;
-        if (article.ScrapeExceptions is not null)
-            foreach (var exception in article.ScrapeExceptions)
+        if (article.Exceptions is not null)
+            foreach (var exception in article.Exceptions)
                 errors += $"{exception.Source}: {exception.Message} | ";
 
         SqliteParameter[] parameters = [

@@ -1,18 +1,18 @@
-﻿using Common.Models;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
+using SnapshotJob.Data.Models;
 
-namespace Common.Data.Repositories;
+namespace SnapshotJob.Data.Repositories;
 
 public class NewsSnapshotRepository(SnapshotJobDatabase database)
 {
-    public async Task<long> CreateAsync(NewsSnapshot snapshot)
+    public async Task<long> CreateAsync(DateTime startedOn)
     {
         string commandText = @"
             INSERT INTO news_snapshot (started_on) 
             VALUES (@started_on);";
 
         SqliteParameter[] parameters = [
-            new("@started_on", (object?)snapshot.StartedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value)
+            new("@started_on", (object?)startedOn.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value)
         ];
 
         long id = await database.InsertAsync(commandText, parameters);
@@ -34,7 +34,7 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
                 headlines_scraped INTEGER,
                 articles_scraped INTEGER,
                 is_success INTEGER,
-                job_error TEXT,
+                error TEXT,
                 scrape_errors TEXT);
 
             INSERT INTO database_info (entity, version) 
@@ -45,20 +45,13 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
 
     public async Task UpdateAsync(NewsSnapshot snapshot)
     {
-        string jobError = snapshot.JobException is not null 
-            ? $"{snapshot.JobException.Source}: {snapshot.JobException.Message}" : string.Empty;
+        string error = snapshot.SnapshotException is not null 
+            ? $"{snapshot.SnapshotException.Source}: {snapshot.SnapshotException.Message}" : string.Empty;
 
         string scrapeErrors = string.Empty;
-        if (snapshot.ScrapeHeadlinesResult?.ScrapeExceptions is not null)
-            foreach (var exception in snapshot.ScrapeHeadlinesResult.ScrapeExceptions)
+        if (snapshot.ScrapeExceptions is not null)
+            foreach (var exception in snapshot.ScrapeExceptions)
                 scrapeErrors += $"{exception.Source}: {exception.Message} | ";
-        if (snapshot.ScrapeArticlesResult?.ScrapeException is not null)
-            scrapeErrors += $"{snapshot.ScrapeArticlesResult.ScrapeException.Source}: {snapshot.ScrapeArticlesResult.ScrapeException.Message} | ";
-        if (snapshot.ScrapeArticlesResult?.ScrapedArticles is not null)
-            foreach (var article in snapshot.ScrapeArticlesResult.ScrapedArticles)
-                if (article.ScrapeExceptions is not null)
-                    foreach (var exception in article.ScrapeExceptions)
-                        scrapeErrors += $"{exception.Source}: {exception.Message} | ";
 
         string commandText = @"
             UPDATE news_snapshot
@@ -68,7 +61,7 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
                 headlines_scraped = @headlines_scraped,
                 articles_scraped = @articles_scraped,
                 is_success = @is_success, 
-                job_error = @job_error,
+                error = @error,
                 scrape_errors = @scrape_errors
             WHERE id = @id;";
 
@@ -76,11 +69,11 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
             new("@id", snapshot.Id),
             new("@finished_on", (object?)snapshot.FinishedOn?.ToString("yyyy-MM-dd HH:mm:ss") ?? DBNull.Value),
             new("@run_time_in_seconds", (object?)snapshot.RunTimeInSeconds ?? DBNull.Value),
-            new("@sections_scraped", (object?)snapshot.ScrapeHeadlinesResult?.SectionsScraped ?? DBNull.Value),
-            new("@headlines_scraped", (object?)snapshot.ScrapeHeadlinesResult?.HeadlinesScraped ?? DBNull.Value),
-            new("@articles_scraped", (object?)snapshot.ScrapeArticlesResult?.ArticlesScraped ?? DBNull.Value),
+            new("@sections_scraped", (object?)snapshot.SectionsScraped ?? DBNull.Value),
+            new("@headlines_scraped", (object?)snapshot.HeadlinesScraped ?? DBNull.Value),
+            new("@articles_scraped", (object?)snapshot.ArticlesScraped ?? DBNull.Value),
             new("@is_success", snapshot.IsSuccess.HasValue ? (snapshot.IsSuccess.Value ? 1 : 0) : (object?)DBNull.Value),
-            new("@job_error", !string.IsNullOrWhiteSpace(jobError) ? jobError : (object?)DBNull.Value),
+            new("@error", !string.IsNullOrWhiteSpace(error) ? error : (object?)DBNull.Value),
             new("@scrape_errors", !string.IsNullOrWhiteSpace(scrapeErrors) ? scrapeErrors : (object?)DBNull.Value)
         ];
 
