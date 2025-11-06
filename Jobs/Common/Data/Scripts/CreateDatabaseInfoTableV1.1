@@ -1,7 +1,0 @@
-﻿CREATE TABLE IF NOT EXISTS database_info (
-    entity TEXT NOT NULL PRIMARY KEY,
-    version TEXT NOT NULL, 
-    created_on TEXT NOT NULL DEFAULT (datetime('now')));
-
-INSERT INTO database_info (entity, version) 
-    VALUES ('database_info', '1.1');
