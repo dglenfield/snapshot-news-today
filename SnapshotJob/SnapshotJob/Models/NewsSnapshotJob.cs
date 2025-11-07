@@ -1,5 +1,5 @@
-﻿using Common.Logging;
-using Common.Serialization;
+﻿using SnapshotJob.Common.Logging;
+using SnapshotJob.Common.Serialization;
 using SnapshotJob.Data.Models;
 using System.Text.Json;
 

@@ -1,14 +1,15 @@
-﻿using Common.Serialization;
+﻿using SnapshotJob.Common.Serialization;
 using System.Text.Json;
 
-namespace Common.Models.PerplexityApi;
+namespace SnapshotJob.Common.Models.PerplexityApi;
 
-public class CuratedNewsArticle : NewsArticle
+public class NewsArticle
 {
-    public string CuratedHeadline { get; set; } = default!;
-    public string Highlights { get; set; } = default!;
-    public string Rationale { get; set; } = default!;
-    public string CuratedCategory { get; set; } = default!;
+    public Uri SourceUri { get; set; } = default!;
+    public string? SourceHeadline { get; set; }
+    public DateTime? SourcePublishDate { get; set; }
+    public string? SourceName { get; set; }
+    public string? SourceCategory { get; set; }
 
     /// <summary>
     /// Returns a JSON-formatted string that represents the current object.
@@ -17,6 +18,7 @@ public class CuratedNewsArticle : NewsArticle
     /// values for readability. This method is useful for logging, debugging, or exporting the object's state.</remarks>
     /// <returns>A string containing the JSON representation of the object, formatted with indentation and excluding properties
     /// with null values.</returns>
-    public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
+    public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default, 
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
+
 }

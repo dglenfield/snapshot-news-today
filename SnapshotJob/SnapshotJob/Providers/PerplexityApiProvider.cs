@@ -1,10 +1,11 @@
-﻿using Common.Logging;
-using Common.Models.PerplexityApi;
+﻿using Common.Models.PerplexityApi;
 using Common.Models.PerplexityApi.Common.Request;
 using Common.Models.PerplexityApi.Common.Response;
 using Common.Models.PerplexityApi.CurateArticles.Request;
 using Common.Models.PerplexityApi.CurateArticles.Response;
-using Common.Serialization;
+using SnapshotJob.Common.Logging;
+using SnapshotJob.Common.Models.PerplexityApi;
+using SnapshotJob.Common.Serialization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;

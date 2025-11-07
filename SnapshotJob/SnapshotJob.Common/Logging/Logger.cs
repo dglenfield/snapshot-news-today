@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Common.Logging;
+namespace SnapshotJob.Common.Logging;
 
 public class Logger
 {

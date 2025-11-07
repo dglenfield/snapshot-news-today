@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\SnapshotJob.Common\SnapshotJob.Common.csproj" />
     <ProjectReference Include="..\SnapshotJob.Data\SnapshotJob.Data.csproj" />
   </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿using Common.Logging;
+﻿using SnapshotJob.Common.Logging;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Models;

@@ -1,4 +1,4 @@
-﻿namespace Common.Models.PerplexityApi;
+﻿namespace SnapshotJob.Common.Models.PerplexityApi;
 
 //  https://snapshots.azurewebsites.net/1759860432 - Unix timestamp used for the page snapshot
 // {

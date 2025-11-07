@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Common.Serialization;
+namespace SnapshotJob.Common.Serialization;
 
 public class LowercaseJsonStringEnumConverter : JsonConverterFactory
 {
