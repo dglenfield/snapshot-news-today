@@ -1,4 +1,4 @@
-﻿namespace Common.Logging;
+﻿namespace SnapshotJob.Common.Logging;
 
 /// <summary>
 /// Specifies the severity level of a log message.

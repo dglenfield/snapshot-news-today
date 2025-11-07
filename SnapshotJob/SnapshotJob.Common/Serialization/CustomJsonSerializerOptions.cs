@@ -1,4 +1,4 @@
-﻿namespace Common.Serialization;
+﻿namespace SnapshotJob.Common.Serialization;
 
 [Flags]
 public enum CustomJsonSerializerOptions

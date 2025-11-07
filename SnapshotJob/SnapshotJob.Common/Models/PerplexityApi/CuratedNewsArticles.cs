@@ -1,8 +1,8 @@
 ﻿using Common.Models.PerplexityApi.Common.Response;
-using Common.Serialization;
+using SnapshotJob.Common.Serialization;
 using System.Text.Json;
 
-namespace Common.Models.PerplexityApi;
+namespace SnapshotJob.Common.Models.PerplexityApi;
 
 public class CuratedNewsArticles
 {

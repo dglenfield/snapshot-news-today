@@ -1,7 +1,7 @@
-﻿using Common.Logging;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using SnapshotJob.Common.Logging;
 using SnapshotJob.Configuration;
 using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data;

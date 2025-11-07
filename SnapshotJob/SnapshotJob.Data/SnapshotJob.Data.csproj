@@ -11,7 +11,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Common\Common.csproj" />
+	  <ProjectReference Include="..\SnapshotJob.Common\SnapshotJob.Common.csproj" />
 	</ItemGroup>
 
 </Project>

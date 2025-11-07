@@ -1,5 +1,5 @@
-﻿using Common.Logging;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
+using SnapshotJob.Common.Logging;
 using SnapshotJob.Data.Configuration.Options;
 using SnapshotJob.Data.Repositories;
 

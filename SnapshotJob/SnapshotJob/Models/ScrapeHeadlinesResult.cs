@@ -1,4 +1,4 @@
-﻿using Common.Serialization;
+﻿using SnapshotJob.Common.Serialization;
 using SnapshotJob.Data.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;

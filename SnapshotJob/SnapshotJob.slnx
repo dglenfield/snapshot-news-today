@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="Common/Common.csproj" Id="f1055be7-9e7f-45a0-8dc0-9a1710f14bb5" />
+  <Project Path="SnapshotJob.Common/SnapshotJob.Common.csproj" Id="f1055be7-9e7f-45a0-8dc0-9a1710f14bb5" />
   <Project Path="SnapshotJob.Data/SnapshotJob.Data.csproj" Id="b3392419-2af0-458c-a73f-7f1abbbfdb9d" />
   <Project Path="SnapshotJob/SnapshotJob.csproj" Id="fd0f0faf-a532-4ba7-93ab-b789834cdbeb" />
 </Solution>

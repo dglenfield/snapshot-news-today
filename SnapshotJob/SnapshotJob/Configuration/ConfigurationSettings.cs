@@ -1,6 +1,6 @@
-﻿using Common.Logging;
-using Common.Serialization;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
+using SnapshotJob.Common.Logging;
+using SnapshotJob.Common.Serialization;
 using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data.Configuration.Options;
 using System.Text.Json;
