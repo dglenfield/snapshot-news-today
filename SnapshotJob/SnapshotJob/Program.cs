@@ -9,7 +9,7 @@ using SnapshotJob.Data.Configuration.Options;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Processors;
 using SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
-using SnapshotJob.Scrapers.AssociatedPress.MainPage;
+using SnapshotJob.Scrapers.MainPage;
 
 namespace SnapshotJob;
 

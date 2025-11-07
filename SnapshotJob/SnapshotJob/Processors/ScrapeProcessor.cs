@@ -1,7 +1,7 @@
 ﻿using SnapshotJob.Data.Models;
 using SnapshotJob.Models;
 using SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
-using SnapshotJob.Scrapers.AssociatedPress.MainPage;
+using SnapshotJob.Scrapers.MainPage;
 
 namespace SnapshotJob.Processors;
 

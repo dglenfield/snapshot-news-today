@@ -1,6 +1,6 @@
 ﻿using HtmlAgilityPack;
 
-namespace SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
+namespace SnapshotJob.Scrapers.MainPage.Sections;
 
 public class B2Scraper(HtmlNode documentNode) : PageSectionScraperBase(documentNode)
 {
