@@ -1,7 +1,7 @@
 ﻿using HtmlAgilityPack;
 using SnapshotJob.Data.Models;
 
-namespace SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
+namespace SnapshotJob.Scrapers.MainPage.Sections;
 
 public class CBlockScraper(HtmlNode documentNode) : PageSectionScraperBase(documentNode)
 {

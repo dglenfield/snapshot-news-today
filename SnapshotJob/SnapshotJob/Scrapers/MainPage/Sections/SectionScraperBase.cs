@@ -3,7 +3,7 @@ using HtmlAgilityPack;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Models;
 
-namespace SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
+namespace SnapshotJob.Scrapers.MainPage.Sections;
 
 public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSectionScraper
 {

@@ -4,9 +4,9 @@ using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Models;
-using SnapshotJob.Scrapers.AssociatedPress.MainPage.Sections;
+using SnapshotJob.Scrapers.MainPage.Sections;
 
-namespace SnapshotJob.Scrapers.AssociatedPress.MainPage;
+namespace SnapshotJob.Scrapers.MainPage;
 
 internal class MainPageScraper(ScrapedHeadlineRepository headlineRepository, IOptions<ScrapingOptions> options)
 {
