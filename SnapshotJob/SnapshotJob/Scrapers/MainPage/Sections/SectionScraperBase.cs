@@ -1,5 +1,4 @@
-﻿using Common.Models;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Models;
 
