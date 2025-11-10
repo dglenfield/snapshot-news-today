@@ -3,13 +3,14 @@ using System.Text.Json;
 
 namespace SnapshotJob.Perplexity.Models;
 
-public class NewsArticle
+public class SourceNewsArticle
 {
+    public long Id { get; set; }
     public Uri SourceUri { get; set; } = default!;
-    public string? SourceHeadline { get; set; }
-    public DateTime? SourcePublishDate { get; set; }
-    public string? SourceName { get; set; }
-    public string? SourceCategory { get; set; }
+    public string? Headline { get; set; }
+    public DateTime? LastUpdatedOn { get; set; }
+    //public string? SourceName { get; set; }
+    public string? Category { get; set; }
 
     /// <summary>
     /// Returns a JSON-formatted string that represents the current object.

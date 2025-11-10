@@ -18,6 +18,7 @@ internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IO
         {
             ScrapedHeadlineId = headline.Id,
             ScrapedOn = DateTime.UtcNow,
+            SectionName = headline.SectionName,
             SourceUri = headline.TargetUri,
             TestFile = _useTestFile ? _testFile : null
         };

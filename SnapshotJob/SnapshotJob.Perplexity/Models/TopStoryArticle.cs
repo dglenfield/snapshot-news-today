@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace SnapshotJob.Perplexity.Models;
 
-public class TopStoryArticle : NewsArticle
+public class TopStoryArticle : SourceNewsArticle
 {
     public string CuratedHeadline { get; set; } = default!;
     public string Highlights { get; set; } = default!;

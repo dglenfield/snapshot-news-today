@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SnapshotJob.Common\SnapshotJob.Common.csproj" />
     <ProjectReference Include="..\SnapshotJob.Data\SnapshotJob.Data.csproj" />
+    <ProjectReference Include="..\SnapshotJob.Perplexity\SnapshotJob.Perplexity.csproj" />
   </ItemGroup>
 
 	<ItemGroup>

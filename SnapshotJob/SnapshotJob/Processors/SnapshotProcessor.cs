@@ -5,7 +5,7 @@ using SnapshotJob.Models;
 
 namespace SnapshotJob.Processors;
 
-internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, 
+internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
     NewsSnapshotRepository newsSnapshotRepository,
     Logger logger)
 {
@@ -43,7 +43,10 @@ internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor,
             }
 
             // Get the Top Stories for the scraped headlines
-
+            if (job.ScrapeArticlesResult?.ScrapedArticles is not null)
+            {
+                var result = await topStoriesProcessor.SelectArticles(job.ScrapeArticlesResult.ScrapedArticles);
+            }
 
             snapshot.IsSuccess = true;
         }
@@ -60,7 +63,7 @@ internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor,
             await newsSnapshotRepository.UpdateAsync(snapshot);
 
             // Log the results
-            job.WriteToLog(logger);
+            //job.WriteToLog(logger);
             logger.Log($"\nNews snapshot job finished {(snapshot.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
                 messageLogLevel: (snapshot.IsSuccess!.Value ? LogLevel.Success : LogLevel.Error));
         }
