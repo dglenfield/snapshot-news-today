@@ -63,7 +63,7 @@ internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProc
             await newsSnapshotRepository.UpdateAsync(snapshot);
 
             // Log the results
-            //job.WriteToLog(logger);
+            job.WriteToLog(logger);
             logger.Log($"\nNews snapshot job finished {(snapshot.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
                 messageLogLevel: (snapshot.IsSuccess!.Value ? LogLevel.Success : LogLevel.Error));
         }

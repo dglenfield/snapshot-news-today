@@ -22,6 +22,9 @@ internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IO
             SourceUri = headline.TargetUri,
             TestFile = _useTestFile ? _testFile : null
         };
+
+        if (options.Value.SkipArticleScrape)
+            return article;
         
         try
         {
