@@ -14,14 +14,14 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly Logger _logger = logger;
 
-    internal async Task<TopStoryArticles> SelectArticles(List<NewsArticle> articles)
+    public async Task<TopStoryArticles> SelectArticles(List<SourceNewsArticle> articles)
     {
         // Get only the URIs of articles published within the past 2 days
         DateTime twoDaysAgo = DateTime.UtcNow.AddDays(-2);
         //if (Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
         //    twoDaysAgo = DateTime.MinValue; // Include all articles if using test data
         List<Uri> recentArticleUris = [ .. articles
-                .Where(a => a.SourcePublishDate.HasValue && a.SourcePublishDate.Value >= twoDaysAgo)
+                .Where(a => a.LastUpdatedOn.HasValue && a.LastUpdatedOn.Value >= twoDaysAgo)
                 .Select(a => a.SourceUri)
                 .Distinct()
         ];
@@ -114,10 +114,10 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
                 .ForEach(ca =>
                 {
                     var sourceArticle = articles.First(a => a.SourceUri == ca.SourceUri);
-                    ca.SourceHeadline = sourceArticle.SourceHeadline;
-                    ca.SourcePublishDate = sourceArticle.SourcePublishDate;
-                    ca.SourceName = sourceArticle.SourceName;
-                    ca.SourceCategory = sourceArticle.SourceCategory;
+                    ca.Headline = sourceArticle.Headline;
+                    ca.LastUpdatedOn = sourceArticle.LastUpdatedOn;
+                    //ca.SourceName = sourceArticle.SourceName;
+                    ca.Category = sourceArticle.Category;
                 });
 
             return curatedNewsArticles;

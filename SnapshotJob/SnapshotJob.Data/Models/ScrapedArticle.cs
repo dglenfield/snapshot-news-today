@@ -13,6 +13,8 @@ public class ScrapedArticle
 
     public DateTime? ScrapedOn { get; set; }
 
+    public string? SectionName { get; set; }
+
     public string? Headline { get; set; }
 
     public Uri SourceUri { get; set; } = default!;

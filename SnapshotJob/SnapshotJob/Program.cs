@@ -7,6 +7,7 @@ using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data;
 using SnapshotJob.Data.Configuration.Options;
 using SnapshotJob.Data.Repositories;
+using SnapshotJob.Perplexity;
 using SnapshotJob.Processors;
 using SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
 using SnapshotJob.Scrapers.MainPage;
@@ -118,6 +119,7 @@ public class Program
             // Processors
             services.AddTransient<SnapshotProcessor>();
             services.AddTransient<ScrapeProcessor>();
+            services.AddTransient<TopStoriesProcessor>();
 
             // Scrapers
             services.AddTransient<MainPageScraper>();
@@ -130,6 +132,8 @@ public class Program
                 client.BaseAddress = perplexityOptions.ApiUri;
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {perplexityOptions.ApiKey}");
             });
+
+            services.AddTransient<TopStoriesProvider>();
         });
     }
 }
