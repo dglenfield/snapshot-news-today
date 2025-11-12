@@ -18,7 +18,8 @@ public class TopStoriesSchema
     /// </summary>
     /// <remarks>The list may be empty if no properties are required.</remarks>
     [JsonPropertyName("required")]
-    public string[] Required => ["top_stories", "selection_criteria", "excluded_categories"];
+    public string[] Required => ["top_stories"];
+    //public string[] Required => ["top_stories", "selection_criteria", "excluded_categories"];
 
     public TopStoriesPropertiesSchema Properties { get; init; } = new();
 

@@ -5,10 +5,10 @@ namespace SnapshotJob.Perplexity.Models;
 
 public class TopStoryArticle : SourceNewsArticle
 {
-    public string CuratedHeadline { get; set; } = default!;
+    //public string CuratedHeadline { get; set; } = default!;
     public string Highlights { get; set; } = default!;
     public string Rationale { get; set; } = default!;
-    public string CuratedCategory { get; set; } = default!;
+    //public string CuratedCategory { get; set; } = default!;
 
     /// <summary>
     /// Returns a JSON-formatted string that represents the current object.

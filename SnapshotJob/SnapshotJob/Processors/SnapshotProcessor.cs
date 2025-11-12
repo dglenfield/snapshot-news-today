@@ -6,7 +6,7 @@ using SnapshotJob.Models;
 namespace SnapshotJob.Processors;
 
 internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
-    NewsSnapshotRepository newsSnapshotRepository,
+    NewsSnapshotRepository newsSnapshotRepository, ScrapedArticleRepository scrapedArticleRepository,
     Logger logger)
 {
     internal async Task Run()
@@ -43,9 +43,17 @@ internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProc
             }
 
             // Get the Top Stories for the scraped headlines
+            var articles = await scrapedArticleRepository.GetBySnapshotId(1);
+            var topStoryArticles = await topStoriesProcessor.SelectArticles(articles);
             if (job.ScrapeArticlesResult?.ScrapedArticles is not null)
             {
-                var result = await topStoriesProcessor.SelectArticles(job.ScrapeArticlesResult.ScrapedArticles);
+                //var result = await topStoriesProcessor.SelectArticles(job.ScrapeArticlesResult.ScrapedArticles);
+            }
+
+            foreach (var article in topStoryArticles.Articles)
+            {
+                logger.Log(article.ToString());
+
             }
 
             snapshot.IsSuccess = true;
@@ -63,7 +71,7 @@ internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProc
             await newsSnapshotRepository.UpdateAsync(snapshot);
 
             // Log the results
-            job.WriteToLog(logger);
+            //job.WriteToLog(logger);
             logger.Log($"\nNews snapshot job finished {(snapshot.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
                 messageLogLevel: (snapshot.IsSuccess!.Value ? LogLevel.Success : LogLevel.Error));
         }

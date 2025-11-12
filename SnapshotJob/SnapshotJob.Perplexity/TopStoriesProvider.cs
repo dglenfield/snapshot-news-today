@@ -19,18 +19,18 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
         // Get only the URIs of articles published within the past 2 days
         DateTime twoDaysAgo = DateTime.UtcNow.AddDays(-2);
         //if (Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
-        //    twoDaysAgo = DateTime.MinValue; // Include all articles if using test data
-        List<Uri> recentArticleUris = [ .. articles
-                .Where(a => a.LastUpdatedOn.HasValue && a.LastUpdatedOn.Value >= twoDaysAgo)
-                .Select(a => a.SourceUri)
-                .Distinct()
-        ];
+            twoDaysAgo = DateTime.MinValue; // Include all articles if using test data
+        //List<Uri> recentArticleUris = [ .. articles
+        //        .Where(a => a.LastUpdatedOn.HasValue && a.LastUpdatedOn.Value >= twoDaysAgo)
+        //        .Select(a => a.SourceUri)
+        //        .Distinct()
+        //];
 
         // Log total articles to curate from
-        _logger.Log($"Total articles to curate from: {recentArticleUris.Count}");
+        //_logger.Log($"Total articles to curate from: {recentArticleUris.Count}");
 
-        if (recentArticleUris.Count == 0)
-            throw new Exception("No recent articles to curate from.");
+        //if (recentArticleUris.Count == 0)
+        //    throw new Exception("No recent articles to curate from.");
 
         string systemPromptFileName = "curate-articles-system-prompt.txt";
         string systemPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", systemPromptFileName);
@@ -38,7 +38,12 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
 
         string userPromptFileName = "curate-articles-user-prompt.txt";
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
-        string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, recentArticleUris.Select(u => u.AbsoluteUri))}";
+        //string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, recentArticleUris.Select(u => u.AbsoluteUri))}";
+        string userContent = $"{File.ReadAllText(userPromptFilePath)}";
+        foreach (var article in articles)
+        {
+            userContent += $"\n{article}";
+        }
 
         // Construct request body
         TopStoriesRequestBody requestBody = new()
@@ -59,7 +64,7 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
         //string testResponseFile = Configuration.TestSettings.PerplexityApiProvider.CurateArticles.TestResponseFile;
         //if (useTestResponseFile && !string.IsNullOrEmpty(testResponseFile) && File.Exists(testResponseFile))
         //    testResponseString = await File.ReadAllTextAsync(testResponseFile);
-
+        //return null;
         string responseString = string.Empty;
         //if (useTestResponseFile) 
         //    responseString = testResponseString;
@@ -74,7 +79,7 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
 
         // Log response JSON (if not using test data)
         //if (!Configuration.TestSettings.PerplexityApiProvider.CurateArticles.UseTestResponseFile)
-        //    _logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
+            _logger.Log("\nResponse JSON:\n" + responseString, logAsRawMessage: true);
         
         // Deserialize the outer response
         var perplexityResponse = JsonSerializer.Deserialize<Response>(responseString);
@@ -87,19 +92,19 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
             contentJson = Regex.Replace(contentJson, @"^```(?:json)?\s*|\s*```$", "", RegexOptions.Multiline).Trim();
 
             // Deserialize the inner JSON
-            var curatedArticlesResponse = JsonSerializer.Deserialize<TopStoriesContent>(contentJson);
-            TopStoryArticles curatedNewsArticles = new()
+            var topArticlesResponse = JsonSerializer.Deserialize<TopStoriesContent>(contentJson);
+            TopStoryArticles topNewsArticles = new()
             {
-                Articles = curatedArticlesResponse?.TopStories.Select(s => new TopStoryArticle
+                Articles = topArticlesResponse?.TopStories.Select(s => new TopStoryArticle
                 {
                     SourceUri = new Uri(s.Url),
-                    CuratedHeadline = s.Headline,
-                    CuratedCategory = s.Category,
+                    Headline = s.Headline,
+                    Category = s.Category,
                     Highlights = s.Highlights,
                     Rationale = s.Rationale
                 }).ToList() ?? [],
-                SelectionCriteria = curatedArticlesResponse?.SelectionCriteriaText?.ToString() ?? string.Empty,
-                ExcludedCategoriesList = curatedArticlesResponse?.ExcludedCategoriesList ?? [],
+                SelectionCriteria = topArticlesResponse?.SelectionCriteriaText?.ToString() ?? string.Empty,
+                ExcludedCategoriesList = topArticlesResponse?.ExcludedCategoriesList ?? [],
                 Citations = perplexityResponse.Citations,
                 SearchResults = perplexityResponse.SearchResults,
                 PerplexityResponseId = perplexityResponse.Id,
@@ -108,19 +113,16 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
             };
             
             // Merge source article details into curated articles
-            curatedNewsArticles.Articles
+            topNewsArticles.Articles
                 .Where(ca => articles.Any(a => a.SourceUri == ca.SourceUri))
                 .ToList()
                 .ForEach(ca =>
                 {
                     var sourceArticle = articles.First(a => a.SourceUri == ca.SourceUri);
-                    ca.Headline = sourceArticle.Headline;
                     ca.LastUpdatedOn = sourceArticle.LastUpdatedOn;
-                    //ca.SourceName = sourceArticle.SourceName;
-                    ca.Category = sourceArticle.Category;
                 });
 
-            return curatedNewsArticles;
+            return topNewsArticles;
         }
 
         throw new Exception("Perplexity API response contained no choices.");
