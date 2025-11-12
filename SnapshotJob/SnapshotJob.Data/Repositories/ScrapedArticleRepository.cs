@@ -45,6 +45,44 @@ public class ScrapedArticleRepository(SnapshotJobDatabase database)
         return id > 0 ? id : throw new InvalidOperationException("Insert into scraped_article failed, no row id returned.");
     }
 
+    //SELECT article.id, article.last_updated_on, headline.section_name, article.headline, article.source
+    //FROM news_snapshot snapshot
+    //inner join scraped_headline headline on headline.news_snapshot_id = snapshot.id
+    //inner join scraped_article article on article.scraped_headline_id = headline.id
+    //WHERE snapshot.Id = 1 ORDER BY article.last_updated_on DESC;
+    
+    public async Task<List<ScrapedArticle>> GetBySnapshotId(long snapshotId)
+    {
+        string commandText = @"
+            SELECT article.id, article.last_updated_on, headline.section_name, article.headline, article.source, article.scraped_headline_id
+            FROM news_snapshot snapshot
+            inner join scraped_headline headline on headline.news_snapshot_id = snapshot.id
+            inner join scraped_article article on article.scraped_headline_id = headline.id
+            WHERE snapshot.Id = @snapshot_id ORDER BY article.last_updated_on DESC;";
+
+        SqliteParameter[] parameters = [new("@snapshot_id", snapshotId)];
+        await using var reader = await database.ExecuteReaderAsync(commandText, parameters);
+        
+        var articles = new List<ScrapedArticle>();
+        while (await reader.ReadAsync())
+        {
+            articles.Add(new ScrapedArticle
+            {
+                Id = reader.GetInt64(0), // article.id
+                LastUpdatedOn = reader.GetDateTime(1), // article.last_updated_on
+                SectionName = reader.GetString(2), // headline.section_name
+                Headline = reader.GetString(3), // article.headline
+                SourceUri = new(reader.GetString(4)),
+                ScrapedHeadlineId = reader.GetInt64(4)
+            });
+        }
+
+        if (articles.Count == 0)
+            throw new InvalidOperationException("Snapshot Id not found.");
+
+        return articles;
+    }
+
     public async Task UpdateAsync(ScrapedArticle article)
     {
         if (article.Id == 0)

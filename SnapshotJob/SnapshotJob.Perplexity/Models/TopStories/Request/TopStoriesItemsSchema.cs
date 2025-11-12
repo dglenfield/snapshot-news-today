@@ -16,8 +16,10 @@ public class TopStoriesItemsSchema : ObjectSchema
     public TopStoriesItemsSchema()
     {
         Required = ["url", "headline", "category", "highlights", "rationale"];
+        //Required = ["id", "rationale"];
         Properties = new Dictionary<string, TypeSchema>
         {
+            //["id"] = new TypeSchema { Type = "string" },
             ["url"] = new TypeSchema { Type = "string" },
             ["headline"] = new TypeSchema { Type = "string" },
             ["category"] = new TypeSchema { Type = "string" },

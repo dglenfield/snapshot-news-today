@@ -15,6 +15,9 @@
 	</ItemGroup>
 
   <ItemGroup>
+    <None Update="Prompts\curate-articles-system-prompt-v1.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Prompts\curate-articles-system-prompt.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

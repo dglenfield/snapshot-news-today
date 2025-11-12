@@ -11,23 +11,20 @@ internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger)
     {
         List<SourceNewsArticle> sourceArticles = [];
 
-        foreach (var article in scrapedArticles.OrderByDescending(s => s.LastUpdatedOn))
+        foreach (var article in scrapedArticles.OrderByDescending(s => s.LastUpdatedOn).Take(20))
         {
             SourceNewsArticle sourceArticle = new()
             {
-                Id = article.Id,
-                Category = article.SectionName, // TODO: Determine category from section name
+                //Id = article.Id,
+                //Category = article.SectionName, 
                 Headline = article.Headline,
                 LastUpdatedOn = article.LastUpdatedOn, 
                 SourceUri = article.SourceUri
             };
             sourceArticles.Add(sourceArticle);
-            logger.Log(sourceArticle.ToString());
         }
 
-
-
-        return null;
+        logger.Log($"Source Articles: {sourceArticles.Count}");
 
         var topStoryArticles = await provider.SelectArticles(sourceArticles);
 

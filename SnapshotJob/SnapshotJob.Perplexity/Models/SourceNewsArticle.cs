@@ -5,11 +5,11 @@ namespace SnapshotJob.Perplexity.Models;
 
 public class SourceNewsArticle
 {
-    public long Id { get; set; }
+    //public long Id { get; set; }
     public Uri SourceUri { get; set; } = default!;
     public string? Headline { get; set; }
     public DateTime? LastUpdatedOn { get; set; }
-    //public string? SourceName { get; set; }
+    public string? SourceName { get; set; }
     public string? Category { get; set; }
 
     /// <summary>
