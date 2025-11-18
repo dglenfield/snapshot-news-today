@@ -4,7 +4,7 @@ using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
-using SnapshotJob.Perplexity.Models;
+using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Scrapers.Models;
 
 namespace SnapshotJob.Processors;
@@ -21,7 +21,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
         ScrapeMainPageResult? scrapeMainPageResult = null;
         ScrapeArticlesResult? scrapeArticlesResult = null;
-        TopStoryArticles? topStoryArticles = null;
+        TopStoriesResult? topStoryArticles = null;
 
         try
 		{
@@ -47,9 +47,9 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                 }
 
                 topStoryArticles = await topStoriesProcessor.SelectArticles(scrapeArticlesResult.ScrapedArticles);
-                if (topStoryArticles?.Articles is not null)
+                if (topStoryArticles?.TopStories is not null)
                 {
-                    foreach (var article in topStoryArticles.Articles)
+                    foreach (var article in topStoryArticles.TopStories)
                     {
                         //logger.Log(article.ToString());
 
@@ -114,7 +114,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
     }
 
     private void WriteToLog(ScrapeMainPageResult? scrapeMainPageResult, ScrapeArticlesResult? scrapeArticlesResult, 
-        TopStoryArticles? topStoryArticles)
+        TopStoriesResult? topStoryArticles)
     {
         bool testFileUsed = Uri.TryCreate(scrapeMainPageResult?.Source, UriKind.Absolute, out Uri? sourceUri);
         if (testFileUsed)
@@ -205,10 +205,10 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             consoleColor: scrapeArticlesResult?.ArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed);
 
         // Top Stories
-        if (topStoryArticles?.Articles is not null)
+        if (topStoryArticles?.TopStories is not null)
         {
             int articleCount = 0;
-            foreach (var article in topStoryArticles.Articles)
+            foreach (var article in topStoryArticles.TopStories)
             {
                 logger.Log($"Article {++articleCount}:", logAsRawMessage: true);
                 logger.Log(article.ToString(), logAsRawMessage: true);
