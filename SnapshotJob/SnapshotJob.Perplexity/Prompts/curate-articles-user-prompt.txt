@@ -1,2 +1,0 @@
-﻿For the following JSON list of news stories, select the top 10 that are either most important to be informed about or interesting to know.
-IMPORTANT: Return your response as a valid JSON object with the name top_stories.

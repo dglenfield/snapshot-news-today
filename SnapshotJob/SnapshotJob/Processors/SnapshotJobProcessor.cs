@@ -51,7 +51,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                 {
                     foreach (var article in topStoryArticles.Articles)
                     {
-                        logger.Log(article.ToString());
+                        //logger.Log(article.ToString());
 
                     }
                 }
@@ -72,7 +72,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             await newsSnapshotRepository.UpdateAsync(_snapshot);
 
             // Log the results
-            WriteToLog(scrapeMainPageResult, scrapeArticlesResult, topStoryArticles);
+            //WriteToLog(scrapeMainPageResult, scrapeArticlesResult, topStoryArticles);
             logger.Log($"\nNews snapshot job finished {(_snapshot.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
                 messageLogLevel: (_snapshot.IsSuccess!.Value ? LogLevel.Success : LogLevel.Error));
         }

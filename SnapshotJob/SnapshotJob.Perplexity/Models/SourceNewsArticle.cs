@@ -5,7 +5,7 @@ namespace SnapshotJob.Perplexity.Models;
 
 public class SourceNewsArticle
 {
-    //public long Id { get; set; }
+    public string Id { get; set; } = default!;
     public Uri SourceUri { get; set; } = default!;
     public string? Headline { get; set; }
     public DateTime? LastUpdatedOn { get; set; }

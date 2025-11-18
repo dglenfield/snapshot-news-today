@@ -7,6 +7,9 @@ namespace SnapshotJob.Perplexity.Models.TopStories.Response;
 /// </summary>
 public class Story
 {
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = default!;
+
     /// <summary>
     /// Gets the URL for the news article.
     /// </summary>

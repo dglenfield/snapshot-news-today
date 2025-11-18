@@ -15,16 +15,16 @@ public class TopStoriesItemsSchema : ObjectSchema
     /// "highlights", and "rationale", each as a string. Additional properties are not allowed in this schema.</remarks>
     public TopStoriesItemsSchema()
     {
-        Required = ["url", "headline", "category", "highlights", "rationale"];
-        //Required = ["id", "rationale"];
+        //Required = ["url", "headline", "category", "highlights", "rationale"];
+        Required = ["id", "rationale"];
         Properties = new Dictionary<string, TypeSchema>
         {
-            //["id"] = new TypeSchema { Type = "string" },
-            ["url"] = new TypeSchema { Type = "string" },
+            ["id"] = new TypeSchema { Type = "string" },
+            //["url"] = new TypeSchema { Type = "string" },
             ["headline"] = new TypeSchema { Type = "string" },
-            ["category"] = new TypeSchema { Type = "string" },
-            ["highlights"] = new TypeSchema { Type = "string" },
-            ["rationale"] = new TypeSchema { Type = "string" }
+            //["category"] = new TypeSchema { Type = "string" },
+            //["highlights"] = new TypeSchema { Type = "string" },
+            //["rationale"] = new TypeSchema { Type = "string" }
         };
         AdditionalProperties = false;
     }
