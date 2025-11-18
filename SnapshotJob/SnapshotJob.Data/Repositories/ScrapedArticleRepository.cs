@@ -48,7 +48,8 @@ public class ScrapedArticleRepository(SnapshotJobDatabase database)
     public async Task<List<ScrapedArticle>> GetBySnapshotId(long snapshotId)
     {
         string commandText = @"
-            SELECT article.id, article.last_updated_on, headline.section_name, article.headline, article.source, article.scraped_headline_id
+            SELECT article.id, article.last_updated_on, headline.section_name, article.headline, article.source, 
+                   article.scraped_headline_id, article.is_success
             FROM news_snapshot snapshot
             inner join scraped_headline headline on headline.news_snapshot_id = snapshot.id
             inner join scraped_article article on article.scraped_headline_id = headline.id
@@ -67,7 +68,8 @@ public class ScrapedArticleRepository(SnapshotJobDatabase database)
                 SectionName = reader.GetString(2), // headline.section_name
                 Headline = reader.GetString(3), // article.headline
                 SourceUri = new(reader.GetString(4)),
-                ScrapedHeadlineId = reader.GetInt64(4)
+                ScrapedHeadlineId = reader.GetInt64(5),
+                IsSuccess = reader.GetBoolean(6)
             });
         }
 
