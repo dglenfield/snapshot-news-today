@@ -15,14 +15,19 @@ internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger)
             SourceNewsArticle sourceArticle = new()
             {
                 Headline = article.Headline,
+                Id = article.Id.ToString(),
                 LastUpdatedOn = article.LastUpdatedOn, 
                 SourceUri = article.SourceUri
             };
             sourceArticles.Add(sourceArticle);
         }
 
-        string file = "C:\\Users\\danny\\OneDrive\\Projects\\SnapshotNewsToday\\TestData\\curate-articles-response_2025-10-06.json";
+        string file = "C:\\Users\\danny\\OneDrive\\Projects\\SnapshotNewsToday\\TestData\\top-stories-response_2025-11-18.json";
         var topStoryArticles = await provider.SelectArticles(sourceArticles, file);
+        //var topStoryArticles = await provider.SelectArticles(sourceArticles);
+
+        logger.Log(topStoryArticles.ToString());
+
         return topStoryArticles;
     }
 }

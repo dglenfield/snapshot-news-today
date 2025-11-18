@@ -1,6 +1,7 @@
 ﻿using SnapshotJob.Common.Logging;
 using SnapshotJob.Common.Serialization;
 using SnapshotJob.Perplexity.Models;
+using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Perplexity.Models.TopStories.Request;
 using SnapshotJob.Perplexity.Models.TopStories.Response;
 using System.Text;
@@ -22,13 +23,22 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
         if (articles.Count == 0)
             throw new Exception("No articles to select from.");
 
-        string systemPromptFileName = "curate-articles-system-prompt.txt";
+        List<StoryHeadline> headlines = [];
+        foreach (var article in articles)
+        {
+            if (!string.IsNullOrWhiteSpace(article.Headline))
+            {
+                headlines.Add(new() { Headline = article.Headline, Id = long.Parse(article.Id) });
+            }
+        }
+
+        string systemPromptFileName = "top-stories-system-prompt.txt";
         string systemPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", systemPromptFileName);
         string systemContent = File.ReadAllText(systemPromptFilePath);
 
-        string userPromptFileName = "curate-articles-user-prompt.txt";
+        string userPromptFileName = "top-stories-user-prompt.txt";
         string userPromptFilePath = Path.Combine(AppContext.BaseDirectory, "Prompts", userPromptFileName);
-        string userContent = $"{File.ReadAllText(userPromptFilePath)}\n{string.Join(Environment.NewLine, articles)}";
+        string userContent = $"{File.ReadAllText(userPromptFilePath)}{TrimInnerHtmlWhitespace(string.Join(Environment.NewLine, headlines))}";
 
         // Construct request body
         TopStoriesRequestBody requestBody = new()
@@ -78,11 +88,12 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
             {
                 Articles = topArticlesResponse?.TopStories.Select(s => new TopStoryArticle
                 {
-                    SourceUri = new Uri(s.Url),
+                    //SourceUri = new Uri(s.Url),
                     Headline = s.Headline,
-                    Category = s.Category,
-                    Highlights = s.Highlights,
-                    Rationale = s.Rationale
+                    Id = s.Id,
+                    //Category = s.Category,
+                    //Highlights = s.Highlights,
+                    //Rationale = s.Rationale
                 }).ToList() ?? [],
                 SelectionCriteria = topArticlesResponse?.SelectionCriteriaText?.ToString() ?? string.Empty,
                 ExcludedCategoriesList = topArticlesResponse?.ExcludedCategoriesList ?? [],
@@ -107,5 +118,11 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
         }
 
         throw new Exception("Perplexity API response contained no choices.");
+    }
+
+    private string TrimInnerHtmlWhitespace(string html)
+    {
+        // Replace multiple whitespace (including newlines/tabs) with a single space
+        return Regex.Replace(html, @"\s+", " ").Trim();
     }
 }
