@@ -1,11 +1,12 @@
 ﻿using SnapshotJob.Common.Serialization;
 using System.Text.Json;
 
-namespace SnapshotJob.Perplexity.Models.TopStories;
+namespace SnapshotJob.Data.Models;
 
-public class StoryHeadline
+public class TopStory
 {
-    public required long Id { get; set; }
+    public long Id { get; set; }
+    public required long ScrapedArticleId { get; set; }
     public required string Headline { get; set; }
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,

@@ -1,6 +1,5 @@
 ﻿using SnapshotJob.Common.Logging;
 using SnapshotJob.Common.Serialization;
-using SnapshotJob.Perplexity.Models;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Perplexity.Models.TopStories.Request;
 using SnapshotJob.Perplexity.Models.TopStories.Response;
@@ -15,20 +14,20 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly Logger _logger = logger;
 
-    public async Task<TopStoryArticles> SelectArticles(List<SourceNewsArticle> articles, string? testResponseFile = null)
+    public async Task<TopStoriesResult> Select(List<NewsStory> stories, string? testResponseFile = null)
     {
-        // Log total articles to select from
-        _logger.Log($"Total articles to select from: {articles.Count}");
+        // Log total news stories to select from
+        _logger.Log($"Total stories to select from: {stories.Count}");
 
-        if (articles.Count == 0)
-            throw new Exception("No articles to select from.");
+        if (stories.Count == 0)
+            throw new Exception("No stories to select from.");
 
-        List<StoryHeadline> headlines = [];
-        foreach (var article in articles)
+        List<NewsStory> headlines = [];
+        foreach (var story in stories)
         {
-            if (!string.IsNullOrWhiteSpace(article.Headline))
+            if (!string.IsNullOrWhiteSpace(story.Headline))
             {
-                headlines.Add(new() { Headline = article.Headline, Id = long.Parse(article.Id) });
+                headlines.Add(new() { Headline = story.Headline, Id = story.Id });
             }
         }
 
@@ -76,43 +75,29 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
         var perplexityResponse = JsonSerializer.Deserialize<Response>(responseString);
         if (perplexityResponse?.Choices != null && perplexityResponse.Choices.Count > 0)
         {
-            // The actual curated articles are in the message content as JSON
+            // The actual top stories are in the message content as JSON
             var contentJson = perplexityResponse.Choices[0].Message.Content;
             
             // Remove markdown code fences using regex
             contentJson = Regex.Replace(contentJson, @"^```(?:json)?\s*|\s*```$", "", RegexOptions.Multiline).Trim();
 
             // Deserialize the inner JSON
-            var topArticlesResponse = JsonSerializer.Deserialize<TopStoriesContent>(contentJson);
-            TopStoryArticles topNewsArticles = new()
+            var topStoriesResponse = JsonSerializer.Deserialize<TopStoriesContent>(contentJson);
+            TopStoriesResult topNewsArticles = new()
             {
-                Articles = topArticlesResponse?.TopStories.Select(s => new TopStoryArticle
+                TopStories = topStoriesResponse?.TopStories.Select(s => new NewsStory
                 {
-                    //SourceUri = new Uri(s.Url),
                     Headline = s.Headline,
-                    Id = s.Id,
-                    //Category = s.Category,
-                    //Highlights = s.Highlights,
-                    //Rationale = s.Rationale
+                    Id = s.Id
                 }).ToList() ?? [],
-                SelectionCriteria = topArticlesResponse?.SelectionCriteriaText?.ToString() ?? string.Empty,
-                ExcludedCategoriesList = topArticlesResponse?.ExcludedCategoriesList ?? [],
+                SelectionCriteria = topStoriesResponse?.SelectionCriteriaText?.ToString() ?? string.Empty,
+                ExcludedCategoriesList = topStoriesResponse?.ExcludedCategoriesList ?? [],
                 Citations = perplexityResponse.Citations,
                 SearchResults = perplexityResponse.SearchResults,
                 PerplexityResponseId = perplexityResponse.Id,
                 PerplexityResponseModel = perplexityResponse.Model,
                 PerplexityApiUsage = perplexityResponse.Usage
             };
-            
-            // Merge source article details into curated articles
-            topNewsArticles.Articles
-                .Where(ca => articles.Any(a => a.SourceUri == ca.SourceUri))
-                .ToList()
-                .ForEach(ca =>
-                {
-                    var sourceArticle = articles.First(a => a.SourceUri == ca.SourceUri);
-                    ca.LastUpdatedOn = sourceArticle.LastUpdatedOn;
-                });
 
             return topNewsArticles;
         }

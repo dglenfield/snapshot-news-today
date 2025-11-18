@@ -1,12 +1,21 @@
 ﻿using SnapshotJob.Common.Serialization;
+using SnapshotJob.Perplexity.Models.TopStories.Response;
 using System.Text.Json;
 
-namespace SnapshotJob.Perplexity.Models;
+namespace SnapshotJob.Perplexity.Models.TopStories;
 
-public class TopStoryArticle : SourceNewsArticle
+public class TopStoriesResult
 {
-    public string Highlights { get; set; } = default!;
-    public string Rationale { get; set; } = default!;
+    public List<NewsStory> TopStories { get; set; } = default!;
+
+    // PerplexityResponse
+    public string PerplexityResponseId { get; set; } = default!;
+    public string PerplexityResponseModel { get; set; } = default!;
+    public Usage PerplexityApiUsage { get; set; } = default!;
+    public string SelectionCriteria { get; set; } = default!;
+    public List<string> ExcludedCategoriesList { get; set; } = default!;
+    public List<string> Citations { get; set; } = default!;
+    public List<SearchResult> SearchResults { get; set; } = default!;
 
     /// <summary>
     /// Returns a JSON-formatted string that represents the current object.
