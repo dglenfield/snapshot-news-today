@@ -18,12 +18,6 @@ public class ScrapingOptions
     public string MainPageTestFile { get; set; } = default!;
 
     [Required]
-    public bool SkipArticleScrape { get; set; }
-
-    [Required]
-    public bool SkipMainPageScrape { get; set; }
-
-    [Required]
     public bool UseArticleTestFile { get; set; }
 
     [Required]

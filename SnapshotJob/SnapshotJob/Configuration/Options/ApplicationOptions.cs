@@ -17,7 +17,19 @@ public class ApplicationOptions
     [Required]
     [JsonPropertyOrder(0)]
     public string Name { get; set; } = default!;
-    
+
+    [Required]
+    [JsonPropertyOrder(3)]
+    public bool SkipArticleScrape { get; set; }
+
+    [Required]
+    [JsonPropertyOrder(4)]
+    public bool SkipMainPageScrape { get; set; }
+
+    [Required]
+    [JsonPropertyOrder(5)]
+    public bool SkipTopStories { get; set; }
+
     [Required]
     [JsonPropertyOrder(1)]
     public bool UseProductionSettings { get; set; }

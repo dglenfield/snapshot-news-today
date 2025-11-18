@@ -2,7 +2,7 @@
 using SnapshotJob.Data.Models;
 using System.Text.Json;
 
-namespace SnapshotJob.Models;
+namespace SnapshotJob.Scrapers.Models;
 
 public class ScrapeMainPageResult
 {
@@ -11,31 +11,30 @@ public class ScrapeMainPageResult
     public DateTime? FinishedOn { get; set; }
     public bool? IsSuccess { get; set; }
     public List<Exception>? Exceptions { get; set; }
-    public HashSet<ScrapedHeadline>? ScrapedHeadlines { get; set; }
+    public HashSet<ScrapedHeadline>? Headlines { get; set; }
 
     public int HeadlinesScraped => 
-        ScrapedHeadlines is null ? 0 : ScrapedHeadlines.Count(h => h.Id > 0);
+        Headlines is null ? 0 : Headlines.Count(h => h.Id > 0);
     public int SectionsScraped => 
-        ScrapedHeadlines is null ? 0 : ScrapedHeadlines.DistinctBy(a => a.SectionName).Count();
+        Headlines is null ? 0 : Headlines.DistinctBy(a => a.SectionName).Count();
 
     public decimal? RunTimeInSeconds => StartedOn.HasValue && FinishedOn.HasValue ?
         (decimal)((long)(FinishedOn.Value - StartedOn.Value).TotalMilliseconds) / 1000 : null;
 
-    public void AddScrapeSectionResult(ScrapeSectionResult result)
-    {
-        foreach (var headline in result.Headlines)
-        {
-            ScrapedHeadlines ??= [];
-            ScrapedHeadlines.Add(headline);
-        }
+    //public void AddScrapeSectionResult(ScrapeSectionResult result)
+    //{
+    //    foreach (var headline in result.Headlines)
+    //    {
+    //        ScrapedHeadlines ??= [];
+    //        ScrapedHeadlines.Add(headline);
+    //    }
 
-        if (result.Exception is not null)
-        {
-            Exceptions ??= [];
-            Exceptions.Add(result.Exception);
-        }
-            
-    }
+    //    //if (result.Exception is not null)
+    //    //{
+    //    //    Exceptions ??= [];
+    //    //    Exceptions.Add(result.Exception);
+    //    //}
+    //}
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);

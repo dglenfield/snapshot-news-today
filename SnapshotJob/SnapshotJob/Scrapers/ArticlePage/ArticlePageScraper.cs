@@ -5,7 +5,7 @@ using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
 using System.Text.RegularExpressions;
 
-namespace SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
+namespace SnapshotJob.Scrapers.ArticlePage;
 
 internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IOptions<ScrapingOptions> options)
 {
@@ -22,9 +22,6 @@ internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IO
             SourceUri = headline.TargetUri,
             TestFile = _useTestFile ? _testFile : null
         };
-
-        if (options.Value.SkipArticleScrape)
-            return article;
         
         try
         {

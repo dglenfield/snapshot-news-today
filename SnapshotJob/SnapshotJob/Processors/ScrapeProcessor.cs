@@ -1,7 +1,7 @@
 ﻿using SnapshotJob.Data.Models;
-using SnapshotJob.Models;
-using SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
+using SnapshotJob.Scrapers.ArticlePage;
 using SnapshotJob.Scrapers.MainPage;
+using SnapshotJob.Scrapers.Models;
 
 namespace SnapshotJob.Processors;
 
@@ -21,7 +21,7 @@ internal class ScrapeProcessor(MainPageScraper mainPageScraper, ArticlePageScrap
                 Console.Write($"Scraping article {++count} of {scrapedHeadlines.Count(h => h.Id > 0)} ");
                 result.ScrapedArticles ??= [];
                 result.ScrapedArticles.Add(await articleScraper.ScrapeAsync(headline));
-                await Task.Delay(1000); // Throttle requests to the server
+                await Task.Delay(500); // Throttle requests to the server
             }
 
             result.IsSuccess = true;

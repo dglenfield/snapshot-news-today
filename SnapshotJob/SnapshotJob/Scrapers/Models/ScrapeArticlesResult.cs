@@ -2,7 +2,7 @@
 using SnapshotJob.Data.Models;
 using System.Text.Json;
 
-namespace SnapshotJob.Models;
+namespace SnapshotJob.Scrapers.Models;
 
 public class ScrapeArticlesResult
 {
