@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using SnapshotJob.Common.Logging;
 using SnapshotJob.Configuration.Options;
+using SnapshotJob.Data;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Scrapers.Models;
@@ -8,7 +9,8 @@ using SnapshotJob.Scrapers.Models;
 namespace SnapshotJob.Processors;
 
 internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
-    NewsSnapshotRepository newsSnapshotRepository, Logger logger, IOptions<ApplicationOptions> options)
+    NewsSnapshotRepository newsSnapshotRepository, Logger logger, IOptions<ApplicationOptions> options,
+    SnapshotJobDatabase database)
 {
     private readonly NewsSnapshot _snapshot = new();
 
@@ -33,7 +35,6 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                 scrapeArticlesResult = await ScrapeArticles(scrapeMainPageResult);
 
             // Get the Top Stories for the scraped headlines
-            
             if (!options.Value.SkipTopStories && scrapeArticlesResult?.ScrapedArticles is not null)
             {
                 var topStoryArticles = await topStoriesProcessor.SelectArticles(scrapeArticlesResult.ScrapedArticles);
@@ -46,6 +47,12 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
                     }
                 }
+            }
+            else if (!options.Value.SkipTopStories)
+            {
+                ScrapedArticleRepository repository = new(database);
+                var scrapedArticles = await repository.GetBySnapshotId(1);
+                scrapeArticlesResult = new() { ScrapedArticles = scrapedArticles };
             }
 
             _snapshot.IsSuccess = true;
