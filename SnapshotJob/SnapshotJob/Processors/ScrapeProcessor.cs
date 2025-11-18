@@ -34,7 +34,7 @@ internal class ScrapeProcessor(MainPageScraper mainPageScraper, ArticlePageScrap
         return result;
     }
 
-    internal async Task<ScrapeHeadlinesResult> ScrapeHeadlines(long jobId)
+    internal async Task<ScrapeMainPageResult> ScrapeMainPage(long jobId)
     {
         // Scrape the main page
         return await mainPageScraper.ScrapeAsync(jobId);

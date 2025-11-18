@@ -35,7 +35,7 @@ public class SnapshotJobDatabase(IOptions<DatabaseOptions> options, Logger logge
             await apNewsArticle.CreateTableAsync();
 
             // Create news_analysis table
-            NewsAnalysisRepository newsAnalysis = new(this);
+            TopStoryRepository newsAnalysis = new(this);
             await newsAnalysis.CreateTableAsync();
 
             logger.Log($"Database created at '{DatabaseFilePath}'.", LogLevel.Success);

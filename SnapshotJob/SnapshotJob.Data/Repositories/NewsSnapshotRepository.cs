@@ -33,6 +33,7 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
                 sections_scraped INTEGER,
                 headlines_scraped INTEGER,
                 articles_scraped INTEGER,
+                top_stories_api_cost TEXT,
                 is_success INTEGER,
                 error TEXT,
                 scrape_errors TEXT);

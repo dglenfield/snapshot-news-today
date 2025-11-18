@@ -9,7 +9,6 @@ public class ScrapeArticlesResult
     public DateTime? StartedOn { get; set; }
     public DateTime? FinishedOn { get; set; }
     public bool? IsSuccess { get; set; }
-    //public Exception? Exception { get; set; }
     public List<ScrapedArticle>? ScrapedArticles { get; set; }
 
     public int ArticlesScraped => 

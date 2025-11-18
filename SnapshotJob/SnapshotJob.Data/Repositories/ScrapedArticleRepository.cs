@@ -44,12 +44,6 @@ public class ScrapedArticleRepository(SnapshotJobDatabase database)
         long id = await database.InsertAsync(commandText, parameters);
         return id > 0 ? id : throw new InvalidOperationException("Insert into scraped_article failed, no row id returned.");
     }
-
-    //SELECT article.id, article.last_updated_on, headline.section_name, article.headline, article.source
-    //FROM news_snapshot snapshot
-    //inner join scraped_headline headline on headline.news_snapshot_id = snapshot.id
-    //inner join scraped_article article on article.scraped_headline_id = headline.id
-    //WHERE snapshot.Id = 1 ORDER BY article.last_updated_on DESC;
     
     public async Task<List<ScrapedArticle>> GetBySnapshotId(long snapshotId)
     {
