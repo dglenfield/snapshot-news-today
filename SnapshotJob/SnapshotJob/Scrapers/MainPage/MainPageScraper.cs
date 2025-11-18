@@ -15,9 +15,9 @@ internal class MainPageScraper(ScrapedHeadlineRepository headlineRepository, IOp
     private readonly string _testFile = options.Value.MainPageTestFile;
     private readonly bool _useTestFile = options.Value.UseMainPageTestFile;
 
-    public async Task<ScrapeHeadlinesResult> ScrapeAsync(long jobId)
+    public async Task<ScrapeMainPageResult> ScrapeAsync(long jobId)
     {
-        ScrapeHeadlinesResult scrapeResult = new() 
+        ScrapeMainPageResult scrapeResult = new() 
         { 
             Source = _useTestFile ? _testFile : _sourceUri.AbsoluteUri, 
             StartedOn = DateTime.UtcNow 
@@ -100,9 +100,9 @@ internal class MainPageScraper(ScrapedHeadlineRepository headlineRepository, IOp
         return scrapeResult;
     }
    
-    public async Task<ScrapeHeadlinesResult> CreateTestHeadline(long jobId)
+    public async Task<ScrapeMainPageResult> CreateTestHeadline(long jobId)
     {
-        ScrapeHeadlinesResult result = new() 
+        ScrapeMainPageResult result = new() 
         {
             Source = _useTestFile ? _testFile : _sourceUri.AbsoluteUri,
             StartedOn = DateTime.UtcNow 

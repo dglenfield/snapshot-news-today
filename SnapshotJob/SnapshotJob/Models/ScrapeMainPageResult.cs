@@ -1,11 +1,10 @@
 ﻿using SnapshotJob.Common.Serialization;
 using SnapshotJob.Data.Models;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace SnapshotJob.Models;
 
-public class ScrapeHeadlinesResult
+public class ScrapeMainPageResult
 {
     public string Source { get; set; } = default!;
     public DateTime? StartedOn { get; set; }

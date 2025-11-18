@@ -20,7 +20,7 @@ internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProc
             snapshot.Id = await newsSnapshotRepository.CreateAsync(snapshot.StartedOn.Value);
 
             // Scrape the main page for headlines
-            job.ScrapeHeadlinesResult = await scrapeProcessor.ScrapeHeadlines(snapshot.Id);
+            job.ScrapeHeadlinesResult = await scrapeProcessor.ScrapeMainPage(snapshot.Id);
             snapshot.SectionsScraped = job.ScrapeHeadlinesResult.SectionsScraped;
             snapshot.HeadlinesScraped = job.ScrapeHeadlinesResult.HeadlinesScraped;
             if (job.ScrapeHeadlinesResult.Exceptions is not null)
@@ -50,11 +50,15 @@ internal class SnapshotProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProc
                 //var result = await topStoriesProcessor.SelectArticles(job.ScrapeArticlesResult.ScrapedArticles);
             }
 
-            foreach (var article in topStoryArticles.Articles)
+            if (topStoryArticles?.Articles is not null)
             {
-                logger.Log(article.ToString());
+                foreach (var article in topStoryArticles.Articles)
+                {
+                    logger.Log(article.ToString());
 
+                }
             }
+            
 
             snapshot.IsSuccess = true;
         }

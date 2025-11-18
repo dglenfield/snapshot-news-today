@@ -9,7 +9,7 @@ public class NewsSnapshotJob
 {
     public NewsSnapshot? NewsSnapshot { get; set; }
     public ScrapeArticlesResult? ScrapeArticlesResult { get; set; }
-    public ScrapeHeadlinesResult? ScrapeHeadlinesResult { get; set; }
+    public ScrapeMainPageResult? ScrapeHeadlinesResult { get; set; }
 
     public void WriteToLog(Logger logger)
     {
