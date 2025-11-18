@@ -9,7 +9,7 @@ using SnapshotJob.Data.Configuration.Options;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
 using SnapshotJob.Processors;
-using SnapshotJob.Scrapers.AssociatedPress.ArticlePage;
+using SnapshotJob.Scrapers.ArticlePage;
 using SnapshotJob.Scrapers.MainPage;
 
 namespace SnapshotJob;
@@ -41,7 +41,7 @@ public class Program
             await database.InitializeAsync();
 
             // Resolve and run the main service
-            var snapshotProcessor = host.Services.GetRequiredService<SnapshotProcessor>();
+            var snapshotProcessor = host.Services.GetRequiredService<SnapshotJobProcessor>();
             await snapshotProcessor.Run();
 
             //switch (targetSite)
@@ -117,7 +117,7 @@ public class Program
             services.AddTransient<ScrapedArticleRepository>();
 
             // Processors
-            services.AddTransient<SnapshotProcessor>();
+            services.AddTransient<SnapshotJobProcessor>();
             services.AddTransient<ScrapeProcessor>();
             services.AddTransient<TopStoriesProcessor>();
 

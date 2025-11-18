@@ -1,10 +1,9 @@
 ﻿using HtmlAgilityPack;
 using SnapshotJob.Data.Models;
-using SnapshotJob.Models;
 
 namespace SnapshotJob.Scrapers.MainPage.Sections;
 
-public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSectionScraper
+public abstract class PageSectionScraperBase(HtmlNode documentNode)
 {
     public abstract string SectionName { get; }
     public abstract string SectionXPath { get; }
@@ -22,31 +21,18 @@ public abstract class PageSectionScraperBase(HtmlNode documentNode) : IPageSecti
     protected virtual HtmlNodeCollection HeadlineNodes => SectionNode.SelectNodes(HeadlinesXPath) 
         ?? throw new NodeNotFoundException($"{SectionName} section node not found. XPath failed for {HeadlinesXPath}");
 
-    public ScrapeSectionResult Scrape()
+    public HashSet<ScrapedHeadline> Scrape()
     {
-        ScrapeSectionResult result = new() { SectionName = SectionName };
         HashSet<ScrapedHeadline> headlines = [];
 
-        try
-        {
-            // Hook for pre-processing - contains no default processing if not overriden
-            PreProcessSection(headlines);
-            // Hook for primary processing - contains the default processing if not overridden
-            ProcessSection(headlines);
-            // Hook for additional processing - contains no default processing if not overriden
-            PostProcessSection(headlines);
-        }
-        catch (NodeNotFoundException ex)
-        {
-            result.Exception = ex;
-        }
-        catch (Exception ex) 
-        {
-            result.Exception = ex;
-        }
-
-        result.Headlines = headlines;
-        return result;
+        // Hook for pre-processing - contains no default processing if not overriden
+        PreProcessSection(headlines);
+        // Hook for primary processing - contains the default processing if not overridden
+        ProcessSection(headlines);
+        // Hook for additional processing - contains no default processing if not overriden
+        PostProcessSection(headlines);
+        
+        return headlines;
     }
 
     // Pre-processing Hook - no default processing

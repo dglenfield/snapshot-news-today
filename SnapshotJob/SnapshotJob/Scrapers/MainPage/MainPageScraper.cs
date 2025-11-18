@@ -3,123 +3,148 @@ using Microsoft.Extensions.Options;
 using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
-using SnapshotJob.Models;
 using SnapshotJob.Scrapers.MainPage.Sections;
+using SnapshotJob.Scrapers.Models;
 
 namespace SnapshotJob.Scrapers.MainPage;
 
-internal class MainPageScraper(ScrapedHeadlineRepository headlineRepository, IOptions<ScrapingOptions> options)
+internal class MainPageScraper
 {
-    private readonly Uri _sourceUri = options.Value.BaseUri;
-    private readonly bool _skipScrape = options.Value.SkipMainPageScrape;
-    private readonly string _testFile = options.Value.MainPageTestFile;
-    private readonly bool _useTestFile = options.Value.UseMainPageTestFile;
+    private readonly ScrapingOptions _options;
+    private readonly ScrapedHeadlineRepository _repository;
+    private readonly ScrapeMainPageResult _scrapeResult;
+
+    public MainPageScraper(ScrapedHeadlineRepository repository, IOptions<ScrapingOptions> options)
+    {
+        _options = options.Value;
+        _repository = repository;
+        _scrapeResult = new() { Source = _options.UseMainPageTestFile ? _options.MainPageTestFile : _options.BaseUri.AbsoluteUri };
+    }
 
     public async Task<ScrapeMainPageResult> ScrapeAsync(long jobId)
-    {
-        ScrapeMainPageResult scrapeResult = new() 
-        { 
-            Source = _useTestFile ? _testFile : _sourceUri.AbsoluteUri, 
-            StartedOn = DateTime.UtcNow 
-        };
-        if (_skipScrape)
-            return await CreateTestHeadline(jobId);
-        
+    {   
+        HtmlDocument htmlDocument = new();
         try
         {
             // Get the Main Page HTML or the HTML test file
-            HtmlDocument htmlDocument = new();
-            if (_useTestFile && !string.IsNullOrWhiteSpace(_testFile))
-                htmlDocument.Load(_testFile);
+            _scrapeResult.StartedOn = DateTime.UtcNow;
+            if (_options.UseMainPageTestFile && !string.IsNullOrWhiteSpace(_options.MainPageTestFile))
+                htmlDocument.Load(_options.MainPageTestFile);
             else
-                htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(_sourceUri));
-
-            // Scrape the HTML document sections for Headlinesokli
-            var documentNode = htmlDocument.DocumentNode;
-            scrapeResult.AddScrapeSectionResult(new MainStoryScraper(documentNode, "A1").Scrape());
-            scrapeResult.AddScrapeSectionResult(new MainStoryScraper(documentNode, "A2").Scrape());
-            scrapeResult.AddScrapeSectionResult(new A3Scraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new CBlockScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new B1Scraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new B2Scraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new IcymiScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new BeWellScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new USNewsScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new WorldNewsScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new PoliticsScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new EntertainmentScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new SportsScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new BusinessScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new ScienceScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new TechnologyScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new HealthScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new ClimateScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new FactCheckScraper(documentNode).Scrape());
-            scrapeResult.AddScrapeSectionResult(new LatestNewsScraper(documentNode).Scrape());
-
-            // Mark any headlines as "Most Read" that were found in the Most Read section
-            var mostReadSection = new MostReadScraper(documentNode).Scrape();
-            if (scrapeResult.ScrapedHeadlines is not null)
-                foreach (var headline in scrapeResult.ScrapedHeadlines)
-                    if (mostReadSection.Headlines.Contains(headline))
-                        headline.MostRead = true;
-
-            // Get all "article" and "live" hyperlinks on the page
-            var allLinks = GetAllHyperlinks(_sourceUri, htmlDocument.DocumentNode); // TODO: Compare articles found with all links
-
-            // Save the headlines to the database
-            if (scrapeResult.ScrapedHeadlines is not null)
-                foreach (var headline in scrapeResult.ScrapedHeadlines.Where(h =>
-                    h.TargetUri.AbsoluteUri.StartsWith($"{_sourceUri}article/", StringComparison.OrdinalIgnoreCase)))
-                {
-                    try
-                    {
-                        // Check if the TargetUri already exists in the table
-                        if (await headlineRepository.ExistsAsync(headline.TargetUri))
-                        {
-                            headline.AlreadyInDatabase = true;
-                            continue;
-                        }
-
-                        // Save the headline
-                        headline.Id = await headlineRepository.CreateAsync(headline, jobId);   
-                    }
-                    catch (Exception ex)
-                    {
-                        scrapeResult.Exceptions ??= [];
-                        scrapeResult.Exceptions.Add(ex);
-                    }
-                }
+                htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(_options.BaseUri));
         }
         catch (Exception ex)
         {
-            scrapeResult.Exceptions ??= [];
-            scrapeResult.Exceptions.Add(ex);
+            _scrapeResult.Exceptions ??= [];
+            _scrapeResult.Exceptions.Add(ex);
+            return _scrapeResult;
+        }
+
+        // Scrape the HTML document sections for Headlines
+        HtmlNode documentNode = htmlDocument.DocumentNode;
+        ScrapeSection(new MainStoryScraper(documentNode, "A1"));
+        ScrapeSection(new MainStoryScraper(documentNode, "A2"));
+        ScrapeSection(new A3Scraper(documentNode));
+        ScrapeSection(new CBlockScraper(documentNode));
+        ScrapeSection(new B1Scraper(documentNode));
+        ScrapeSection(new B2Scraper(documentNode));
+        ScrapeSection(new IcymiScraper(documentNode));
+        ScrapeSection(new BeWellScraper(documentNode));
+        ScrapeSection(new USNewsScraper(documentNode));
+        ScrapeSection(new WorldNewsScraper(documentNode));
+        ScrapeSection(new PoliticsScraper(documentNode));
+        ScrapeSection(new EntertainmentScraper(documentNode));
+        ScrapeSection(new SportsScraper(documentNode));
+        ScrapeSection(new BusinessScraper(documentNode));
+        ScrapeSection(new ScienceScraper(documentNode));
+        ScrapeSection(new TechnologyScraper(documentNode));
+        ScrapeSection(new HealthScraper(documentNode));
+        ScrapeSection(new ClimateScraper(documentNode));
+        ScrapeSection(new FactCheckScraper(documentNode));
+        ScrapeSection(new LatestNewsScraper(documentNode));
+
+        try
+        {
+            // Mark any headlines as "Most Read" that were found in the Most Read section
+            var mostReadHeadlines = new MostReadScraper(documentNode).Scrape();
+            if (_scrapeResult.Headlines is not null)
+                foreach (var headline in _scrapeResult.Headlines)
+                    if (mostReadHeadlines.Contains(headline))
+                        headline.MostRead = true;
+        }
+        catch (Exception ex)
+        {
+            _scrapeResult.Exceptions ??= [];
+            _scrapeResult.Exceptions.Add(ex);
+        }
+
+        if (_scrapeResult.Headlines is null)
+            return _scrapeResult;
+
+        // Save the headlines to the database
+        foreach (var headline in _scrapeResult.Headlines.Where(h =>
+            h.TargetUri.AbsoluteUri.StartsWith($"{_options.BaseUri}article/", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                // Check if the TargetUri already exists in the table
+                if (await _repository.ExistsAsync(headline.TargetUri))
+                {
+                    headline.AlreadyInDatabase = true;
+                    continue;
+                }
+
+                // Save the headline
+                headline.Id = await _repository.CreateAsync(headline, jobId);   
+            }
+            catch (Exception ex)
+            {
+                _scrapeResult.Exceptions ??= [];
+                _scrapeResult.Exceptions.Add(ex);
+            }
         }
         
-        return scrapeResult;
+        return _scrapeResult;
     }
    
-    public async Task<ScrapeMainPageResult> CreateTestHeadline(long jobId)
+    private async Task<ScrapeMainPageResult> CreateTestHeadline(long jobId)
     {
-        ScrapeMainPageResult result = new() 
+        try
         {
-            Source = _useTestFile ? _testFile : _sourceUri.AbsoluteUri,
-            StartedOn = DateTime.UtcNow 
-        };
-        ScrapedHeadline headline = new() { Headline = "Test Headline", TargetUri = new($"https://test.com/{DateTime.UtcNow.Ticks}") };
-        headline.Id = await headlineRepository.CreateAsync(headline, jobId);
-        result.ScrapedHeadlines ??= [];
-        result.ScrapedHeadlines.Add(headline);
-        return result;
+            _scrapeResult.StartedOn = DateTime.UtcNow;
+            ScrapedHeadline headline = new() { Headline = "Test Headline", TargetUri = new($"https://test.com/{DateTime.UtcNow.Ticks}") };
+            headline.Id = await _repository.CreateAsync(headline, jobId);
+            _scrapeResult.Headlines ??= [];
+            _scrapeResult.Headlines.Add(headline);
+        }
+        catch (Exception ex)
+        {
+            _scrapeResult.Exceptions ??= [];
+            _scrapeResult.Exceptions.Add(ex);
+        }
+        
+        return _scrapeResult;
     }
 
-    private List<string> GetAllHyperlinks(Uri sourceUri, HtmlNode documentNode)
+    private void ScrapeSection(PageSectionScraperBase sectionScraper)
     {
-        return documentNode.SelectNodes("//a[@href]")?.Select(node => node.GetAttributeValue("href", ""))
-            .Where(href =>
-                href.StartsWith($"{sourceUri}/article/", StringComparison.OrdinalIgnoreCase) ||
-                href.StartsWith($"{sourceUri}/live/", StringComparison.OrdinalIgnoreCase))
-            .Distinct().ToList() ?? [];
+        try
+        {
+            foreach (var headline in sectionScraper.Scrape())
+            {
+                _scrapeResult.Headlines ??= [];
+                _scrapeResult.Headlines.Add(headline);
+            }
+        }
+        catch (NodeNotFoundException ex)
+        {
+            _scrapeResult.Exceptions ??= [];
+            _scrapeResult.Exceptions.Add(ex);
+        }
+        catch (Exception ex)
+        {
+            _scrapeResult.Exceptions ??= [];
+            _scrapeResult.Exceptions.Add(ex);
+        }
     }
 }
