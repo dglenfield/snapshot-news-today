@@ -4,6 +4,7 @@ using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
+using SnapshotJob.Perplexity.Models;
 using SnapshotJob.Scrapers.Models;
 
 namespace SnapshotJob.Processors;
@@ -20,6 +21,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
         ScrapeMainPageResult? scrapeMainPageResult = null;
         ScrapeArticlesResult? scrapeArticlesResult = null;
+        TopStoryArticles? topStoryArticles = null;
 
         try
 		{
@@ -35,10 +37,16 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                 scrapeArticlesResult = await ScrapeArticles(scrapeMainPageResult);
 
             // Get the Top Stories for the scraped headlines
-            if (!options.Value.SkipTopStories && scrapeArticlesResult?.ScrapedArticles is not null)
+            if (!options.Value.SkipTopStories)
             {
-                var topStoryArticles = await topStoriesProcessor.SelectArticles(scrapeArticlesResult.ScrapedArticles);
+                if (scrapeArticlesResult?.ScrapedArticles is null)
+                {
+                    ScrapedArticleRepository repository = new(database);
+                    var scrapedArticles = await repository.GetBySnapshotId(1);
+                    scrapeArticlesResult = new() { ScrapedArticles = scrapedArticles };
+                }
 
+                topStoryArticles = await topStoriesProcessor.SelectArticles(scrapeArticlesResult.ScrapedArticles);
                 if (topStoryArticles?.Articles is not null)
                 {
                     foreach (var article in topStoryArticles.Articles)
@@ -47,12 +55,6 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
                     }
                 }
-            }
-            else if (!options.Value.SkipTopStories)
-            {
-                ScrapedArticleRepository repository = new(database);
-                var scrapedArticles = await repository.GetBySnapshotId(1);
-                scrapeArticlesResult = new() { ScrapedArticles = scrapedArticles };
             }
 
             _snapshot.IsSuccess = true;
@@ -70,7 +72,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             await newsSnapshotRepository.UpdateAsync(_snapshot);
 
             // Log the results
-            WriteToLog(scrapeMainPageResult, scrapeArticlesResult);
+            WriteToLog(scrapeMainPageResult, scrapeArticlesResult, topStoryArticles);
             logger.Log($"\nNews snapshot job finished {(_snapshot.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
                 messageLogLevel: (_snapshot.IsSuccess!.Value ? LogLevel.Success : LogLevel.Error));
         }
@@ -111,7 +113,8 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
         return scrapeMainPageResult;
     }
 
-    private void WriteToLog(ScrapeMainPageResult? scrapeMainPageResult, ScrapeArticlesResult? scrapeArticlesResult)
+    private void WriteToLog(ScrapeMainPageResult? scrapeMainPageResult, ScrapeArticlesResult? scrapeArticlesResult, 
+        TopStoryArticles? topStoryArticles)
     {
         bool testFileUsed = Uri.TryCreate(scrapeMainPageResult?.Source, UriKind.Absolute, out Uri? sourceUri);
         if (testFileUsed)
@@ -200,6 +203,17 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             consoleColor: scrapeMainPageResult?.HeadlinesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed);
         logger.Log($"Total Articles scraped: {scrapeArticlesResult?.ArticlesScraped}", logAsRawMessage: true,
             consoleColor: scrapeArticlesResult?.ArticlesScraped > 0 ? ConsoleColor.DarkGreen : ConsoleColor.DarkRed);
+
+        // Top Stories
+        if (topStoryArticles?.Articles is not null)
+        {
+            int articleCount = 0;
+            foreach (var article in topStoryArticles.Articles)
+            {
+                logger.Log($"Article {++articleCount}:", logAsRawMessage: true);
+                logger.Log(article.ToString(), logAsRawMessage: true);
+            }
+        }
 
         if (_snapshot is not null && _snapshot.FinishedOn.HasValue)
             logger.Log($"Job took {_snapshot.RunTimeInSeconds} seconds", logAsRawMessage: true, consoleColor: ConsoleColor.Yellow);
