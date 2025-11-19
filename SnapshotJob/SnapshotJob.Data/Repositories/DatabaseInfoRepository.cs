@@ -19,7 +19,7 @@ public class DatabaseInfoRepository(SnapshotJobDatabase database)
         await database.ExecuteNonQueryAsync(commandText);
     }
 
-    public async Task<DatabaseInfo> GetAsync(string entity)
+    public async Task<DatabaseInfo?> GetAsync(string entity)
     {
         string commandText = "SELECT * FROM database_info WHERE entity = @entity;";
         SqliteParameter[] parameters = [new("@entity", entity)];
@@ -35,7 +35,7 @@ public class DatabaseInfoRepository(SnapshotJobDatabase database)
             };
         }
         
-        throw new InvalidOperationException("Database version not found.");
+        return null;
     }
 
     public async Task<string> GetDatabaseVersionAsync()
