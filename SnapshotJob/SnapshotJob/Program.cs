@@ -136,6 +136,7 @@ public class Program
             });
 
             services.AddTransient<TopStoriesProvider>();
+            services.AddTransient<ArticleProvider>();
         });
     }
 }

@@ -4,6 +4,7 @@ using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
+using SnapshotJob.Perplexity;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Scrapers.Models;
 
@@ -12,7 +13,7 @@ namespace SnapshotJob.Processors;
 internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
     NewsSnapshotRepository newsSnapshotRepository, ScrapedArticleRepository scrapedArticleRepository,
     Logger logger, IOptions<ApplicationOptions> options,
-    SnapshotJobDatabase database)
+    SnapshotJobDatabase database, ArticleProvider articleProvider)
 {
     private readonly NewsSnapshot _snapshot = new();
 
@@ -53,12 +54,13 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     {
                         if (long.TryParse(story.Id, out long scrapedArticleId))
                         {
-                            var article = await scrapedArticleRepository.GetByIdAsync(scrapedArticleId);
+                            ScrapedArticle? article = await scrapedArticleRepository.GetByIdAsync(scrapedArticleId);
                             if (article is null)
                                 continue;
-                            logger.Log(article.ToString());
-                            // Analyze the article with Perplexity API
 
+                            // Analyze the article with Perplexity API
+                            await articleProvider.Analyze(article);
+                            break;
                         }
                             
                     }
