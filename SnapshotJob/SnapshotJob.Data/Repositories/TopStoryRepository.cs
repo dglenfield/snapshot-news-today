@@ -7,22 +7,6 @@ public class TopStoryRepository(SnapshotJobDatabase database)
 {
     public string Version { get; } = "1.1";
 
-    public async Task CreateTableAsync()
-    {
-        string commandText = $@"
-            CREATE TABLE IF NOT EXISTS top_story (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                created_on TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
-                scraped_article_id INTEGER,
-                headline TEXT,
-                FOREIGN KEY(scraped_article_id) REFERENCES scraped_article(id) ON DELETE CASCADE);
-
-            INSERT INTO database_info (entity, version) 
-                VALUES ('top_story', '{Version}');";
-
-        await database.ExecuteNonQueryAsync(commandText);
-    }
-
     public async Task<long> CreateAsync(TopStory topStory)
     {
         string commandText = @"
@@ -46,5 +30,21 @@ public class TopStoryRepository(SnapshotJobDatabase database)
 
         var result = await database.ExecuteScalarAsync(commandText, parameters);
         return !string.IsNullOrWhiteSpace(result?.ToString());
+    }
+
+    public async Task CreateTableAsync()
+    {
+        string commandText = $@"
+            CREATE TABLE IF NOT EXISTS top_story (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_on TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
+                scraped_article_id INTEGER,
+                headline TEXT,
+                FOREIGN KEY(scraped_article_id) REFERENCES scraped_article(id) ON DELETE CASCADE);
+
+            INSERT INTO database_info (entity, version) 
+                VALUES ('top_story', '{Version}');";
+
+        await database.ExecuteNonQueryAsync(commandText);
     }
 }

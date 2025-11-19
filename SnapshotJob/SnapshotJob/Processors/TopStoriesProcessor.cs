@@ -1,12 +1,11 @@
-﻿using SnapshotJob.Common.Logging;
-using SnapshotJob.Data.Models;
+﻿using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
 using SnapshotJob.Perplexity.Models.TopStories;
 
 namespace SnapshotJob.Processors;
 
-internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger, 
+internal class TopStoriesProcessor(TopStoriesProvider provider, 
     TopStoryApiCallRepository topStoryApiCallRepository, TopStoryRepository topStoryRepository)
 {
     internal async Task<TopStoriesResult> SelectStories(List<ScrapedArticle> scrapedArticles, long snapshotId)
@@ -46,7 +45,7 @@ internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger,
         await topStoryApiCallRepository.CreateAsync(apiCall, snapshotId);
 
         // Save Top Stories in database
-        foreach (var topStory in topStoriesResult.TopStories)
+        foreach (NewsStory topStory in topStoriesResult.TopStories)
         {
             if (long.TryParse(topStory.Id, out long scrapedArticleId) 
                 && !await topStoryRepository.ExistsAsync(scrapedArticleId))
