@@ -16,7 +16,10 @@
 	</ItemGroup>
 
   <ItemGroup>
-    <None Update="Prompts\curate-articles-system-prompt-v1.txt">
+    <None Update="Prompts\analyze-article-system-prompt.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Prompts\analyze-article-user-prompt.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Prompts\top-stories-system-prompt.txt">
