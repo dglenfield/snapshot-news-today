@@ -38,4 +38,13 @@ public class TopStoryRepository(SnapshotJobDatabase database)
         long id = await database.InsertAsync(commandText, parameters);
         return id > 0 ? id : throw new InvalidOperationException("Insert into top_story failed, no row id returned.");
     }
+
+    public async Task<bool> ExistsAsync(long scrapeArticleId)
+    {
+        string commandText = @"SELECT scraped_article_id FROM top_story WHERE scraped_article_id = @scraped_article_id LIMIT 1;";
+        SqliteParameter[] parameters = [new("@scraped_article_id", scrapeArticleId)];
+
+        var result = await database.ExecuteScalarAsync(commandText, parameters);
+        return !string.IsNullOrWhiteSpace(result?.ToString());
+    }
 }
