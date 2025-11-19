@@ -1,70 +1,105 @@
 ﻿using Microsoft.Extensions.Options;
 using SnapshotJob.Common.Logging;
 using SnapshotJob.Data.Configuration.Options;
-using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
 
 namespace SnapshotJob.Data;
 
-public class SnapshotJobDatabase(IOptions<DatabaseOptions> options, Logger logger) 
-    : SqliteDatabase(options.Value.DatabaseFilePath)
-{   
+public class SnapshotJobDatabase : SqliteDatabase
+{
+    private readonly DatabaseInfoRepository _databaseInfoRepository;
+    private readonly NewsSnapshotRepository _newsSnapshotRepository;
+    private readonly ScrapedHeadlineRepository _scrapedHeadlineRepository;
+    private readonly ScrapedArticleRepository _scrapedArticleRepository;
+    private readonly TopStoryApiCallRepository _topStoryApiCallRepository;
+    private readonly TopStoryRepository _topStoryRepository;
+    private readonly Logger _logger;
+    private readonly DatabaseOptions _options;
+
+    public SnapshotJobDatabase(IOptions<DatabaseOptions> options, Logger logger) : base(options.Value.DatabaseFilePath)
+    {
+        _logger = logger;
+        _options = options.Value;
+        _databaseInfoRepository = new(this);
+        _newsSnapshotRepository = new(this);
+        _scrapedHeadlineRepository = new(this);
+        _scrapedArticleRepository = new(this);
+        _topStoryApiCallRepository = new(this);
+        _topStoryRepository = new(this);
+    }
+
     public async Task InitializeAsync()
     {
-        if (options.Value.DeleteExistingDatabase)
+        if (_options.DeleteExistingDatabase)
         {
+            // Delete the existing database
             await DeleteAsync();
-            logger.Log($"Database deleted at '{DatabaseFilePath}'.", LogLevel.Success);
+            _logger.Log($"Database deleted at '{DatabaseFilePath}'.", LogLevel.Success);
         }
 
-        DatabaseInfoRepository databaseInfo = new(this);
-        TopStoryApiCallRepository topStoryApiCall = new(this);
         if (!File.Exists(DatabaseFilePath))
         {
-            // Create database_info table
-            await databaseInfo.CreateTableAsync();
+            // Create the entire database
+            await _databaseInfoRepository.CreateTableAsync();
+            await _newsSnapshotRepository.CreateTableAsync();
+            await _scrapedHeadlineRepository.CreateTableAsync();
+            await _scrapedArticleRepository.CreateTableAsync();
+            await _topStoryApiCallRepository.CreateTableAsync();
+            await _topStoryRepository.CreateTableAsync();
 
-            // Create news_snapshot table
-            NewsSnapshotRepository newsSnapshot = new(this);
-            await newsSnapshot.CreateTableAsync();
-
-            // Create scraped_headline table
-            ScrapedHeadlineRepository headlineScrapeRepository = new(this);
-            await headlineScrapeRepository.CreateTableAsync();
-
-            // Create scraped_article table
-            ScrapedArticleRepository apNewsArticle = new(this);
-            await apNewsArticle.CreateTableAsync();
-
-            // Create top_story_api_call table
-            await topStoryApiCall.CreateTableAsync();
-
-            // Create top_story table
-            TopStoryRepository topStory = new(this);
-            await topStory.CreateTableAsync();
-
-            logger.Log($"Database created at '{DatabaseFilePath}'.", LogLevel.Success);
-
-            return;
-        }
-
-        // Updates for news_snapshot table (example of how to use in the future)
-        var newsSnapshotDbInfo = await databaseInfo.GetAsync("news_snapshot");
-        if (newsSnapshotDbInfo.Version != "1.1")
-        {
-            logger.Log("UPDATE TABLE");
+            _logger.Log($"Database created at '{DatabaseFilePath}'.", LogLevel.Success);
         }
         else
         {
-            logger.Log("TABLE UP TO DATE");
-        }
+            // Update individual tables
+            await UpdateDatabaseInfoTable();
+            await UpdateTopStoryApiCallTable();
+            await UpdateTopStoryTable();
+        }            
+    }
 
-        // Updates for top_story_api_call table
-        var topStoryApiCallDbInfo = await databaseInfo.GetAsync("top_story_api_call");
-        if (topStoryApiCallDbInfo is null)
+    private async Task UpdateDatabaseInfoTable()
+    {
+        var tableInfo = await _databaseInfoRepository.GetAsync("database_info");
+        if (tableInfo is null)
         {
-            await topStoryApiCall.CreateTableAsync();
-            logger.Log($"top_story_api_call table created at '{DatabaseFilePath}'.", LogLevel.Success);
+            // Create the table
+            await _databaseInfoRepository.CreateTableAsync();
+            _logger.Log("database_info table created.", LogLevel.Success);
+        }
+        else if (_databaseInfoRepository.Version > tableInfo.Version)
+        {
+            // Update the table
+            _databaseInfoRepository.UpdateTable(tableInfo.Version);
+            _logger.Log("database_info table updated.", LogLevel.Success);
+        }
+    }
+
+    private async Task UpdateTopStoryTable()
+    {
+        var tableInfo = await _databaseInfoRepository.GetAsync("top_story");
+        if (tableInfo is null)
+        {
+            // Create the table
+            await _topStoryRepository.CreateTableAsync();
+            _logger.Log("top_story table created.", LogLevel.Success);
+        }
+    }
+
+    private async Task UpdateTopStoryApiCallTable()
+    {
+        var tableInfo = await _databaseInfoRepository.GetAsync("top_story_api_call");
+        if (tableInfo is null)
+        {
+            // Create the table
+            await _topStoryApiCallRepository.CreateTableAsync();
+            _logger.Log("top_story_api_call table created.", LogLevel.Success);
+        }
+        else if (_topStoryApiCallRepository.Version > tableInfo.Version)
+        {
+            // Update the table
+            _topStoryApiCallRepository.UpdateTable(tableInfo.Version);
+            _logger.Log("top_story_api_call table updated.", LogLevel.Success);
         }
     }
 }
