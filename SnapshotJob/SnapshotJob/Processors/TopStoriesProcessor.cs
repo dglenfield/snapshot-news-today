@@ -48,14 +48,14 @@ internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger,
         // Save Top Stories in database
         foreach (var topStory in topStoriesResult.TopStories)
         {
-            if (long.TryParse(topStory.Id, out long scrapedArticleId))
+            if (long.TryParse(topStory.Id, out long scrapedArticleId) 
+                && !await topStoryRepository.ExistsAsync(scrapedArticleId))
             {
-                if (!await topStoryRepository.ExistsAsync(scrapedArticleId))
-                    await topStoryRepository.CreateAsync(new()
-                    {
-                        Headline = topStory.Headline,
-                        ScrapedArticleId = scrapedArticleId
-                    });
+                await topStoryRepository.CreateAsync(new()
+                {
+                    Headline = topStory.Headline,
+                    ScrapedArticleId = scrapedArticleId
+                });
             }
         }
 
