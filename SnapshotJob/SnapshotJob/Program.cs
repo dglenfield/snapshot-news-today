@@ -116,6 +116,7 @@ public class Program
             services.AddTransient<ScrapedHeadlineRepository>();
             services.AddTransient<ScrapedArticleRepository>();
             services.AddTransient<TopStoryApiCallRepository>();
+            services.AddTransient<TopStoryRepository>();
 
             // Processors
             services.AddTransient<SnapshotJobProcessor>();

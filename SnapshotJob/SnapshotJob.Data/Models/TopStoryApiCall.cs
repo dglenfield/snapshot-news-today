@@ -14,7 +14,9 @@ public class TopStoryApiCall
     public double RequestCost { get; init; }
     public double TotalCost { get; init; }
 
-    public string ResponseString { get; set; } = default!;
+    public string? RequestBody { get; set; } 
+    public string? ResponseString { get; set; }
+    public Exception? Exception { get; set; }
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);

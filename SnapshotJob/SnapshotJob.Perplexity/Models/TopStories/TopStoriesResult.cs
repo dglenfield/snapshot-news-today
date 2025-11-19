@@ -8,7 +8,9 @@ public class TopStoriesResult
 {
     public List<NewsStory> TopStories { get; set; } = default!;
 
-    public string ResponseString { get; set; } = default!;
+    public string? RequestBody { get; set; }
+    public string? ResponseString { get; set; }
+    public Exception? Exception { get; set; }
 
     // PerplexityResponse
     public string PerplexityResponseId { get; set; } = default!;

@@ -6,7 +6,8 @@ using SnapshotJob.Perplexity.Models.TopStories;
 
 namespace SnapshotJob.Processors;
 
-internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger, TopStoryApiCallRepository topStoryApiCallRepository)
+internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger, 
+    TopStoryApiCallRepository topStoryApiCallRepository, TopStoryRepository topStoryRepository)
 {
     internal async Task<TopStoriesResult> SelectStories(List<ScrapedArticle> scrapedArticles, long snapshotId)
     {
@@ -28,9 +29,7 @@ internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger, T
         var topStoriesResult = await provider.Select(newsStories, file);
         //var topStoryArticles = await provider.SelectArticles(sourceArticles);
 
-        logger.Log(topStoriesResult.ToString());
-
-        // Save Top Stories API call in top-stories-api-call
+        // Save API call in database
         TopStoryApiCall apiCall = new() 
         {
             CompletionTokens = topStoriesResult.PerplexityApiUsage.CompletionTokens,
@@ -40,14 +39,22 @@ internal class TopStoriesProcessor(TopStoriesProvider provider, Logger logger, T
             OutputTokensCost = topStoriesResult.PerplexityApiUsage.Cost.OutputTokensCost,
             RequestCost = topStoriesResult.PerplexityApiUsage.Cost.RequestCost,
             TotalCost = topStoriesResult.PerplexityApiUsage.Cost.TotalCost,
-            ResponseString = topStoriesResult.ResponseString
+            RequestBody = topStoriesResult.RequestBody,
+            ResponseString = topStoriesResult.ResponseString,
+            Exception = topStoriesResult.Exception
         };
-
-        logger.Log(apiCall.ResponseString.ToString());
-
         await topStoryApiCallRepository.CreateAsync(apiCall, snapshotId);
 
-        // Save the Top Stories in top-stories table
+        // Save Top Stories in database
+        foreach (var topStory in topStoriesResult.TopStories)
+        {
+            if (long.TryParse(topStory.Id, out long scrapedArticleId))
+                await topStoryRepository.CreateAsync(new() 
+                { 
+                    Headline = topStory.Headline, 
+                    ScrapedArticleId = scrapedArticleId 
+                });
+        }
 
         return topStoriesResult;
     }
