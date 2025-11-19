@@ -10,7 +10,8 @@ using SnapshotJob.Scrapers.Models;
 namespace SnapshotJob.Processors;
 
 internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
-    NewsSnapshotRepository newsSnapshotRepository, Logger logger, IOptions<ApplicationOptions> options,
+    NewsSnapshotRepository newsSnapshotRepository, ScrapedArticleRepository scrapedArticleRepository,
+    Logger logger, IOptions<ApplicationOptions> options,
     SnapshotJobDatabase database)
 {
     private readonly NewsSnapshot _snapshot = new();
@@ -21,7 +22,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
         ScrapeMainPageResult? scrapeMainPageResult = null;
         ScrapeArticlesResult? scrapeArticlesResult = null;
-        TopStoriesResult? topStoryArticles = null;
+        TopStoriesResult? topStoriesResult = null;
 
         try
 		{
@@ -41,18 +42,25 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             {
                 if (scrapeArticlesResult?.ScrapedArticles is null)
                 {
-                    ScrapedArticleRepository repository = new(database);
-                    var scrapedArticles = await repository.GetBySnapshotId(1);
+                    var scrapedArticles = await scrapedArticleRepository.GetBySnapshotId(1);
                     scrapeArticlesResult = new() { ScrapedArticles = scrapedArticles };
                 }
 
-                topStoryArticles = await topStoriesProcessor.SelectStories(scrapeArticlesResult.ScrapedArticles, _snapshot.Id);
-                if (topStoryArticles?.TopStories is not null)
+                topStoriesResult = await topStoriesProcessor.SelectStories(scrapeArticlesResult.ScrapedArticles, _snapshot.Id);
+                if (topStoriesResult?.TopStories is not null)
                 {
-                    foreach (var article in topStoryArticles.TopStories)
+                    foreach (NewsStory story in topStoriesResult.TopStories)
                     {
-                        //logger.Log(article.ToString());
+                        if (long.TryParse(story.Id, out long scrapedArticleId))
+                        {
+                            var article = await scrapedArticleRepository.GetByIdAsync(scrapedArticleId);
+                            if (article is null)
+                                continue;
+                            logger.Log(article.ToString());
+                            // Analyze the article with Perplexity API
 
+                        }
+                            
                     }
                 }
             }

@@ -15,9 +15,6 @@ public class DatabaseInfoRepository(SnapshotJobDatabase database)
         await using var reader = await database.ExecuteReaderAsync(commandText, parameters);        
         if (await reader.ReadAsync())
         {
-            //string? updatedOn = reader.IsDBNull(3) ? null : reader.GetString(3);
-
-            //Console.WriteLine(updatedOn);
             return new DatabaseInfo()
             {
                 Entity = reader.GetString(reader.GetOrdinal("entity")),

@@ -5,27 +5,7 @@ namespace SnapshotJob.Data.Repositories;
 
 public class ScrapedArticleRepository(SnapshotJobDatabase database)
 {
-    public async Task CreateTableAsync()
-    {
-        string commandText = @"
-            CREATE TABLE IF NOT EXISTS scraped_article (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                scraped_headline_id INTEGER, -- Foreign key to link to scraped_headline table
-                scraped_on TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
-                is_success INTEGER,
-                source TEXT NOT NULL,
-                headline TEXT,
-                author TEXT,
-                last_updated_on TEXT,
-                article_content TEXT,
-                errors TEXT,
-                FOREIGN KEY(scraped_headline_id) REFERENCES scraped_headline(id) ON DELETE CASCADE);
-
-            INSERT INTO database_info (entity, version) 
-                VALUES ('scraped_article', '1.1');";
-
-        await database.ExecuteNonQueryAsync(commandText);
-    }
+    public float Version { get; } = 1.1F;
 
     public async Task<long> CreateAsync(ScrapedArticle article)
     {
@@ -44,7 +24,32 @@ public class ScrapedArticleRepository(SnapshotJobDatabase database)
         long id = await database.InsertAsync(commandText, parameters);
         return id > 0 ? id : throw new InvalidOperationException("Insert into scraped_article failed, no row id returned.");
     }
-    
+
+    public async Task<ScrapedArticle?> GetByIdAsync(long id)
+    {
+        string commandText = "SELECT * FROM scraped_article WHERE id = @id;";
+        SqliteParameter[] parameters = [new("@id", id)];
+
+        await using var reader = await database.ExecuteReaderAsync(commandText, parameters);
+        if (await reader.ReadAsync())
+        {
+            return new ScrapedArticle()
+            {
+                Author = reader.IsDBNull(reader.GetOrdinal("author")) ? null : reader.GetString(reader.GetOrdinal("author")), 
+                ContentParagraphs = [reader.GetString(reader.GetOrdinal("article_content"))],
+                Headline = reader.GetString(reader.GetOrdinal("headline")),
+                Id = reader.GetInt64(reader.GetOrdinal("id")),
+                IsSuccess = reader.GetBoolean(reader.GetOrdinal("is_success")),
+                LastUpdatedOn = reader.IsDBNull(reader.GetOrdinal("last_updated_on"))
+                    ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("last_updated_on"))),
+                ScrapedHeadlineId = reader.GetInt64(reader.GetOrdinal("scraped_headline_id")),
+                SourceUri = new(reader.GetString(reader.GetOrdinal("source")))
+            };
+        }
+
+        return null;
+    }
+
     public async Task<List<ScrapedArticle>> GetBySnapshotId(long snapshotId)
     {
         string commandText = @"
@@ -112,5 +117,27 @@ public class ScrapedArticleRepository(SnapshotJobDatabase database)
         int rowsAffected = await database.ExecuteNonQueryAsync(commandText, parameters);
         if (rowsAffected == 0)
             throw new InvalidOperationException($"No record found with id {article.Id} to update in table scraped_article.");
+    }
+
+    public async Task CreateTableAsync()
+    {
+        string commandText = $@"
+            CREATE TABLE IF NOT EXISTS scraped_article (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                scraped_headline_id INTEGER, -- Foreign key to link to scraped_headline table
+                scraped_on TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
+                is_success INTEGER,
+                source TEXT NOT NULL,
+                headline TEXT,
+                author TEXT,
+                last_updated_on TEXT,
+                article_content TEXT,
+                errors TEXT,
+                FOREIGN KEY(scraped_headline_id) REFERENCES scraped_headline(id) ON DELETE CASCADE);
+
+            INSERT INTO database_info (entity, version) 
+                VALUES ('scraped_article', '{Version}');";
+
+        await database.ExecuteNonQueryAsync(commandText);
     }
 }
