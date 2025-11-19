@@ -46,7 +46,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     scrapeArticlesResult = new() { ScrapedArticles = scrapedArticles };
                 }
 
-                topStoryArticles = await topStoriesProcessor.SelectArticles(scrapeArticlesResult.ScrapedArticles);
+                topStoryArticles = await topStoriesProcessor.SelectStories(scrapeArticlesResult.ScrapedArticles, _snapshot.Id);
                 if (topStoryArticles?.TopStories is not null)
                 {
                     foreach (var article in topStoryArticles.TopStories)

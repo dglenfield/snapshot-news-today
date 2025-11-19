@@ -8,6 +8,8 @@ public class TopStoriesResult
 {
     public List<NewsStory> TopStories { get; set; } = default!;
 
+    public string ResponseString { get; set; } = default!;
+
     // PerplexityResponse
     public string PerplexityResponseId { get; set; } = default!;
     public string PerplexityResponseModel { get; set; } = default!;

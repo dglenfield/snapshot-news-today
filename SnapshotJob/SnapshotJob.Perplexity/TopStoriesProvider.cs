@@ -96,7 +96,8 @@ public class TopStoriesProvider(IHttpClientFactory httpClientFactory, Logger log
                 SearchResults = perplexityResponse.SearchResults,
                 PerplexityResponseId = perplexityResponse.Id,
                 PerplexityResponseModel = perplexityResponse.Model,
-                PerplexityApiUsage = perplexityResponse.Usage
+                PerplexityApiUsage = perplexityResponse.Usage, 
+                ResponseString = responseString
             };
 
             return topNewsArticles;
