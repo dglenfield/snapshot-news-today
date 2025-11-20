@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace SnapshotJob.Perplexity.Models.TopStories.Response;
+namespace SnapshotJob.Perplexity.Models.ApiResponse;
 
 /// <summary>
 /// Represents token usage and related cost information for a request and its response.

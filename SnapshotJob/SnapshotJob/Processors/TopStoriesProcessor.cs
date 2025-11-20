@@ -28,7 +28,7 @@ internal class TopStoriesProcessor(TopStoriesProvider provider,
         var topStoriesResult = await provider.Select(newsStories, file);
         //var topStoryArticles = await provider.SelectArticles(sourceArticles);
 
-        // Save API call in database
+        // Save API call to the database
         TopStoryApiCall apiCall = new() 
         {
             CompletionTokens = topStoriesResult.PerplexityApiUsage.CompletionTokens,
@@ -44,7 +44,7 @@ internal class TopStoriesProcessor(TopStoriesProvider provider,
         };
         await topStoryApiCallRepository.CreateAsync(apiCall, snapshotId);
 
-        // Save Top Stories in database
+        // Save Top Stories to the database
         foreach (NewsStory topStory in topStoriesResult.TopStories)
         {
             if (long.TryParse(topStory.Id, out long scrapedArticleId) 

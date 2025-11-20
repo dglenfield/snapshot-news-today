@@ -59,7 +59,12 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                                 continue;
 
                             // Analyze the article with Perplexity API
-                            await articleProvider.Analyze(article);
+                            var result = await articleProvider.Analyze(article);
+                            logger.Log("\n" + result);
+
+                            // Save the analyzed article to the database
+
+
                             break;
                         }
                             

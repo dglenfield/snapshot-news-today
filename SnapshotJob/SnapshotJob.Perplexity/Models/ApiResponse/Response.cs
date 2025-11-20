@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SnapshotJob.Perplexity.Models.TopStories.Response;
+namespace SnapshotJob.Perplexity.Models.ApiResponse;
 
 /// <summary>
 /// Represents the response returned from a Perplexity API operation, including metadata, usage statistics, and result data.

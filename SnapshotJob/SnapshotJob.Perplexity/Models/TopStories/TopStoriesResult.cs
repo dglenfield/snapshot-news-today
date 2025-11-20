@@ -1,5 +1,5 @@
 ﻿using SnapshotJob.Common.Serialization;
-using SnapshotJob.Perplexity.Models.TopStories.Response;
+using SnapshotJob.Perplexity.Models.ApiResponse;
 using System.Text.Json;
 
 namespace SnapshotJob.Perplexity.Models.TopStories;
