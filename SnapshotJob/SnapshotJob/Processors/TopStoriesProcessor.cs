@@ -6,7 +6,7 @@ using SnapshotJob.Perplexity.Models.TopStories;
 namespace SnapshotJob.Processors;
 
 internal class TopStoriesProcessor(TopStoriesProvider provider, 
-    TopStoryApiCallRepository topStoryApiCallRepository, TopStoryRepository topStoryRepository)
+    PerplexityApiCallRepository topStoryApiCallRepository, TopStoryRepository topStoryRepository)
 {
     internal async Task<TopStoriesResult> SelectStories(List<ScrapedArticle> scrapedArticles, long snapshotId)
     {
@@ -29,7 +29,7 @@ internal class TopStoriesProcessor(TopStoriesProvider provider,
         //var topStoryArticles = await provider.SelectArticles(sourceArticles);
 
         // Save API call to the database
-        TopStoryApiCall apiCall = new() 
+        PerplexityApiCall apiCall = new() 
         {
             CompletionTokens = topStoriesResult.PerplexityApiUsage.CompletionTokens,
             PromptTokens = topStoriesResult.PerplexityApiUsage.PromptTokens,

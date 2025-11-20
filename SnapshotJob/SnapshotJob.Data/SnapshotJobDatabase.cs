@@ -11,8 +11,9 @@ public class SnapshotJobDatabase : SqliteDatabase
     private readonly NewsSnapshotRepository _newsSnapshotRepository;
     private readonly ScrapedHeadlineRepository _scrapedHeadlineRepository;
     private readonly ScrapedArticleRepository _scrapedArticleRepository;
-    private readonly TopStoryApiCallRepository _topStoryApiCallRepository;
+    private readonly PerplexityApiCallRepository _perplexityApiCallRepository;
     private readonly TopStoryRepository _topStoryRepository;
+    private readonly AnalyzedArticleRepository _analyzedArticleRepository;
     private readonly Logger _logger;
     private readonly DatabaseOptions _options;
 
@@ -24,8 +25,9 @@ public class SnapshotJobDatabase : SqliteDatabase
         _newsSnapshotRepository = new(this);
         _scrapedHeadlineRepository = new(this);
         _scrapedArticleRepository = new(this);
-        _topStoryApiCallRepository = new(this);
+        _perplexityApiCallRepository = new(this);
         _topStoryRepository = new(this);
+        _analyzedArticleRepository = new(this);
     }
 
     public async Task InitializeAsync()
@@ -44,8 +46,9 @@ public class SnapshotJobDatabase : SqliteDatabase
             await _newsSnapshotRepository.CreateTableAsync();
             await _scrapedHeadlineRepository.CreateTableAsync();
             await _scrapedArticleRepository.CreateTableAsync();
-            await _topStoryApiCallRepository.CreateTableAsync();
+            await _perplexityApiCallRepository.CreateTableAsync();
             await _topStoryRepository.CreateTableAsync();
+            await _analyzedArticleRepository.CreateTableAsync();
 
             _logger.Log($"Database created at '{DatabaseFilePath}'.", LogLevel.Success);
         }
@@ -53,9 +56,21 @@ public class SnapshotJobDatabase : SqliteDatabase
         {
             // Update individual tables
             await UpdateDatabaseInfoTable();
-            await UpdateTopStoryApiCallTable();
+            await UpdatePerplexityApiCallTable();
             await UpdateTopStoryTable();
+            await UpdateAnalyzedArticleTable();
         }            
+    }
+
+    private async Task UpdateAnalyzedArticleTable()
+    {
+        var tableInfo = await _databaseInfoRepository.GetAsync("analyzed_article");
+        if (tableInfo is null)
+        {
+            // Create the table
+            await _analyzedArticleRepository.CreateTableAsync();
+            _logger.Log("analyzed_article table created.", LogLevel.Success);
+        }
     }
 
     private async Task UpdateDatabaseInfoTable()
@@ -86,20 +101,20 @@ public class SnapshotJobDatabase : SqliteDatabase
         }
     }
 
-    private async Task UpdateTopStoryApiCallTable()
+    private async Task UpdatePerplexityApiCallTable()
     {
-        var tableInfo = await _databaseInfoRepository.GetAsync("top_story_api_call");
+        var tableInfo = await _databaseInfoRepository.GetAsync("perplexity_api_call");
         if (tableInfo is null)
         {
             // Create the table
-            await _topStoryApiCallRepository.CreateTableAsync();
-            _logger.Log("top_story_api_call table created.", LogLevel.Success);
+            await _perplexityApiCallRepository.CreateTableAsync();
+            _logger.Log("perplexity_api_call table created.", LogLevel.Success);
         }
-        else if (_topStoryApiCallRepository.Version > tableInfo.Version)
+        else if (_perplexityApiCallRepository.Version > tableInfo.Version)
         {
             // Update the table
-            _topStoryApiCallRepository.UpdateTable(tableInfo.Version);
-            _logger.Log("top_story_api_call table updated.", LogLevel.Success);
+            _perplexityApiCallRepository.UpdateTable(tableInfo.Version);
+            _logger.Log("perplexity_api_call table updated.", LogLevel.Success);
         }
     }
 }

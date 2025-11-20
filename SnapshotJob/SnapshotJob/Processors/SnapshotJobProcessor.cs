@@ -7,13 +7,14 @@ using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Scrapers.Models;
+using System.Text.Json;
 
 namespace SnapshotJob.Processors;
 
 internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
     NewsSnapshotRepository newsSnapshotRepository, ScrapedArticleRepository scrapedArticleRepository,
     Logger logger, IOptions<ApplicationOptions> options,
-    SnapshotJobDatabase database, ArticleProvider articleProvider)
+    SnapshotJobDatabase database, ArticleProvider articleProvider, AnalyzedArticleRepository analyzedArticleRepository)
 {
     private readonly NewsSnapshot _snapshot = new();
 
@@ -54,16 +55,30 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     {
                         if (long.TryParse(story.Id, out long scrapedArticleId))
                         {
-                            ScrapedArticle? article = await scrapedArticleRepository.GetByIdAsync(scrapedArticleId);
-                            if (article is null)
+                            ScrapedArticle? scrapedArticle = await scrapedArticleRepository.GetByIdAsync(scrapedArticleId);
+                            if (scrapedArticle is null)
                                 continue;
 
                             // Analyze the article with Perplexity API
-                            var result = await articleProvider.Analyze(article);
-                            logger.Log("\n" + result);
+                            var analyzeArticleResult = await articleProvider.Analyze(scrapedArticle);
+                            logger.Log("\n" + analyzeArticleResult);
 
                             // Save the analyzed article to the database
+                            if (analyzeArticleResult.Content is null)
+                                continue;
 
+                            AnalyzedArticle analyzedArticle = new()
+                            {
+                                AnalyzedOn = DateTime.UtcNow,
+                                CustomHeadline = analyzeArticleResult.Content.CustomHeadline,
+                                Exception = analyzeArticleResult.Exception,
+                                KeyPoints = analyzeArticleResult.Content.KeyPoints,
+                                KeyPointsJson = JsonSerializer.Serialize(analyzeArticleResult.Content.KeyPoints),
+                                ScrapedArticleId = scrapedArticle.Id,
+                                Summary = analyzeArticleResult.Content.Summary
+                            };
+
+                            await analyzedArticleRepository.CreateAsync(analyzedArticle);
 
                             break;
                         }
@@ -71,6 +86,9 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     }
                 }
             }
+
+            // Publish analyzed articles for top stories
+            // Save to Cosmos DB
 
             _snapshot.IsSuccess = true;
         }

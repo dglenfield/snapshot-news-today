@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace SnapshotJob.Data.Models;
 
-public class TopStoryApiCall
+public class PerplexityApiCall
 {
     public int PromptTokens { get; init; }
     public int CompletionTokens { get; init; }

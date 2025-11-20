@@ -3,17 +3,17 @@ using SnapshotJob.Data.Models;
 
 namespace SnapshotJob.Data.Repositories;
 
-public class TopStoryApiCallRepository(SnapshotJobDatabase database)
+public class PerplexityApiCallRepository(SnapshotJobDatabase database)
 {
-    public float Version { get; } = 1.4F;
+    public float Version { get; } = 1.5F;
 
-    public async Task<long> CreateAsync(TopStoryApiCall topStoryApiCall, long snapshotId)
+    public async Task<long> CreateAsync(PerplexityApiCall record, long snapshotId)
     {
-        string error = topStoryApiCall.Exception is not null
-            ? $"{topStoryApiCall.Exception.Source}: {topStoryApiCall.Exception.Message}" : string.Empty;
+        string error = record.Exception is not null
+            ? $"{record.Exception.Source}: {record.Exception.Message}" : string.Empty;
 
         string commandText = @"
-            INSERT INTO top_story_api_call (
+            INSERT INTO perplexity_api_call (
                 news_snapshot_id, prompt_tokens, completion_tokens, total_tokens,
                 input_tokens_cost, output_tokens_cost, request_cost, total_cost, 
                 request_body, response_string, error)
@@ -24,28 +24,28 @@ public class TopStoryApiCallRepository(SnapshotJobDatabase database)
 
         SqliteParameter[] parameters = [
             new("@news_snapshot_id", snapshotId),
-            new("@prompt_tokens", topStoryApiCall.PromptTokens),
-            new("@completion_tokens", topStoryApiCall.CompletionTokens),
-            new("@total_tokens", topStoryApiCall.TotalTokens),
-            new("@input_tokens_cost", topStoryApiCall.InputTokensCost.ToString()),
-            new("@output_tokens_cost", topStoryApiCall.OutputTokensCost.ToString()),
-            new("@request_cost", topStoryApiCall.RequestCost.ToString()),
-            new("@total_cost", topStoryApiCall.TotalCost.ToString()),
-            new("@request_body", !string.IsNullOrWhiteSpace(topStoryApiCall.RequestBody) 
-                ? topStoryApiCall.RequestBody : (object?)DBNull.Value),
-            new("@response_string", !string.IsNullOrWhiteSpace(topStoryApiCall.ResponseString) 
-                ? topStoryApiCall.ResponseString : (object?)DBNull.Value),
+            new("@prompt_tokens", record.PromptTokens),
+            new("@completion_tokens", record.CompletionTokens),
+            new("@total_tokens", record.TotalTokens),
+            new("@input_tokens_cost", record.InputTokensCost.ToString()),
+            new("@output_tokens_cost", record.OutputTokensCost.ToString()),
+            new("@request_cost", record.RequestCost.ToString()),
+            new("@total_cost", record.TotalCost.ToString()),
+            new("@request_body", !string.IsNullOrWhiteSpace(record.RequestBody) 
+                ? record.RequestBody : (object?)DBNull.Value),
+            new("@response_string", !string.IsNullOrWhiteSpace(record.ResponseString) 
+                ? record.ResponseString : (object?)DBNull.Value),
             new("@error", !string.IsNullOrWhiteSpace(error) ? error : (object?)DBNull.Value)
             ];
 
         long id = await database.InsertAsync(commandText, parameters);
-        return id > 0 ? id : throw new InvalidOperationException("Insert into top_story_api_call failed, no row id returned.");
+        return id > 0 ? id : throw new InvalidOperationException("Insert into perplexity_api_call failed, no row id returned.");
     }
 
     public async Task CreateTableAsync()
     {
         string commandText = $@"
-            CREATE TABLE IF NOT EXISTS top_story_api_call (
+            CREATE TABLE IF NOT EXISTS perplexity_api_call (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 news_snapshot_id INTEGER, -- Foreign key to link to news_snapshot table
                 created_on TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
@@ -62,7 +62,7 @@ public class TopStoryApiCallRepository(SnapshotJobDatabase database)
                 FOREIGN KEY(news_snapshot_id) REFERENCES news_snapshot(id) ON DELETE CASCADE);
 
             INSERT INTO database_info (entity, version) 
-                VALUES ('top_story_api_call', '{Version}');";
+                VALUES ('perplexity_api_call', '{Version}');";
 
         await database.ExecuteNonQueryAsync(commandText);
     }
@@ -72,10 +72,10 @@ public class TopStoryApiCallRepository(SnapshotJobDatabase database)
         if (currentVersion == 1.1F)
         {
             string commandText = $@"
-                ALTER TABLE top_story_api_call ADD COLUMN request_body TEXT;
+                ALTER TABLE perplexity_api_call ADD COLUMN request_body TEXT;
                                 
                 UPDATE database_info SET version = '{currentVersion += .1F}', updated_on = '{DateTime.UtcNow}' 
-                WHERE entity = 'top_story_api_call';";
+                WHERE entity = 'perplexity_api_call';";
             database.ExecuteNonQueryAsync(commandText).Wait();
             
             return UpdateTable(currentVersion);
@@ -83,20 +83,20 @@ public class TopStoryApiCallRepository(SnapshotJobDatabase database)
         if (currentVersion == 1.2F)
         {
             string commandText = $@"
-                ALTER TABLE top_story_api_call ADD COLUMN error TEXT;
+                ALTER TABLE perplexity_api_call ADD COLUMN error TEXT;
                 
                 UPDATE database_info SET version = '{currentVersion += .1F}', updated_on = '{DateTime.UtcNow}'  
-                WHERE entity = 'top_story_api_call';";
+                WHERE entity = 'perplexity_api_call';";
             database.ExecuteNonQueryAsync(commandText).Wait();
             return UpdateTable(currentVersion);
         }
         if (currentVersion == 1.3F)
         {
             string commandText = $@"
-                ALTER TABLE top_story_api_call ADD COLUMN request_body TEXT;
+                ALTER TABLE perplexity_api_call ADD COLUMN request_body TEXT;
                 
                 UPDATE database_info SET version = '{currentVersion += .1F}', updated_on = '{DateTime.UtcNow}'  
-                WHERE entity = 'top_story_api_call';";
+                WHERE entity = 'perplexity_api_call';";
             database.ExecuteNonQueryAsync(commandText).Wait();
             return UpdateTable(currentVersion);
         }
