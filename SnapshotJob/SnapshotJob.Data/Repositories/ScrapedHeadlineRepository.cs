@@ -5,25 +5,6 @@ namespace SnapshotJob.Data.Repositories;
 
 public class ScrapedHeadlineRepository(SnapshotJobDatabase database)
 {
-    public async Task CreateTableAsync()
-    {
-        string commandText = @"
-            CREATE TABLE IF NOT EXISTS scraped_headline (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                news_snapshot_id INTEGER, -- Foreign key to link to news_snapshot table
-                section_name TEXT,
-                headline TEXT,
-                target_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
-                last_updated_on TEXT,
-                most_read INTEGER,
-                FOREIGN KEY(news_snapshot_id) REFERENCES news_snapshot(id) ON DELETE CASCADE);
-
-            INSERT INTO database_info (entity, version) 
-                VALUES ('scraped_headline', '1.1');";
-
-        await database.ExecuteNonQueryAsync(commandText);
-    }
-
     public async Task<long> CreateAsync(ScrapedHeadline headline, long jobId)
     {
         string commandText = @"
@@ -51,5 +32,24 @@ public class ScrapedHeadlineRepository(SnapshotJobDatabase database)
 
         var result = await database.ExecuteScalarAsync(commandText, parameters);
         return !string.IsNullOrWhiteSpace(result?.ToString());
+    }
+
+    public async Task CreateTableAsync()
+    {
+        string commandText = @"
+            CREATE TABLE IF NOT EXISTS scraped_headline (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                news_snapshot_id INTEGER, -- Foreign key to link to news_snapshot table
+                section_name TEXT,
+                headline TEXT,
+                target_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
+                last_updated_on TEXT,
+                most_read INTEGER,
+                FOREIGN KEY(news_snapshot_id) REFERENCES news_snapshot(id) ON DELETE CASCADE);
+
+            INSERT INTO database_info (entity, version) 
+                VALUES ('scraped_headline', '1.1');";
+
+        await database.ExecuteNonQueryAsync(commandText);
     }
 }

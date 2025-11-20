@@ -12,11 +12,17 @@ using System.Text.Json;
 namespace SnapshotJob.Processors;
 
 internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
-    NewsSnapshotRepository newsSnapshotRepository, ScrapedArticleRepository scrapedArticleRepository,
-    Logger logger, IOptions<ApplicationOptions> options,
-    SnapshotJobDatabase database, ArticleProvider articleProvider, AnalyzedArticleRepository analyzedArticleRepository)
+    ArticleProvider articleProvider, SnapshotJobDatabase database, IOptions<ApplicationOptions> options, 
+    Logger logger)
 {
+    // This news snapshot instance
     private readonly NewsSnapshot _snapshot = new();
+
+    // Repositories
+    private readonly AnalyzedArticleRepository _analyzedArticleRepository = new(database);
+    private readonly NewsSnapshotRepository _newsSnapshotRepository = new(database);
+    private readonly NewsSnapshotArticleRepository _newsSnapshotArticleRepository = new(database);
+    private readonly ScrapedArticleRepository _scrapedArticleRepository = new(database);
 
     internal async Task Run()
     {
@@ -25,11 +31,12 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
         ScrapeMainPageResult? scrapeMainPageResult = null;
         ScrapeArticlesResult? scrapeArticlesResult = null;
         TopStoriesResult? topStoriesResult = null;
+        List<AnalyzedArticle>? analyzedArticles = null;
 
         try
 		{
             // Insert initial News Snapshot record to track this session
-            _snapshot.Id = await newsSnapshotRepository.CreateAsync(_snapshot.StartedOn.Value);
+            _snapshot.Id = await _newsSnapshotRepository.CreateAsync(_snapshot.StartedOn.Value);
 
             // Scrape the main page for headlines
             if (!options.Value.SkipMainPageScrape)
@@ -44,7 +51,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             {
                 if (scrapeArticlesResult?.ScrapedArticles is null)
                 {
-                    var scrapedArticles = await scrapedArticleRepository.GetBySnapshotId(1);
+                    var scrapedArticles = await _scrapedArticleRepository.GetBySnapshotId(1);
                     scrapeArticlesResult = new() { ScrapedArticles = scrapedArticles };
                 }
 
@@ -55,7 +62,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     {
                         if (long.TryParse(story.Id, out long scrapedArticleId))
                         {
-                            ScrapedArticle? scrapedArticle = await scrapedArticleRepository.GetByIdAsync(scrapedArticleId);
+                            ScrapedArticle? scrapedArticle = await _scrapedArticleRepository.GetByIdAsync(scrapedArticleId);
                             if (scrapedArticle is null)
                                 continue;
 
@@ -78,7 +85,10 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                                 Summary = analyzeArticleResult.Content.Summary
                             };
 
-                            await analyzedArticleRepository.CreateAsync(analyzedArticle);
+                            analyzedArticle.Id = await _analyzedArticleRepository.CreateAsync(analyzedArticle);
+
+                            analyzedArticles ??= [];
+                            analyzedArticles.Add(analyzedArticle);
 
                             break;
                         }
@@ -87,8 +97,44 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                 }
             }
 
+            // Save News Snapshot Articles to database in preparation for publishing
+            if (analyzedArticles is not null)
+            {
+                foreach (var analyzedArticle in analyzedArticles)
+                {
+                    // Get the scraped article data from the database
+                    var scrapedArticle = await _scrapedArticleRepository.GetByIdAsync(analyzedArticle.ScrapedArticleId);
+                    if (scrapedArticle is null)
+                    {
+                        logger.Log($"ScrapedArticleId {analyzedArticle.ScrapedArticleId} not found.", LogLevel.Warning);
+                        continue;
+                    }
+
+                    NewsSnapshotArticle snapshotArticle = new() 
+                    { 
+                        AnalyzedArticleId = analyzedArticle.Id,
+                        Author = scrapedArticle.Author,
+                        ContentParagraphs = scrapedArticle.ContentParagraphs,
+                        CustomHeadline = analyzedArticle.CustomHeadline,
+                        KeyPoints = analyzedArticle.KeyPoints, 
+                        KeyPointsJson = analyzedArticle.KeyPointsJson,
+                        LastUpdatedOn = scrapedArticle.LastUpdatedOn,
+                        NewsSnapshotId = _snapshot.Id,
+                        SourceHeadline = scrapedArticle.Headline,
+                        SourceSectionName = scrapedArticle.SectionName,
+                        SourceUri = scrapedArticle.SourceUri,
+                        Summary = analyzedArticle.Summary
+                    };
+
+                    logger.Log("\n" + snapshotArticle.ToString());
+
+                    await _newsSnapshotArticleRepository.CreateAsync(snapshotArticle);
+                }
+            }
+            
             // Publish analyzed articles for top stories
             // Save to Cosmos DB
+
 
             _snapshot.IsSuccess = true;
         }
@@ -102,7 +148,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
         {
             // Update job record with results
             _snapshot.FinishedOn = DateTime.UtcNow;
-            await newsSnapshotRepository.UpdateAsync(_snapshot);
+            await _newsSnapshotRepository.UpdateAsync(_snapshot);
 
             // Log the results
             //WriteToLog(scrapeMainPageResult, scrapeArticlesResult, topStoryArticles);
@@ -250,20 +296,5 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
         if (_snapshot is not null && _snapshot.FinishedOn.HasValue)
             logger.Log($"Job took {_snapshot.RunTimeInSeconds} seconds", logAsRawMessage: true, consoleColor: ConsoleColor.Yellow);
-
-        //logger.Log($"\n{ConsoleColor.Blue}", logAsRawMessage: true, consoleColor: ConsoleColor.Blue);
-        //logger.Log($"{ConsoleColor.DarkBlue}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkBlue);
-        //logger.Log($"{ConsoleColor.Cyan}", logAsRawMessage: true, consoleColor: ConsoleColor.Cyan);
-        //logger.Log($"{ConsoleColor.DarkCyan}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkCyan);
-        //logger.Log($"{ConsoleColor.Gray}", logAsRawMessage: true, consoleColor: ConsoleColor.Gray);
-        //logger.Log($"{ConsoleColor.DarkGray}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkGray);
-        //logger.Log($"{ConsoleColor.Green}", logAsRawMessage: true, consoleColor: ConsoleColor.Green);
-        //logger.Log($"{ConsoleColor.DarkGreen}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkGreen);
-        //logger.Log($"{ConsoleColor.Magenta}", logAsRawMessage: true, consoleColor: ConsoleColor.Magenta);
-        //logger.Log($"{ConsoleColor.DarkMagenta}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkMagenta);
-        //logger.Log($"{ConsoleColor.Red}", logAsRawMessage: true, consoleColor: ConsoleColor.Red);
-        //logger.Log($"{ConsoleColor.DarkRed}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkRed);
-        //logger.Log($"{ConsoleColor.Yellow}", logAsRawMessage: true, consoleColor: ConsoleColor.Yellow);
-        //logger.Log($"{ConsoleColor.DarkYellow}", logAsRawMessage: true, consoleColor: ConsoleColor.DarkYellow);
     }
 }
