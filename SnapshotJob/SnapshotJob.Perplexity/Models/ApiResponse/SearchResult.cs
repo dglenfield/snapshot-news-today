@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace SnapshotJob.Perplexity.Models.TopStories.Response;
+namespace SnapshotJob.Perplexity.Models.ApiResponse;
 
 public class SearchResult
 {

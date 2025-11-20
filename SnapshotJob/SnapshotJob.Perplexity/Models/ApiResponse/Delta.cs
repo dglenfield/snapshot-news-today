@@ -1,20 +1,20 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace SnapshotJob.Perplexity.Models.TopStories.Response;
+namespace SnapshotJob.Perplexity.Models.ApiResponse;
 
 /// <summary>
-/// Represents a message containing a role and associated textual content for the response.
+/// Represents a partial message update containing the role of the sender and the associated content.
 /// </summary>
-public class Message
+public class Delta
 {
     /// <summary>
-    /// Gets or sets the role associated with the message.
+    /// Gets the role associated with the message sender.
     /// </summary>
     [JsonPropertyName("role")]
     public string Role { get; init; } = default!;
 
     /// <summary>
-    /// Gets the main textual content associated with this object.
+    /// Gets the content associated with this instance.
     /// </summary>
     [JsonPropertyName("content")]
     public string Content { get; init; } = default!;

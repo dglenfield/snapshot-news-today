@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace SnapshotJob.Perplexity.Models.TopStories.Response;
+namespace SnapshotJob.Perplexity.Models.ApiResponse;
 
 /// <summary>
 /// Represents the cost breakdown for an operation, including input, output, request, and total costs.

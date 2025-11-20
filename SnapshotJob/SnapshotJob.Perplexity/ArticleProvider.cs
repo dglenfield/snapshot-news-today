@@ -1,7 +1,8 @@
 ﻿using SnapshotJob.Common.Logging;
 using SnapshotJob.Data.Models;
 using SnapshotJob.Perplexity.Models.AnalyzeArticle;
-using SnapshotJob.Perplexity.Models.TopStories.Response;
+using SnapshotJob.Perplexity.Models.ApiResponse;
+using SnapshotJob.Perplexity.Models.TopStories;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -10,7 +11,7 @@ namespace SnapshotJob.Perplexity;
 
 public class ArticleProvider(IHttpClientFactory httpClientFactory, Logger logger)
 {
-    public async Task Analyze(ScrapedArticle article)
+    public async Task<AnalyzeArticleResult> Analyze(ScrapedArticle article)
     {
         AnalyzeArticleResult analyzeArticleResult = new();
 
@@ -85,16 +86,38 @@ public class ArticleProvider(IHttpClientFactory httpClientFactory, Logger logger
         //logger.Log("\n" + responseString);
         //return Content(responseString, "application/json");
 
-        var apiResponse = JsonSerializer.Deserialize<Response>(responseString);
-        var contentJson = apiResponse?.Choices[0].Message.Content;
         
-        // Remove opening and closing brackets
-        contentJson = (contentJson?.Length > 2) ? contentJson.Substring(1, contentJson.Length - 2) : string.Empty;
+        try
+        {
+            var apiResponse = JsonSerializer.Deserialize<Response>(responseString);
+            if (apiResponse is not null)
+            {
+                var contentJson = apiResponse?.Choices[0].Message.Content;
 
-        var analyzeArticleResponse = JsonSerializer.Deserialize<AnalyzeArticleContent>(contentJson);
-        logger.Log("\n" + analyzeArticleResponse);
+                // Remove opening and closing brackets
+                contentJson = (contentJson?.Length > 2) ? contentJson.Substring(1, contentJson.Length - 2) : string.Empty;
 
-        analyzeArticleResult.PerplexityApiUsage = apiResponse.Usage;
+                analyzeArticleResult.Content = JsonSerializer.Deserialize<AnalyzeArticleContent>(contentJson);
+                analyzeArticleResult.Citations = apiResponse?.Citations;
+                analyzeArticleResult.SearchResults = apiResponse?.SearchResults;
+                analyzeArticleResult.PerplexityResponseId = apiResponse?.Id;
+                analyzeArticleResult.PerplexityResponseModel = apiResponse?.Model;
+                analyzeArticleResult.PerplexityApiUsage = apiResponse?.Usage;
+            }
+        }
+        catch (Exception ex)
+        {
+            analyzeArticleResult.Exception = ex;
+        }
+        finally
+        {
+            if (jsonContent is not null)
+                analyzeArticleResult.RequestBody = jsonContent.ReadAsStringAsync().GetAwaiter().GetResult();
+            if (!string.IsNullOrWhiteSpace(responseString))
+                analyzeArticleResult.ResponseString = responseString;
+        }
+
+        return analyzeArticleResult;
     }
 
     private string TrimInnerHtmlWhitespace(string html)
