@@ -15,7 +15,7 @@ public class ScrapedArticle
 
     public string? SectionName { get; set; }
 
-    public string? Headline { get; set; }
+    public string Headline { get; set; } = default!;
 
     public Uri SourceUri { get; set; } = default!;
 
