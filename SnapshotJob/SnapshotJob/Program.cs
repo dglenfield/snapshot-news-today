@@ -8,6 +8,7 @@ using SnapshotJob.Data;
 using SnapshotJob.Data.Configuration.Options;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
+using SnapshotJob.Perplexity.Configuration.Options;
 using SnapshotJob.Processors;
 using SnapshotJob.Scrapers.ArticlePage;
 using SnapshotJob.Scrapers.MainPage;
