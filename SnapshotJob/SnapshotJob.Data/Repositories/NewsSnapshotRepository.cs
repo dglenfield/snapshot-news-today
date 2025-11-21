@@ -22,32 +22,12 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
         throw new InvalidOperationException("Insert into news_snapshot failed, no row id returned.");
     }
 
-    public async Task CreateTableAsync()
-    {
-        string commandText = @"
-            CREATE TABLE IF NOT EXISTS news_snapshot (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                started_on TEXT NOT NULL,
-                finished_on TEXT,
-                run_time_in_seconds INTEGER,
-                sections_scraped INTEGER,
-                headlines_scraped INTEGER,
-                articles_scraped INTEGER,
-                top_stories_api_cost TEXT,
-                is_success INTEGER,
-                error TEXT,
-                scrape_errors TEXT);
-
-            INSERT INTO database_info (entity, version) 
-                VALUES ('news_snapshot', '1.1');";
-
-        await database.ExecuteNonQueryAsync(commandText);
-    }
-
     public async Task UpdateAsync(NewsSnapshot snapshot)
     {
-        string error = snapshot.SnapshotException is not null 
-            ? $"{snapshot.SnapshotException.Source}: {snapshot.SnapshotException.Message}" : string.Empty;
+        string snapshotErrors = string.Empty;
+        if (snapshot.SnapshotExceptions is not null)
+            foreach (var exception in snapshot.SnapshotExceptions)
+                snapshotErrors += $"{exception.Source}: {exception.Message} | ";
 
         string scrapeErrors = string.Empty;
         if (snapshot.ScrapeExceptions is not null)
@@ -62,7 +42,7 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
                 headlines_scraped = @headlines_scraped,
                 articles_scraped = @articles_scraped,
                 is_success = @is_success, 
-                error = @error,
+                snapshot_errors = @snapshot_errors,
                 scrape_errors = @scrape_errors
             WHERE id = @id;";
 
@@ -74,13 +54,35 @@ public class NewsSnapshotRepository(SnapshotJobDatabase database)
             new("@headlines_scraped", (object?)snapshot.HeadlinesScraped ?? DBNull.Value),
             new("@articles_scraped", (object?)snapshot.ArticlesScraped ?? DBNull.Value),
             new("@is_success", snapshot.IsSuccess.HasValue ? (snapshot.IsSuccess.Value ? 1 : 0) : (object?)DBNull.Value),
-            new("@error", !string.IsNullOrWhiteSpace(error) ? error : (object?)DBNull.Value),
+            new("@snapshot_errors", !string.IsNullOrWhiteSpace(snapshotErrors) ? snapshotErrors : (object?)DBNull.Value),
             new("@scrape_errors", !string.IsNullOrWhiteSpace(scrapeErrors) ? scrapeErrors : (object?)DBNull.Value)
         ];
 
         int rowsAffected = await database.ExecuteNonQueryAsync(commandText, parameters);
         if (rowsAffected == 0)
             throw new InvalidOperationException($"No record found with id = {snapshot.Id} to update in the news_snapshot table.");
+    }
+
+    public async Task CreateTableAsync()
+    {
+        string commandText = @"
+            CREATE TABLE IF NOT EXISTS news_snapshot (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                started_on TEXT NOT NULL,
+                finished_on TEXT,
+                run_time_in_seconds INTEGER,
+                sections_scraped INTEGER,
+                headlines_scraped INTEGER,
+                articles_scraped INTEGER,
+                top_stories_api_cost TEXT,
+                is_success INTEGER,
+                snapshot_errors TEXT,
+                scrape_errors TEXT);
+
+            INSERT INTO database_info (entity, version) 
+                VALUES ('news_snapshot', '1.1');";
+
+        await database.ExecuteNonQueryAsync(commandText);
     }
 
     // Read operations

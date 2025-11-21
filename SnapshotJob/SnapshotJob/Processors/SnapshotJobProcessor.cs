@@ -126,9 +126,18 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                         Summary = analyzedArticle.Summary
                     };
 
-                    logger.Log("\n" + snapshotArticle.ToString());
-
-                    await _newsSnapshotArticleRepository.CreateAsync(snapshotArticle);
+                    try
+                    {
+                        if (await _newsSnapshotArticleRepository.ExistsAsync(snapshotArticle.SourceUri))
+                            logger.Log($"Article already exists in news_snapshot_article", LogLevel.Warning);
+                        else
+                            await _newsSnapshotArticleRepository.CreateAsync(snapshotArticle);
+                    }
+                    catch (Exception ex)
+                    {
+                        _snapshot.SnapshotExceptions ??= [];
+                        _snapshot.SnapshotExceptions.Add(ex);
+                    }
                 }
             }
             
@@ -141,7 +150,8 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 		catch (Exception ex)
 		{
             _snapshot.IsSuccess = false;
-            _snapshot.SnapshotException = ex;
+            _snapshot.SnapshotExceptions ??= [];
+            _snapshot.SnapshotExceptions.Add(ex);
             throw;
         }
         finally
@@ -202,10 +212,13 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             logger.Log($"\nScraping results from {sourceUri?.AbsoluteUri}", consoleColor: ConsoleColor.Blue);
 
         // News Snapshot Exception
-        if (_snapshot?.SnapshotException is not null)
+        if (_snapshot?.SnapshotExceptions is not null)
         {
-            logger.Log($"\nNews Snapshot Exception in {_snapshot.SnapshotException.Source}", LogLevel.Error, logAsRawMessage: true);
-            logger.LogException(_snapshot.SnapshotException);
+            foreach (var exception in _snapshot.SnapshotExceptions)
+            {
+                logger.Log($"\nException in {exception.Source}", LogLevel.Error, logAsRawMessage: true);
+                logger.LogException(exception);
+            }
         }
 
         // Scrape Headlines Exceptions
