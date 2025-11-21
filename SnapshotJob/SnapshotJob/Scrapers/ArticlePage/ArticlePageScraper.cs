@@ -35,10 +35,10 @@ internal class ArticlePageScraper(ScrapedArticleRepository articleRepository, IO
             else
                 htmlDocument.LoadHtml(await new HttpClient().GetStringAsync(article.SourceUri));
 
-            // Headline is optional, continue processing if not found
+            // Headline is required, throw an exception if not found
             HtmlNode? headlineNode = htmlDocument.DocumentNode.SelectSingleNode("//h1[normalize-space(@class) = 'Page-headline']");
             string articleHeadline = TrimInnerHtmlWhitespace(headlineNode?.InnerText.Trim() ?? string.Empty);
-            article.Headline = !string.IsNullOrWhiteSpace(articleHeadline) ? articleHeadline : null;
+            article.Headline = !string.IsNullOrWhiteSpace(articleHeadline) ? articleHeadline : throw new Exception("Headline not found.");
 
             // Author is optional, continue processing if not found
             HtmlNode? authorNode = htmlDocument.DocumentNode.SelectSingleNode("//div[normalize-space(@class) = 'Page-authors']");
