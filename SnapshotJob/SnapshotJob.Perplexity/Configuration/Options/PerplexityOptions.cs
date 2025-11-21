@@ -16,6 +16,12 @@ public class PerplexityOptions
     [Required]
     public Uri ApiUri { get; set; } = default!;
 
+    [Required]
+    public string TopStoriesTestFile { get; set; } = default!;
+
+    [Required]
+    public bool UseTopStoriesTestFile { get; set; }
+
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);
 }

@@ -1,12 +1,15 @@
-﻿using SnapshotJob.Data.Models;
+﻿using Microsoft.Extensions.Options;
+using SnapshotJob.Data.Models;
 using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
+using SnapshotJob.Perplexity.Configuration.Options;
 using SnapshotJob.Perplexity.Models.TopStories;
 
 namespace SnapshotJob.Processors;
 
 internal class TopStoriesProcessor(TopStoriesProvider provider, 
-    PerplexityApiCallRepository topStoryApiCallRepository, TopStoryRepository topStoryRepository)
+    PerplexityApiCallRepository topStoryApiCallRepository, TopStoryRepository topStoryRepository, 
+    IOptions<PerplexityOptions> options)
 {
     internal async Task<TopStoriesResult> SelectStories(List<ScrapedArticle> scrapedArticles, long snapshotId)
     {
@@ -24,10 +27,13 @@ internal class TopStoriesProcessor(TopStoriesProvider provider,
             newsStories.Add(newsStory);
         }
 
-        string file = "C:\\Users\\danny\\OneDrive\\Projects\\SnapshotNewsToday\\TestData\\top-stories-response_2025-11-18.json";
-        var topStoriesResult = await provider.Select(newsStories, file);
-        //var topStoryArticles = await provider.SelectArticles(sourceArticles);
-
+        Console.WriteLine(options.Value.TopStoriesTestFile);
+        TopStoriesResult topStoriesResult;
+        if (options.Value.UseTopStoriesTestFile)
+            topStoriesResult = await provider.Select(newsStories, options.Value.TopStoriesTestFile);
+        else
+            topStoriesResult = await provider.Select(newsStories);
+        
         // Save API call to the database
         PerplexityApiCall apiCall = new() 
         {
