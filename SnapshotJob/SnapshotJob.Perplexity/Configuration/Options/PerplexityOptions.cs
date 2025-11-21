@@ -17,7 +17,13 @@ public class PerplexityOptions
     public Uri ApiUri { get; set; } = default!;
 
     [Required]
+    public string ArticleTestFile { get; set; } = default!;
+
+    [Required]
     public string TopStoriesTestFile { get; set; } = default!;
+
+    [Required]
+    public bool UseArticleTestFile { get; set; }
 
     [Required]
     public bool UseTopStoriesTestFile { get; set; }

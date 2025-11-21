@@ -1,15 +1,15 @@
-﻿using SnapshotJob.Common.Logging;
+﻿using Microsoft.Extensions.Options;
 using SnapshotJob.Data.Models;
+using SnapshotJob.Perplexity.Configuration.Options;
 using SnapshotJob.Perplexity.Models.AnalyzeArticle;
 using SnapshotJob.Perplexity.Models.ApiResponse;
-using SnapshotJob.Perplexity.Models.TopStories;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace SnapshotJob.Perplexity;
 
-public class ArticleProvider(IHttpClientFactory httpClientFactory, Logger logger)
+public class ArticleProvider(IHttpClientFactory httpClientFactory, IOptions<PerplexityOptions> options)
 {
     public async Task<AnalyzeArticleResult> Analyze(ScrapedArticle article)
     {
@@ -69,26 +69,17 @@ public class ArticleProvider(IHttpClientFactory httpClientFactory, Logger logger
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-        //logger.Log(await jsonContent.ReadAsStringAsync());
-
-        string file = "C:\\Users\\danny\\OneDrive\\Projects\\SnapshotNewsToday\\TestData\\analyze-article-response_2025-11-19.json";
-        var responseString = await File.ReadAllTextAsync(file);
-
-        //var response = await httpClientFactory.CreateClient("Perplexity").PostAsync("", jsonContent);
-
-        //if (!response.IsSuccessStatusCode)
-        //{
-            //return StatusCode((int)response.StatusCode, await response.Content.ReadAsStringAsync());
-        //}
-
-        //var responseString = await response.Content.ReadAsStringAsync();
-        //logger.Log("\n" + responseString);
-        //return Content(responseString, "application/json");
-
-        
+        string responseString = string.Empty;
         try
         {
+            if (options.Value.UseArticleTestFile)
+                responseString = await File.ReadAllTextAsync(options.Value.ArticleTestFile);
+            else
+            {
+                var response = await httpClientFactory.CreateClient("Perplexity").PostAsync("", jsonContent);
+                responseString = await response.Content.ReadAsStringAsync();
+            }
+
             var apiResponse = JsonSerializer.Deserialize<Response>(responseString);
             if (apiResponse is not null)
             {
