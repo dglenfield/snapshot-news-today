@@ -3,6 +3,7 @@ using SnapshotJob.Common.Logging;
 using SnapshotJob.Common.Serialization;
 using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data.Configuration.Options;
+using SnapshotJob.Perplexity.Configuration.Options;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SnapshotJob.Configuration.Options;
+namespace SnapshotJob.Perplexity.Configuration.Options;
 
 public class PerplexityOptions
 {
