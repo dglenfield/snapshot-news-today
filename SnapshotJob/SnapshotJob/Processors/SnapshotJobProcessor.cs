@@ -23,6 +23,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
     private readonly NewsSnapshotRepository _newsSnapshotRepository = new(database);
     private readonly NewsSnapshotArticleRepository _newsSnapshotArticleRepository = new(database);
     private readonly ScrapedArticleRepository _scrapedArticleRepository = new(database);
+    private readonly PerplexityApiCallRepository _perplexityApiCallRepository = new(database);
 
     internal async Task Run()
     {
@@ -30,7 +31,6 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
         ScrapeMainPageResult? scrapeMainPageResult = null;
         ScrapeArticlesResult? scrapeArticlesResult = null;
-        TopStoriesResult? topStoriesResult = null;
         List<AnalyzedArticle>? analyzedArticles = null;
 
         try
@@ -55,7 +55,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     scrapeArticlesResult = new() { ScrapedArticles = scrapedArticles };
                 }
 
-                topStoriesResult = await topStoriesProcessor.SelectStories(scrapeArticlesResult.ScrapedArticles, _snapshot.Id);
+                TopStoriesResult? topStoriesResult = await topStoriesProcessor.SelectStories(scrapeArticlesResult.ScrapedArticles, _snapshot.Id);
                 if (topStoriesResult?.TopStories is not null)
                 {
                     foreach (NewsStory story in topStoriesResult.TopStories)
@@ -68,7 +68,23 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
                             // Analyze the article with Perplexity API
                             var analyzeArticleResult = await articleProvider.Analyze(scrapedArticle);
-                            logger.Log("\n" + analyzeArticleResult);
+
+                            // Save API call to the database
+                            var usage = analyzeArticleResult.PerplexityApiUsage;
+                            PerplexityApiCall apiCall = new()
+                            {
+                                CompletionTokens = usage is null ? 0 : usage.CompletionTokens,
+                                PromptTokens = usage is null ? 0 : usage.PromptTokens,
+                                TotalTokens = usage is null ? 0 : usage.TotalTokens,
+                                InputTokensCost = usage is null ? 0 : usage.Cost.InputTokensCost,
+                                OutputTokensCost = usage is null ? 0 : usage.Cost.OutputTokensCost,
+                                RequestCost = usage is null ? 0 : usage.Cost.RequestCost,
+                                TotalCost = usage is null ? 0 : usage.Cost.TotalCost,
+                                RequestBody = analyzeArticleResult.RequestBody,
+                                ResponseString = analyzeArticleResult.ResponseString,
+                                Exception = analyzeArticleResult.Exception
+                            };
+                            await _perplexityApiCallRepository.CreateAsync(apiCall, _snapshot.Id);
 
                             // Save the analyzed article to the database
                             if (analyzeArticleResult.Content is null)
@@ -90,7 +106,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                             analyzedArticles ??= [];
                             analyzedArticles.Add(analyzedArticle);
 
-                            break;
+                            //break;
                         }
                             
                     }

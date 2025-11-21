@@ -51,7 +51,7 @@ public class SnapshotJobDatabase : SqliteDatabase
             await _perplexityApiCallRepository.CreateTableAsync();
             await _topStoryRepository.CreateTableAsync();
             await _analyzedArticleRepository.CreateTableAsync();
-            await _newsSnapshotRepository.CreateTableAsync();
+            await _newsSnapshotArticleRepository.CreateTableAsync();
 
             _logger.Log($"Database created at '{DatabaseFilePath}'.", LogLevel.Success);
         }

@@ -8,7 +8,7 @@ using SnapshotJob.Perplexity.Models.TopStories;
 namespace SnapshotJob.Processors;
 
 internal class TopStoriesProcessor(TopStoriesProvider provider, 
-    PerplexityApiCallRepository topStoryApiCallRepository, TopStoryRepository topStoryRepository, 
+    PerplexityApiCallRepository perplexityApiCallRepository, TopStoryRepository topStoryRepository, 
     IOptions<PerplexityOptions> options)
 {
     internal async Task<TopStoriesResult> SelectStories(List<ScrapedArticle> scrapedArticles, long snapshotId)
@@ -27,7 +27,6 @@ internal class TopStoriesProcessor(TopStoriesProvider provider,
             newsStories.Add(newsStory);
         }
 
-        Console.WriteLine(options.Value.TopStoriesTestFile);
         TopStoriesResult topStoriesResult;
         if (options.Value.UseTopStoriesTestFile)
             topStoriesResult = await provider.Select(newsStories, options.Value.TopStoriesTestFile);
@@ -48,7 +47,7 @@ internal class TopStoriesProcessor(TopStoriesProvider provider,
             ResponseString = topStoriesResult.ResponseString,
             Exception = topStoriesResult.Exception
         };
-        await topStoryApiCallRepository.CreateAsync(apiCall, snapshotId);
+        await perplexityApiCallRepository.CreateAsync(apiCall, snapshotId);
 
         // Save Top Stories to the database
         foreach (NewsStory topStory in topStoriesResult.TopStories)
