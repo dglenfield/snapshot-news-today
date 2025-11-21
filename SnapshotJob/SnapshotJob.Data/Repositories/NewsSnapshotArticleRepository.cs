@@ -38,6 +38,15 @@ public class NewsSnapshotArticleRepository(SnapshotJobDatabase database)
         return id > 0 ? id : throw new InvalidOperationException("Insert into news_snapshot_article failed, no row id returned.");
     }
 
+    public async Task<bool> ExistsAsync(Uri targetUri)
+    {
+        string commandText = @"SELECT id FROM news_snapshot_article WHERE id > 0 AND source_uri = @source_uri LIMIT 1;";
+        SqliteParameter[] parameters = [new("@source_uri", targetUri.AbsoluteUri)];
+
+        var result = await database.ExecuteScalarAsync(commandText, parameters);
+        return !string.IsNullOrWhiteSpace(result?.ToString());
+    }
+
     public async Task CreateTableAsync()
     {
         string commandText = $@"

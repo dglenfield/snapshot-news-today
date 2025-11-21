@@ -9,7 +9,7 @@ public class NewsSnapshot
     public DateTime? StartedOn { get; set; }
     public DateTime? FinishedOn { get; set; }
     public bool? IsSuccess { get; set; }
-    public Exception? SnapshotException { get; set; }
+    public List<Exception>? SnapshotExceptions { get; set; }
     public List<Exception>? ScrapeExceptions { get; set; }
     public int ArticlesScraped { get; set; }
     public int HeadlinesScraped { get; set; }
