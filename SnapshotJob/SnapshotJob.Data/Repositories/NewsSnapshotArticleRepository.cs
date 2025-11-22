@@ -47,6 +47,55 @@ public class NewsSnapshotArticleRepository(SnapshotJobDatabase database)
         return !string.IsNullOrWhiteSpace(result?.ToString());
     }
 
+    public async Task<List<NewsSnapshotArticle>> GetBySnapshotId(long snapshotId)
+    {
+        string commandText = @"
+            SELECT id, news_snapshot_id, analyzed_article_id, created_on, published_on,
+                source_uri, source_section_name, author, source_headline, last_updated_on,
+                custom_headline, summary, key_points, article_content 
+            FROM news_snapshot_article 
+            WHERE news_snapshot_id = @news_snapshot_id ORDER BY id;";
+
+        SqliteParameter[] parameters = [new("@news_snapshot_id", snapshotId)];
+        await using var reader = await database.ExecuteReaderAsync(commandText, parameters);
+
+        var articles = new List<NewsSnapshotArticle>();
+        while (await reader.ReadAsync())
+        {
+            articles.Add(new NewsSnapshotArticle
+            {
+                AnalyzedArticleId = reader.GetInt64(reader.GetOrdinal("analyzed_article_id")),
+                Author = reader.IsDBNull(reader.GetOrdinal("author")) ? null : reader.GetString(reader.GetOrdinal("author")),
+                ContentParagraphs = [reader.GetString(reader.GetOrdinal("article_content"))],
+                CreatedOn = reader.IsDBNull(reader.GetOrdinal("created_on"))
+                    ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("created_on"))),
+                CustomHeadline = reader.IsDBNull(reader.GetOrdinal("custom_headline"))
+                    ? null : reader.GetString(reader.GetOrdinal("custom_headline")),
+                Id = reader.GetInt64(reader.GetOrdinal("id")),
+                KeyPoints = reader.IsDBNull(reader.GetOrdinal("custom_headline")) 
+                    ? null : [reader.GetString(reader.GetOrdinal("key_points"))],
+                KeyPointsJson = reader.IsDBNull(reader.GetOrdinal("custom_headline"))
+                    ? null : reader.GetString(reader.GetOrdinal("key_points")),
+                LastUpdatedOn = reader.IsDBNull(reader.GetOrdinal("last_updated_on"))
+                    ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("last_updated_on"))),
+                NewsSnapshotId = reader.GetInt64(reader.GetOrdinal("news_snapshot_id")),
+                PublishedOn = reader.IsDBNull(reader.GetOrdinal("published_on"))
+                    ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("published_on"))),
+                SourceHeadline = reader.GetString(reader.GetOrdinal("source_headline")),
+                SourceSectionName = reader.IsDBNull(reader.GetOrdinal("source_section_name"))
+                    ? null : reader.GetString(reader.GetOrdinal("source_section_name")),
+                SourceUri = new(reader.GetString(reader.GetOrdinal("source_uri"))),
+                Summary = reader.IsDBNull(reader.GetOrdinal("summary"))
+                    ? null : reader.GetString(reader.GetOrdinal("summary"))
+            });
+        }
+
+        if (articles.Count == 0)
+            throw new InvalidOperationException("Snapshot Id not found.");
+
+        return articles;
+    }
+
     public async Task CreateTableAsync()
     {
         string commandText = $@"
@@ -56,7 +105,7 @@ public class NewsSnapshotArticleRepository(SnapshotJobDatabase database)
                 analyzed_article_id INTEGER, -- Foreign key to link to analyzed_article table
                 created_on TEXT NOT NULL DEFAULT (datetime('now', 'utc')),
                 published_on TEXT,
-                source_uri TEXT NOT NULL UNIQUE, -- target_uri is unique to prevent duplicate articles
+                source_uri TEXT NOT NULL UNIQUE, -- source_uri is unique to prevent duplicate articles
                 source_section_name TEXT,
                 last_updated_on TEXT,
                 author TEXT,
