@@ -114,6 +114,7 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
             }
 
             // Save News Snapshot Articles to database in preparation for publishing
+            List<NewsSnapshotArticle>? snapshotArticles = null;
             if (analyzedArticles is not null)
             {
                 foreach (var analyzedArticle in analyzedArticles)
@@ -147,7 +148,12 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                         if (await _newsSnapshotArticleRepository.ExistsAsync(snapshotArticle.SourceUri))
                             logger.Log($"Article already exists in news_snapshot_article", LogLevel.Warning);
                         else
-                            await _newsSnapshotArticleRepository.CreateAsync(snapshotArticle);
+                        {
+                            snapshotArticle.Id = await _newsSnapshotArticleRepository.CreateAsync(snapshotArticle);
+                            snapshotArticles ??= [];
+                            snapshotArticles.Add(snapshotArticle);
+                        }
+                            
                     }
                     catch (Exception ex)
                     {
@@ -157,9 +163,21 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                 }
             }
             
-            // Publish analyzed articles for top stories
-            // Save to Cosmos DB
+            // Publish analyzed articles for top stories by saving to Cosmos DB
+            if (options.Value.SkipTopStories && snapshotArticles is null)
+            {
+                // Get articles from the database
+                long newsSnapshotId = 1;
+                snapshotArticles = await _newsSnapshotArticleRepository.GetBySnapshotId(newsSnapshotId);
+            }
 
+            if (snapshotArticles is not null)
+            {
+                foreach (var snapshotArticle in snapshotArticles) 
+                {
+                    logger.Log("\n" + snapshotArticle);
+                }
+            }
 
             _snapshot.IsSuccess = true;
         }
