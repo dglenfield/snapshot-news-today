@@ -15,7 +15,6 @@ using SnapshotJob.Scrapers.ArticlePage;
 using SnapshotJob.Scrapers.MainPage;
 using SnapshotNewsToday.Data;
 using SnapshotNewsToday.Data.Configuration.Options;
-using System;
 
 namespace SnapshotJob;
 
@@ -47,14 +46,15 @@ public class Program
 
             // Initialize the application database
             var applicationDatabase = host.Services.GetRequiredService<SnapshotNewsTodayDatabase>();
-            await applicationDatabase.CreateDatabase();
+            //await applicationDatabase.CreateDatabase();
+            await applicationDatabase.CreateArticlesContainer();
 
             // Resolve and run the main service
             var snapshotProcessor = host.Services.GetRequiredService<SnapshotJobProcessor>();
             await snapshotProcessor.Run();
 
             // Testing - Delete the application database
-            await applicationDatabase.DeleteDatabase();
+            //await applicationDatabase.DeleteDatabase();
         }
         catch (Exception ex)
         {

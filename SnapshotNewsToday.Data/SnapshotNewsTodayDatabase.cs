@@ -11,6 +11,51 @@ public class SnapshotNewsTodayDatabase(IOptions<SnapshotNewsTodayDatabaseOptions
     private readonly string _accountEndpoint = options.Value.AccountEndpoint;
     private readonly string _accountKey = options.Value.AccountKey;
 
+    public async Task CreateArticlesContainer()
+    {
+        Console.WriteLine($"Connecting to {_accountEndpoint}");
+        try
+        {
+            using CosmosClient client = new(_accountEndpoint, _accountKey);
+            DatabaseResponse dbResponse = await client.CreateDatabaseIfNotExistsAsync(_databaseName, throughput: 400);
+            string status = dbResponse.StatusCode switch
+            {
+                HttpStatusCode.OK => "exists",
+                HttpStatusCode.Created => "created",
+                _ => "unknown"
+            };
+            Console.WriteLine($"Database Id: {dbResponse.Database.Id}, Status: {status}", status == "created" ? ConsoleColor.Green : null);
+            Console.WriteLine($"Request Charge = {dbResponse.RequestCharge:N2}");
+
+            // Create Indexing Policy for the container.
+            IndexingPolicy indexingPolicy = new()
+            {
+                Automatic = true,
+                IncludedPaths = { new IncludedPath { Path = "/*" } },
+                IndexingMode = IndexingMode.Consistent
+            };
+
+            ContainerProperties containerProperties = new("Articles", "/publishDateId")
+            {
+                //IndexingPolicy = indexingPolicy
+            };
+            var containerResponse = await dbResponse.Database.CreateContainerIfNotExistsAsync(containerProperties, throughput: 400);
+            status = containerResponse.StatusCode switch
+            {
+                HttpStatusCode.OK => "exists",
+                HttpStatusCode.Created => "created",
+                _ => "unknown"
+            };
+            Console.WriteLine($"Container Id: {containerResponse.Container.Id}, Status: {status}", status == "created" ? ConsoleColor.Green : null);
+            Console.WriteLine($"Request Charge = {containerResponse.RequestCharge:N2}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            throw;
+        }
+    }
+
     public async Task CreateDatabase()
     {
         Console.WriteLine($"Connecting to {_accountEndpoint}");
