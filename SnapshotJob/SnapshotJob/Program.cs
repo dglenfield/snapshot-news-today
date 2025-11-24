@@ -41,9 +41,13 @@ public class Program
             if (configSettings.ApplicationOptions.LogConfigurationSettings)
                 configSettings.WriteToLog();
 
-            // Initialize the database
-            var database = host.Services.GetRequiredService<SnapshotJobDatabase>();
-            await database.InitializeAsync();
+            // Initialize the job database
+            var jobDatabase = host.Services.GetRequiredService<SnapshotJobDatabase>();
+            await jobDatabase.InitializeAsync();
+
+            // Initialize the application database
+            var applicationDatabase = host.Services.GetRequiredService<SnapshotNewsTodayDatabase>();
+            await applicationDatabase.CreateDatabase();
 
             // Resolve and run the main service
             var snapshotProcessor = host.Services.GetRequiredService<SnapshotJobProcessor>();
@@ -156,6 +160,8 @@ public class Program
                     accountKey: databaseOptions.AccountKey,
                     databaseName: databaseOptions.DatabaseName);
             });
+
+            services.AddTransient<SnapshotNewsTodayDatabase>();
         });
     }
 }

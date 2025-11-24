@@ -7,23 +7,25 @@ using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Scrapers.Models;
+using SnapshotNewsToday.Data;
 using System.Text.Json;
 
 namespace SnapshotJob.Processors;
 
 internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
-    ArticleProvider articleProvider, SnapshotJobDatabase database, IOptions<ApplicationOptions> options, 
+    ArticleProvider articleProvider, SnapshotJobDatabase snapshotJobDatabase, SnapshotNewsTodayDatabase cosmosDbDatabase,
+    IOptions<ApplicationOptions> options, 
     Logger logger)
 {
     // This news snapshot instance
     private readonly NewsSnapshot _snapshot = new();
 
     // Repositories
-    private readonly AnalyzedArticleRepository _analyzedArticleRepository = new(database);
-    private readonly NewsSnapshotRepository _newsSnapshotRepository = new(database);
-    private readonly NewsSnapshotArticleRepository _newsSnapshotArticleRepository = new(database);
-    private readonly ScrapedArticleRepository _scrapedArticleRepository = new(database);
-    private readonly PerplexityApiCallRepository _perplexityApiCallRepository = new(database);
+    private readonly AnalyzedArticleRepository _analyzedArticleRepository = new(snapshotJobDatabase);
+    private readonly NewsSnapshotRepository _newsSnapshotRepository = new(snapshotJobDatabase);
+    private readonly NewsSnapshotArticleRepository _newsSnapshotArticleRepository = new(snapshotJobDatabase);
+    private readonly ScrapedArticleRepository _scrapedArticleRepository = new(snapshotJobDatabase);
+    private readonly PerplexityApiCallRepository _perplexityApiCallRepository = new(snapshotJobDatabase);
 
     internal async Task Run()
     {
@@ -196,8 +198,8 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
 
             // Log the results
             //WriteToLog(scrapeMainPageResult, scrapeArticlesResult, topStoryArticles);
-            logger.Log($"\nNews snapshot job finished {(_snapshot.IsSuccess!.Value ? "successfully" : "unsuccessfully")}.",
-                messageLogLevel: (_snapshot.IsSuccess!.Value ? LogLevel.Success : LogLevel.Error));
+            logger.Log($"\nNews snapshot job finished {(_snapshot.IsSuccess.HasValue && _snapshot.IsSuccess.Value ? "successfully" : "unsuccessfully")}.",
+                messageLogLevel: (_snapshot.IsSuccess.HasValue && _snapshot.IsSuccess.Value ? LogLevel.Success : LogLevel.Error));
         }
     }
 
