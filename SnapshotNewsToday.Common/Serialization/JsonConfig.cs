@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SnapshotJob.Common.Serialization;
+namespace SnapshotNewsToday.Common.Serialization;
 
 public static class JsonConfig
 {

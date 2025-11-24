@@ -1,5 +1,5 @@
-﻿using SnapshotJob.Common.Serialization;
-using SnapshotJob.Data.Models;
+﻿using SnapshotJob.Data.Models;
+using SnapshotNewsToday.Common.Serialization;
 using System.Text.Json;
 
 namespace SnapshotJob.Scrapers.Models;
@@ -20,21 +20,6 @@ public class ScrapeMainPageResult
 
     public decimal? RunTimeInSeconds => StartedOn.HasValue && FinishedOn.HasValue ?
         (decimal)((long)(FinishedOn.Value - StartedOn.Value).TotalMilliseconds) / 1000 : null;
-
-    //public void AddScrapeSectionResult(ScrapeSectionResult result)
-    //{
-    //    foreach (var headline in result.Headlines)
-    //    {
-    //        ScrapedHeadlines ??= [];
-    //        ScrapedHeadlines.Add(headline);
-    //    }
-
-    //    //if (result.Exception is not null)
-    //    //{
-    //    //    Exceptions ??= [];
-    //    //    Exceptions.Add(result.Exception);
-    //    //}
-    //}
 
     public override string ToString() => JsonConfig.ToJson(this, JsonSerializerOptions.Default,
         CustomJsonSerializerOptions.IgnoreNull | CustomJsonSerializerOptions.WriteIndented);

@@ -1,8 +1,8 @@
-﻿using SnapshotJob.Common.Serialization;
-using SnapshotJob.Perplexity.Models.ApiResponse;
+﻿using SnapshotJob.Perplexity.Models.ApiResponse;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Perplexity.Models.TopStories.Request;
 using SnapshotJob.Perplexity.Models.TopStories.Response;
+using SnapshotNewsToday.Common.Serialization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;

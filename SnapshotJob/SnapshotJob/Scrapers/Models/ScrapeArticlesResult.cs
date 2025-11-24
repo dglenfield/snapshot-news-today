@@ -1,5 +1,5 @@
-﻿using SnapshotJob.Common.Serialization;
-using SnapshotJob.Data.Models;
+﻿using SnapshotJob.Data.Models;
+using SnapshotNewsToday.Common.Serialization;
 using System.Text.Json;
 
 namespace SnapshotJob.Scrapers.Models;
