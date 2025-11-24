@@ -4,9 +4,9 @@ using System.Text.Json;
 
 namespace SnapshotJob.Data.Configuration.Options;
 
-public class DatabaseOptions
+public class SnapshotJobDatabaseOptions
 {
-    public const string SectionName = "Database";
+    public const string SectionName = "SnapshotJobDatabase";
 
     [Required]
     public bool DeleteExistingDatabase { get; set; }
