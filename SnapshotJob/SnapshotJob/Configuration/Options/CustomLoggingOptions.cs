@@ -1,5 +1,5 @@
 ﻿using SnapshotJob.Common.Logging;
-using SnapshotJob.Common.Serialization;
+using SnapshotNewsToday.Common.Serialization;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 

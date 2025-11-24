@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Options;
 using SnapshotJob.Common.Logging;
-using SnapshotJob.Common.Serialization;
 using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data.Configuration.Options;
 using SnapshotJob.Perplexity.Configuration.Options;
+using SnapshotNewsToday.Common.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
