@@ -55,6 +55,7 @@ public class Program
 
             // Testing - Delete the application database
             //await applicationDatabase.DeleteDatabase();
+            await applicationDatabase.DeleteArticlesContainer();
         }
         catch (Exception ex)
         {
@@ -140,7 +141,7 @@ public class Program
                 options.UseCosmos(
                     accountEndpoint: databaseOptions.AccountEndpoint,
                     accountKey: databaseOptions.AccountKey,
-                    databaseName: databaseOptions.DatabaseName);
+                    databaseName: databaseOptions.DatabaseId);
             });
 
             services.AddTransient<SnapshotNewsTodayDatabase>();
