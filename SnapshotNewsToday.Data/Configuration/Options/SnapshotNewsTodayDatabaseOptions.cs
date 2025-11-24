@@ -13,7 +13,7 @@ public class SnapshotNewsTodayDatabaseOptions
     public string AccountKey { get; set; } = default!;
 
     [Required]
-    public string DatabaseName { get; set; } = default!;
+    public string DatabaseId { get; set; } = default!;
 
     [Required]
     public bool DeleteExistingDatabase { get; set; }
