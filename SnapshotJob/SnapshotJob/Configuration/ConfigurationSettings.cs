@@ -11,7 +11,7 @@ namespace SnapshotJob.Configuration;
 
 public class ConfigurationSettings(IOptions<ApplicationOptions> applicationOptions,
     IOptions<CustomLoggingOptions> customLoggingOptions,
-    IOptions<DatabaseOptions> databaseOptions,
+    IOptions<SnapshotJobDatabaseOptions> databaseOptions,
     IOptions<ScrapingOptions> scrapingOptions,
     IOptions<PerplexityOptions> perplexityOptions,
     Logger logger)
@@ -23,7 +23,7 @@ public class ConfigurationSettings(IOptions<ApplicationOptions> applicationOptio
     public CustomLoggingOptions CustomLoggingOptions => customLoggingOptions.Value;
 
     [JsonPropertyOrder(2)]
-    public DatabaseOptions DatabaseOptions => databaseOptions.Value;
+    public SnapshotJobDatabaseOptions DatabaseOptions => databaseOptions.Value;
 
     [JsonPropertyOrder(10)]
     public PerplexityOptions PerplexityOptions => perplexityOptions.Value;

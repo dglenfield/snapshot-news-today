@@ -16,9 +16,9 @@ public class SnapshotJobDatabase : SqliteDatabase
     private readonly AnalyzedArticleRepository _analyzedArticleRepository;
     private readonly NewsSnapshotArticleRepository _newsSnapshotArticleRepository;
     private readonly Logger _logger;
-    private readonly DatabaseOptions _options;
+    private readonly SnapshotJobDatabaseOptions _options;
 
-    public SnapshotJobDatabase(IOptions<DatabaseOptions> options, Logger logger) : base(options.Value.DatabaseFilePath)
+    public SnapshotJobDatabase(IOptions<SnapshotJobDatabaseOptions> options, Logger logger) : base(options.Value.DatabaseFilePath)
     {
         _logger = logger;
         _options = options.Value;

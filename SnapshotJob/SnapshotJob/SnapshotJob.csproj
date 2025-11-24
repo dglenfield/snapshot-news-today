@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\SnapshotNewsToday.Data\SnapshotNewsToday.Data.csproj" />
     <ProjectReference Include="..\SnapshotJob.Common\SnapshotJob.Common.csproj" />
     <ProjectReference Include="..\SnapshotJob.Data\SnapshotJob.Data.csproj" />
     <ProjectReference Include="..\SnapshotJob.Perplexity\SnapshotJob.Perplexity.csproj" />

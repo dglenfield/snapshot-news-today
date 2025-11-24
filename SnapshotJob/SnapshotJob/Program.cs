@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using SnapshotJob.Common.Logging;
@@ -12,6 +13,9 @@ using SnapshotJob.Perplexity.Configuration.Options;
 using SnapshotJob.Processors;
 using SnapshotJob.Scrapers.ArticlePage;
 using SnapshotJob.Scrapers.MainPage;
+using SnapshotNewsToday.Data;
+using SnapshotNewsToday.Data.Configuration.Options;
+using System;
 
 namespace SnapshotJob;
 
@@ -91,8 +95,11 @@ public class Program
             services.AddOptions<CustomLoggingOptions>()
                 .BindConfiguration(CustomLoggingOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
-            services.AddOptions<DatabaseOptions>()
-                .BindConfiguration(DatabaseOptions.SectionName)
+            services.AddOptions<SnapshotJobDatabaseOptions>()
+                .BindConfiguration(SnapshotJobDatabaseOptions.SectionName)
+                .ValidateDataAnnotations().ValidateOnStart();
+            services.AddOptions<SnapshotNewsTodayDatabaseOptions>()
+                .BindConfiguration(SnapshotNewsTodayDatabaseOptions.SectionName)
                 .ValidateDataAnnotations().ValidateOnStart();
             services.AddOptions<PerplexityOptions>()
                 .BindConfiguration(PerplexityOptions.SectionName)
@@ -139,6 +146,16 @@ public class Program
 
             services.AddTransient<TopStoriesProvider>();
             services.AddTransient<ArticleProvider>();
+
+            // Azure Cosmos DB configuration
+            services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
+            {
+                var databaseOptions = serviceProvider.GetRequiredService<IOptions<SnapshotNewsTodayDatabaseOptions>>().Value;
+                options.UseCosmos(
+                    accountEndpoint: databaseOptions.AccountEndpoint,
+                    accountKey: databaseOptions.AccountKey,
+                    databaseName: databaseOptions.DatabaseName);
+            });
         });
     }
 }
