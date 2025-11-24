@@ -53,26 +53,8 @@ public class Program
             var snapshotProcessor = host.Services.GetRequiredService<SnapshotJobProcessor>();
             await snapshotProcessor.Run();
 
-            //switch (targetSite)
-            //{
-            //    case NewsWebsite.AssociatedPress:
-            //        var articlePageConfig = configSettings.NewsSourceOptions.AssociatedPress.Scrapers.ArticlePage;
-            //        var mainPageConfig = configSettings.NewsSourceOptions.AssociatedPress.Scrapers.MainPage;
-            //        APNewsScrape job = new()
-            //        {
-            //            SourceName = targetSite.ToString(),
-            //            SourceUri = configSettings.NewsSourceOptions.AssociatedPress.BaseUri,
-            //            SkipArticlePageScrape = configSettings.ApplicationOptions.UseProductionSettings ? false : articlePageConfig.Skip,
-            //            SkipMainPageScrape = configSettings.ApplicationOptions.UseProductionSettings ? false : mainPageConfig.Skip,
-            //            UseArticlePageTestFile = configSettings.ApplicationOptions.UseProductionSettings ? false : articlePageConfig.UseTestFile,
-            //            UseMainPageTestFile = configSettings.ApplicationOptions.UseProductionSettings ? false : mainPageConfig.UseTestFile
-            //        };
-            //        job.ArticlePageTestFile = job.UseArticlePageTestFile ? articlePageConfig.TestFile : null;
-            //        job.MainPageTestFile = job.UseMainPageTestFile ? mainPageConfig.TestFile : null;
-            //        var apNewsProcessor = host.Services.GetRequiredService<APNewsProcessor>();
-            //        await apNewsProcessor.Run(job);
-            //        break;
-
+            // Testing - Delete the application database
+            await applicationDatabase.DeleteDatabase();
         }
         catch (Exception ex)
         {

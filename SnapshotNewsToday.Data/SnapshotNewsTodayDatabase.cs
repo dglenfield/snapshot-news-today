@@ -33,4 +33,29 @@ public class SnapshotNewsTodayDatabase(IOptions<SnapshotNewsTodayDatabaseOptions
             throw;
         }
     }
+
+    public async Task DeleteDatabase()
+    {
+        Console.WriteLine($"Connecting to {_accountEndpoint}");
+        try
+        {
+            using CosmosClient client = new(_accountEndpoint, _accountKey);
+            try
+            {
+                Database database = client.GetDatabase(_databaseName);
+                DatabaseResponse dbResponse = await database.DeleteAsync();
+                Console.WriteLine($"Database Id: {dbResponse.Database.Id} DELETED", ConsoleColor.Green);
+                Console.WriteLine($"Request Charge = {dbResponse.RequestCharge:N2}");
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Database Id: {_databaseName} DOES NOT EXIST", ConsoleColor.DarkYellow);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            throw;
+        }
+    }
 }
