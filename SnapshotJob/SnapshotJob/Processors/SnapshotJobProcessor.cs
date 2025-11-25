@@ -8,12 +8,13 @@ using SnapshotJob.Perplexity;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Scrapers.Models;
 using SnapshotNewsToday.Data;
+using SnapshotNewsToday.Data.Models;
 using System.Text.Json;
 
 namespace SnapshotJob.Processors;
 
 internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesProcessor topStoriesProcessor,
-    ArticleProvider articleProvider, SnapshotJobDatabase snapshotJobDatabase, SnapshotNewsTodayDatabase cosmosDbDatabase,
+    ArticleProvider articleProvider, SnapshotJobDatabase snapshotJobDatabase, SnapshotNewsTodayDatabase snapshotNewsTodayDatabase,
     IOptions<ApplicationOptions> options, 
     Logger logger)
 {
@@ -180,6 +181,16 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     logger.Log("\n" + snapshotArticle);
                 }
             }
+
+            // Create a test article to save to Cosmos DB
+            Article article = new() 
+            { 
+                CreatedOn = DateTime.Now, 
+                Headline = "Test Headline", 
+                Id = "TestId", 
+                PublishDateId = 20251124
+            };
+            await snapshotNewsTodayDatabase.CreateArticle(article);
 
             _snapshot.IsSuccess = true;
         }
