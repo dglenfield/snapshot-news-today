@@ -1,6 +1,7 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
 using SnapshotNewsToday.Data.Configuration.Options;
+using SnapshotNewsToday.Data.Models;
 using System.Net;
 
 namespace SnapshotNewsToday.Data;
@@ -10,6 +11,24 @@ public class SnapshotNewsTodayDatabase(IOptions<SnapshotNewsTodayDatabaseOptions
     private readonly string _databaseId = options.Value.DatabaseId;
     private readonly string _accountEndpoint = options.Value.AccountEndpoint;
     private readonly string _accountKey = options.Value.AccountKey;
+
+    public async Task CreateArticle(Article article)
+    {
+        try
+        {
+            using CosmosClient client = new(_accountEndpoint, _accountKey);
+            Container container = client.GetContainer(_databaseId, "Articles");
+            ItemResponse<Article> articleResponse = await container.CreateItemAsync(article);
+            Console.WriteLine($"Request Charge = {articleResponse.RequestCharge:N2}");
+
+            Console.WriteLine(articleResponse.StatusCode.ToString());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            throw;
+        }
+    }
 
     public async Task CreateArticlesContainer()
     {

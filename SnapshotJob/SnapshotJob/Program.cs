@@ -55,7 +55,7 @@ public class Program
 
             // Testing - Delete the application database
             //await applicationDatabase.DeleteDatabase();
-            await applicationDatabase.DeleteArticlesContainer();
+            //await applicationDatabase.DeleteArticlesContainer();
         }
         catch (Exception ex)
         {
