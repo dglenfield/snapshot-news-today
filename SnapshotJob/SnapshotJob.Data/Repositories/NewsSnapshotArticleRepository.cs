@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using SnapshotJob.Data.Models;
+using System.Text.Json;
 
 namespace SnapshotJob.Data.Repositories;
 
@@ -73,7 +74,7 @@ public class NewsSnapshotArticleRepository(SnapshotJobDatabase database)
                     ? null : reader.GetString(reader.GetOrdinal("custom_headline")),
                 Id = reader.GetInt64(reader.GetOrdinal("id")),
                 KeyPoints = reader.IsDBNull(reader.GetOrdinal("custom_headline")) 
-                    ? null : [reader.GetString(reader.GetOrdinal("key_points"))],
+                    ? null : JsonSerializer.Deserialize<List<string>>(reader.GetString(reader.GetOrdinal("key_points"))),
                 KeyPointsJson = reader.IsDBNull(reader.GetOrdinal("custom_headline"))
                     ? null : reader.GetString(reader.GetOrdinal("key_points")),
                 LastUpdatedOn = reader.IsDBNull(reader.GetOrdinal("last_updated_on"))
