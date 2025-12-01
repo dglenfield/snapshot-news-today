@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Azure.Cosmos.Linq;
+using Microsoft.Extensions.Options;
 using SnapshotJob.Common.Logging;
 using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data;
@@ -7,6 +8,7 @@ using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Scrapers.Models;
+using SnapshotNewsToday.Common.Models;
 using SnapshotNewsToday.Data;
 using SnapshotNewsToday.Data.Models;
 using System.Text.Json;
@@ -165,32 +167,41 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                     }
                 }
             }
-            
-            // Publish analyzed articles for top stories by saving to Cosmos DB
+
+            // Get articles from the database for testing
             if (options.Value.SkipTopStories && snapshotArticles is null)
             {
-                // Get articles from the database
                 long newsSnapshotId = 1;
                 snapshotArticles = await _newsSnapshotArticleRepository.GetBySnapshotId(newsSnapshotId);
             }
 
+            // Publish analyzed articles for top stories by saving to Cosmos DB
             if (snapshotArticles is not null)
             {
                 foreach (var snapshotArticle in snapshotArticles) 
                 {
-                    logger.Log("\n" + snapshotArticle);
+                    Article article = new()
+                    {
+                        CreatedOn = DateTime.Now,
+                        Headline = snapshotArticle.CustomHeadline ?? snapshotArticle.SourceHeadline,
+                        Id = snapshotArticle.SourceUri.Segments.Last().TrimEnd('/'),
+                        PublishDateId = snapshotArticle.LastUpdatedOn is null ? 
+                            int.Parse(DateTime.Today.ToString("yyyymmdd")) :
+                            int.Parse(snapshotArticle.LastUpdatedOn.Value.ToString("yyyyMMdd")),
+                        SourceLink = snapshotArticle.SourceUri.AbsoluteUri, 
+                        SourcePublishDate = snapshotArticle.LastUpdatedOn
+                    };
+
+                    // Add the key points
+                    if (snapshotArticle.KeyPoints is not null)
+                    {
+                        article.KeyPoints = [];
+                        foreach (var keyPoint in snapshotArticle.KeyPoints)
+                            article.KeyPoints.Add(new() { Description = keyPoint });
+                    }
+                    await snapshotNewsTodayDatabase.CreateArticle(article);
                 }
             }
-
-            // Create a test article to save to Cosmos DB
-            Article article = new() 
-            { 
-                CreatedOn = DateTime.Now, 
-                Headline = "Test Headline", 
-                Id = "TestId", 
-                PublishDateId = 20251124
-            };
-            await snapshotNewsTodayDatabase.CreateArticle(article);
 
             _snapshot.IsSuccess = true;
         }
