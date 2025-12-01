@@ -91,7 +91,7 @@ public class NewsSnapshotArticleRepository(SnapshotJobDatabase database)
         }
 
         if (articles.Count == 0)
-            throw new InvalidOperationException("Snapshot Id not found.");
+            throw new InvalidOperationException($"Snapshot Id {snapshotId} not found.");
 
         return articles;
     }
