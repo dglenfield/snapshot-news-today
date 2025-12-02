@@ -34,6 +34,9 @@ public class Article
     [JsonProperty("sourcePublishDate")]
     public DateTime? SourcePublishDate { get; set; }
 
+    [JsonProperty("summary")]
+    public string? Summary { get; set; }
+
     [JsonProperty("totalComments")]
     public int TotalComments { get; set; }
 }
