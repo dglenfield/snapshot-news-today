@@ -1,5 +1,4 @@
-﻿using Microsoft.Azure.Cosmos.Linq;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using SnapshotJob.Common.Logging;
 using SnapshotJob.Configuration.Options;
 using SnapshotJob.Data;
@@ -8,7 +7,6 @@ using SnapshotJob.Data.Repositories;
 using SnapshotJob.Perplexity;
 using SnapshotJob.Perplexity.Models.TopStories;
 using SnapshotJob.Scrapers.Models;
-using SnapshotNewsToday.Common.Models;
 using SnapshotNewsToday.Data;
 using SnapshotNewsToday.Data.Models;
 using System.Text.Json;
@@ -189,7 +187,8 @@ internal class SnapshotJobProcessor(ScrapeProcessor scrapeProcessor, TopStoriesP
                             int.Parse(DateTime.Today.ToString("yyyymmdd")) :
                             int.Parse(snapshotArticle.LastUpdatedOn.Value.ToString("yyyyMMdd")),
                         SourceLink = snapshotArticle.SourceUri.AbsoluteUri, 
-                        SourcePublishDate = snapshotArticle.LastUpdatedOn
+                        SourcePublishDate = snapshotArticle.LastUpdatedOn, 
+                        Summary = snapshotArticle.Summary
                     };
 
                     // Add the key points
